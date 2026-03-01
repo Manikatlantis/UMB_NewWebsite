@@ -188,7 +188,7 @@ pm2 restart umass-boston
 
 ```
 umass-boston/
-├── umass-boston-v2.html        ← Front-end (served as static file)
+├── umass-boston.html           ← Front-end (served as static file)
 ├── Umass-Boston-Logo-01.png
 ├── .gitignore                  ← Excludes .env and node_modules
 ├── DEPLOY.md                   ← This guide

@@ -28,7 +28,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime
 
 // ── Fallback — serve index HTML for any unknown path ──
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'umass-boston-v2.html'));
+  res.sendFile(path.join(__dirname, '..', 'umass-boston.html'));
 });
 
 app.listen(PORT, () => {

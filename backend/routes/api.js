@@ -53,6 +53,14 @@ router.post('/chat', async (req, res) => {
   res.json({ reply });
 });
 
+// ── GET /api/maps-key ───────────────────────────
+// Returns the Google Maps API key from env so it never appears in static HTML
+router.get('/maps-key', (req, res) => {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return res.status(500).json({ error: 'Maps key not configured' });
+  res.json({ key });
+});
+
 // ── GET /api/stats ──────────────────────────────
 // Simple analytics endpoint (admin use)
 router.get('/stats', async (req, res) => {

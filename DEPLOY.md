@@ -219,9 +219,26 @@ umass-boston/
 
 ---
 
+## API Key Security — Google Cloud Console Restrictions
+
+Even though the Maps key is no longer in static HTML, you should restrict it in
+Google Cloud Console so it's useless if anyone intercepts it:
+
+1. Go to **APIs & Services → Credentials** → click your Maps API key
+2. Under **Application restrictions** → select **HTTP referrers (websites)**
+   → add your production domain: `https://yourdomain.com/*`
+3. Under **API restrictions** → select **Restrict key**
+   → enable **Maps JavaScript API** and **Places API (New)** only
+4. Click **Save**
+
+After this, the key will only work for Maps/Places requests originating from
+your domain — stolen keys cannot be used elsewhere.
+
+---
+
 ## Next Steps
 
 - **Restrict MongoDB Network Access** — once deployed, replace `0.0.0.0/0` with your Vultr server IP
 - **Add the Anthropic chatbot** — uncomment the API call in `backend/routes/api.js` and add `@anthropic-ai/sdk` to dependencies
-- **Move Google Maps key server-side** — add a `/api/maps-key` endpoint that returns the key only to your domain, remove it from the HTML
+- **Restrict Google Maps key** — follow the "API Key Security" section above to add HTTP referrer restrictions in Google Cloud Console
 - **Add a domain** — buy a `.com` from Namecheap/Cloudflare, point it to your Vultr IP, then run Certbot for HTTPS

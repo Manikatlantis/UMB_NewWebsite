@@ -16,6 +16,9 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 app.use(morgan('dev'));
 
+// ── Serve uploaded photos ───────────────────────
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ── Serve the front-end HTML ────────────────────
 // The single-page HTML lives one level up from backend/
 app.use(express.static(path.join(__dirname, '..')));

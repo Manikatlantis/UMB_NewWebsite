@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UMass Boston — Harbor of Knowledge</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700&display=swap" rel="stylesheet">
+<!-- Three.js for 3D campus hero (r128 — last version with full UMD/script-tag support) -->
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <!-- Google Maps JavaScript API — replace YOUR_GOOGLE_MAPS_API_KEY with your real key -->
 <script>
   async function initCampusMap(){
@@ -230,6 +233,19 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 @keyframes sb{0%,100%{opacity:0;transform:scaleY(0);transform-origin:top;}50%{opacity:1;transform:scaleY(1);}}
 @keyframes fup{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
 
+/* ── 3D EXPLORE MODE ── */
+.btn-3d{margin-top:18px;padding:10px 28px;background:transparent;border:1px solid rgba(0,212,184,0.35);color:var(--teal);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;opacity:0;animation:fup 1s 1.3s forwards;}
+.btn-3d:hover{background:rgba(0,212,184,0.1);border-color:var(--teal);}
+.btn-exit3d{position:absolute;top:80px;left:24px;z-index:20;padding:10px 22px;background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.25);color:var(--teal);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;opacity:0;pointer-events:none;backdrop-filter:blur(10px);}
+.btn-exit3d:hover{background:rgba(0,212,184,0.1);}
+.btn-exit3d.vis{opacity:1;pointer-events:all;}
+#hero.explore-mode .hero-overlay{opacity:0;pointer-events:none;transition:opacity 0.6s;}
+#hero.explore-mode .hero-content{opacity:0;pointer-events:none;transition:opacity 0.5s;}
+#hero.explore-mode .scroll-hint{opacity:0!important;pointer-events:none;transition:opacity 0.3s;}
+#hero:not(.explore-mode) .hero-overlay{transition:opacity 0.6s 0.3s;}
+#hero:not(.explore-mode) .hero-content{transition:opacity 0.5s 0.5s;}
+#hero:not(.explore-mode) .scroll-hint{transition:opacity 0.5s 0.8s;}
+
 /* ── TICKER ── */
 .ticker{overflow:hidden;border-top:1px solid rgba(0,212,184,0.1);border-bottom:1px solid rgba(0,212,184,0.1);background:rgba(0,16,32,0.9);padding:14px 0;}
 .ticker-track{display:flex;gap:0;white-space:nowrap;animation:tick 28s linear infinite;}
@@ -383,6 +399,31 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 .foot-bottom p{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:rgba(238,243,248,0.25);}
 .foot-bottom a{color:var(--teal);text-decoration:none;}
 
+/* ── BUILDING INFO PANEL ── */
+#building-panel{position:fixed;top:0;right:-420px;width:400px;max-width:90vw;height:100vh;background:rgba(0,10,22,0.97);border-left:1px solid rgba(0,212,184,0.2);z-index:1001;transition:right 0.4s cubic-bezier(0.22,1,0.36,1);overflow-y:auto;backdrop-filter:blur(20px);display:flex;flex-direction:column;}
+#building-panel.open{right:0;}
+.bp-close{position:absolute;top:16px;right:16px;width:36px;height:36px;background:rgba(0,212,184,0.1);border:1px solid rgba(0,212,184,0.2);color:var(--teal);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-family:'Space Mono',monospace;}
+.bp-close:hover{background:rgba(0,212,184,0.2);color:#fff;}
+.bp-header{padding:32px 28px 20px;border-bottom:1px solid rgba(0,212,184,0.1);}
+.bp-name{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;}
+.bp-desc{font-size:14px;color:rgba(238,243,248,0.6);line-height:1.7;margin-bottom:16px;}
+.bp-link{display:inline-block;padding:8px 20px;background:var(--teal);color:var(--deep);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all 0.2s;}
+.bp-link:hover{background:#00f0d0;}
+.bp-photos{padding:20px 28px;flex:1;}
+.bp-photos-title{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--teal);margin-bottom:14px;}
+.bp-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.bp-photo-slot{aspect-ratio:1;background:rgba(0,212,184,0.04);border:1px dashed rgba(0,212,184,0.15);display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(238,243,248,0.2);font-family:'Space Mono',monospace;cursor:pointer;transition:all 0.2s;}
+.bp-photo-slot:hover{border-color:rgba(0,212,184,0.3);background:rgba(0,212,184,0.08);}
+.bp-photo-slot img{width:100%;height:100%;object-fit:cover;}
+
+/* ── PHOTO LIGHTBOX ── */
+#photo-lightbox{position:fixed;inset:0;background:rgba(0,5,12,0.95);z-index:1002;display:none;align-items:center;justify-content:center;flex-direction:column;}
+#photo-lightbox.open{display:flex;}
+.lb-close{position:absolute;top:20px;right:20px;width:40px;height:40px;background:rgba(0,212,184,0.1);border:1px solid rgba(0,212,184,0.2);color:var(--teal);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;}
+.lb-content{max-width:80vw;max-height:80vh;display:flex;align-items:center;justify-content:center;}
+.lb-content img{max-width:100%;max-height:80vh;object-fit:contain;}
+.lb-msg{font-family:'Space Mono',monospace;font-size:12px;color:rgba(238,243,248,0.5);letter-spacing:2px;text-align:center;padding:20px;}
+
 /* ══════════════════════════════════════════════════
    RESPONSIVE — Tablet (≤1024px)
    ══════════════════════════════════════════════════ */
@@ -438,6 +479,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   /* Hide custom cursor on mobile */
   #compass-cursor{display:none!important;}
   body.custom-cursor{cursor:auto;}
+  #building-panel{width:100vw;max-width:100vw;}
 }
 
 /* ══════════════════════════════════════════════════
@@ -493,9 +535,34 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <a href="https://www.umb.edu/academics/" target="_blank" class="btn-r">Explore Programs</a>
       <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-o">Apply Fall 2025</a>
     </div>
+    <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()">Explore Campus 3D &rarr;</button>
   </div>
+  <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
   <div class="scroll-hint"><span>Scroll</span><div class="scroll-bar"></div></div>
 </section>
+
+<!-- ─── BUILDING INFO PANEL ─── -->
+<div id="building-panel">
+  <button class="bp-close" onclick="closeBuildingPanel()">&times;</button>
+  <div class="bp-header">
+    <div class="bp-name" id="bp-name">Building Name</div>
+    <div class="bp-desc" id="bp-desc">Description</div>
+    <a class="bp-link" id="bp-link" href="#" target="_blank">Learn More &rarr;</a>
+  </div>
+  <div class="bp-photos">
+    <div class="bp-photos-title">Window Photos</div>
+    <div class="bp-photo-grid" id="bp-photo-grid"></div>
+    <div class="lb-msg" id="bp-photo-msg" style="margin-top:12px;">Click a window on the 3D model to see photos.<br>Photos coming soon!</div>
+  </div>
+</div>
+
+<!-- ─── PHOTO LIGHTBOX ─── -->
+<div id="photo-lightbox">
+  <button class="lb-close" onclick="closeLightbox()">&times;</button>
+  <div class="lb-content" id="lb-content">
+    <div class="lb-msg">No photo yet — check back soon!</div>
+  </div>
+</div>
 
 <!-- ─── TICKER ─── -->
 <div class="ticker">
@@ -774,232 +841,481 @@ const obs=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.
 document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
 
 // ────────────────────────────────────────────────
-// HERO — Aerial Campus Flyover (Canvas 2D)
+// HERO — Three.js 3D Low-Poly Campus
 // ────────────────────────────────────────────────
 (function(){
-  const cv=document.getElementById('webgl-canvas');
-  const ctx=cv.getContext('2d');
-  if(!ctx)return;
-  function resize(){ cv.width=innerWidth; cv.height=innerHeight; }
-  addEventListener('resize',resize); resize();
+  const canvas=document.getElementById('webgl-canvas');
+  if(!window.THREE){console.warn('Three.js not loaded');return;}
 
-  // ── Campus aerial flyover ──────────────────────
-  // Columbia Point peninsula: top-down map view
-  // Camera zooms in from orbit altitude, then slowly
-  // circles the campus while buildings glow.
-
-  let t=0, mx=0, my=0;
-  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
-
-  // Zoom / orbit state
-  // Phase 0 (0–6s): pull in from satellite altitude
-  // Phase 1 (6s+): low orbit circle with gentle drift
-  const PHASE0_DUR=360; // frames
-  let fr=0;
-
-  // Campus peninsula shape (normalized 0-1 coords, will be scaled)
-  // Represents Columbia Point roughly
-  const peninsula=[
-    [0.48,0.15],[0.62,0.12],[0.74,0.18],[0.80,0.28],[0.82,0.42],
-    [0.78,0.55],[0.72,0.65],[0.60,0.72],[0.50,0.75],[0.38,0.72],
-    [0.28,0.64],[0.22,0.52],[0.20,0.38],[0.24,0.25],[0.34,0.17]
+  // ── Building data (diorama scale — real campus colors) ──
+  const BUILDINGS=[
+    {name:'Campus Center',x:0,z:0,w:4,h:3,d:3,col:0xd4cfc0,
+     desc:'The heart of student life — dining, organizations, and events.',
+     link:'https://www.umb.edu/campus-life/'},
+    {name:'Integrated Sciences Complex',x:9,z:-2,w:3,h:5,d:3,col:0xb8d8e8,
+     desc:'State-of-the-art research labs — biology, chemistry & physics.',
+     link:'https://www.umb.edu/academics/csm/'},
+    {name:'Healey Library',x:-3,z:7,w:4,h:4,d:4,col:0x6b2020,
+     desc:'Main library with 700,000+ volumes and digital resources.',
+     link:'https://www.umb.edu/library/'},
+    {name:'Quinn Administration',x:3,z:-9,w:3,h:2.5,d:3,col:0x6b2020,
+     desc:'Administrative offices, Registrar, Bursar, and leadership.',
+     link:'https://www.umb.edu/about/'},
+    {name:'Wheatley Hall',x:5,z:-6,w:3,h:3.5,d:2.5,col:0x6b2020,
+     desc:'College of Education, Nursing and Social Work.',
+     link:'https://www.umb.edu/academics/nursing/'},
+    {name:'McCormack Hall',x:-8,z:3,w:3,h:4,d:3,col:0x6b2020,
+     desc:'Graduate studies, College of Liberal Arts offices and classrooms.',
+     link:'https://www.umb.edu/academics/cla/'},
+    {name:'Clark Athletic Center',x:-12,z:10,w:4,h:2,d:4,col:0xc8c0b0,
+     desc:'Full recreation center — gym, pool, courts, fitness facilities.',
+     link:'https://www.umb.edu/athletics/'},
+    {name:'University Hall',x:7,z:4,w:3,h:3,d:2.5,col:0xd4cfc0,
+     desc:'Computer Science, Math, and Sciences classrooms and labs.',
+     link:'https://www.umb.edu/academics/cts/'},
+    {name:'West Garage',x:14,z:-7,w:3,h:4,d:3,col:0xe0e0e0,
+     desc:'Campus parking garage with blue-stripe exterior.',
+     link:'https://www.umb.edu/campus-life/'},
+    {name:'JFK Presidential Library',x:-10,z:-8,w:5,h:2.5,d:4,col:0xe8e4dc,
+     desc:'Iconic landmark dedicated to President John F. Kennedy.',
+     link:'https://www.jfklibrary.org'},
   ];
 
-  // Buildings (normalized campus-space coords + color + label)
-  const buildings=[
-    {x:0.50,y:0.40,w:0.09,h:0.06,col:'#1c6ea4',label:'Campus Center'},
-    {x:0.62,y:0.38,w:0.07,h:0.05,col:'#0097c8',label:'ISC'},
-    {x:0.46,y:0.48,w:0.08,h:0.05,col:'#0097c8',label:'Healey Library'},
-    {x:0.47,y:0.30,w:0.07,h:0.05,col:'#cc0000',label:'Quinn Admin'},
-    {x:0.55,y:0.33,w:0.07,h:0.05,col:'#0097c8',label:'Wheatley Hall'},
-    {x:0.52,y:0.45,w:0.07,h:0.04,col:'#f5a623',label:'McCormack'},
-    {x:0.36,y:0.54,w:0.08,h:0.06,col:'#cc0000',label:'Clark Athletic'},
-    {x:0.58,y:0.43,w:0.06,h:0.04,col:'#0097c8',label:'University Hall'},
-    {x:0.68,y:0.35,w:0.07,h:0.05,col:'#f5a623',label:'Sci & Tech'},
-    {x:0.40,y:0.43,w:0.07,h:0.05,col:'#1c6ea4',label:'McCormack Hall'},
+  // ── Renderer ──
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setClearColor(0x000d1a);
+
+  // ── Scene ──
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x000d1a,0.002);
+
+  // ── Camera ──
+  const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,2000);
+  camera.position.set(0,500,0); // start high (satellite)
+  camera.lookAt(0,0,0);
+
+  // ── Lights (subdued for background feel) ──
+  const ambient=new THREE.AmbientLight(0x223344,0.5);
+  scene.add(ambient);
+  const dirLight=new THREE.DirectionalLight(0x8899aa,0.5);
+  dirLight.position.set(40,80,30);
+  scene.add(dirLight);
+  const tealPoint=new THREE.PointLight(0x00c8d4,0.8,120);
+  tealPoint.position.set(0,15,0);
+  scene.add(tealPoint);
+  const tealPoint2=new THREE.PointLight(0x00c8d4,0.4,80);
+  tealPoint2.position.set(-15,10,10);
+  scene.add(tealPoint2);
+
+  // ── Ground peninsula ──
+  const peninsulaShape=new THREE.Shape();
+  // Real campus outline (simplified Columbia Point) — scaled 0.5x
+  const ptsRaw=[
+    [-50,-40],[-30,-50],[-5,-52],[20,-48],[38,-40],
+    [48,-25],[52,-5],[50,15],[42,30],[30,42],
+    [15,48],[0,50],[-18,46],[-32,38],[-42,25],
+    [-48,10],[-50,-10],[-50,-25]
   ];
+  const S=0.5; // scale factor
+  const pts=ptsRaw.map(p=>[p[0]*S,p[1]*S]);
+  peninsulaShape.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) peninsulaShape.lineTo(pts[i][0],pts[i][1]);
+  peninsulaShape.closePath();
 
-  // Roads (pairs of [x,y] normalized)
-  const roads=[
-    [[0.30,0.28],[0.72,0.28]],
-    [[0.30,0.42],[0.72,0.42]],
-    [[0.30,0.56],[0.72,0.56]],
-    [[0.40,0.18],[0.40,0.68]],
-    [[0.52,0.18],[0.52,0.68]],
-    [[0.64,0.18],[0.64,0.65]],
-  ];
+  const extrudeSettings={depth:1,bevelEnabled:true,bevelThickness:0.3,bevelSize:0.3,bevelSegments:2};
+  const groundGeo=new THREE.ExtrudeGeometry(peninsulaShape,extrudeSettings);
+  const groundMat=new THREE.MeshStandardMaterial({color:0x0a1810,roughness:0.95,metalness:0.05});
+  const ground=new THREE.Mesh(groundGeo,groundMat);
+  ground.rotation.x=-Math.PI/2;
+  ground.position.y=-1;
+  scene.add(ground);
 
-  // Stars
-  const sts=Array.from({length:180},()=>({
-    x:Math.random(),y:Math.random(),
-    r:Math.random()<0.15?1.5:0.8,
-    a:0.25+Math.random()*0.65,
-    p:Math.random()*Math.PI*2
-  }));
+  // ── Coastline glow ring ──
+  const coastPts=pts.map(p=>new THREE.Vector2(p[0],p[1]));
+  coastPts.push(coastPts[0].clone());
+  const coastCurve=new THREE.SplineCurve(coastPts);
+  const coastGeo=new THREE.BufferGeometry().setFromPoints(coastCurve.getPoints(100));
+  const coastMat=new THREE.LineBasicMaterial({color:0x00c8d4,transparent:true,opacity:0.25});
+  const coastLine=new THREE.Line(coastGeo,coastMat);
+  coastLine.rotation.x=-Math.PI/2;
+  coastLine.position.y=0.2;
+  scene.add(coastLine);
 
-  function ease(x){ return x<0.5?2*x*x:1-Math.pow(-2*x+2,2)/2; }
+  // ── Water plane ──
+  const waterGeo=new THREE.PlaneGeometry(600,600,60,60);
+  const waterMat=new THREE.MeshStandardMaterial({
+    color:0x010c18,roughness:0.8,metalness:0.2,transparent:true,opacity:0.95
+  });
+  const water=new THREE.Mesh(waterGeo,waterMat);
+  water.rotation.x=-Math.PI/2;
+  water.position.y=-2;
+  scene.add(water);
 
-  function draw(ts){
-    fr++;
-    t=ts*0.001;
-    const W=cv.width, H=cv.height;
-    ctx.clearRect(0,0,W,H);
+  // ── Sky dome (hidden in hero mode, shown in explore mode) ──
+  const skyGeo=new THREE.SphereGeometry(500,32,16);
+  const skyMat=new THREE.MeshBasicMaterial({
+    color:0x000d1a,side:THREE.BackSide,fog:false
+  });
+  const skyDome=new THREE.Mesh(skyGeo,skyMat);
+  scene.add(skyDome);
 
-    // Progress through phases
-    const phase0prog=Math.min(1, fr/PHASE0_DUR);
-    const altScale=ease(phase0prog); // 0=satellite, 1=campus level
-    const orbitAngle=(fr>PHASE0_DUR)?(fr-PHASE0_DUR)*0.004:0;
+  // Target sky colors for explore mode
+  const SKY_DARK=new THREE.Color(0x000d1a);
+  const SKY_DAY=new THREE.Color(0x7db4e0); // soft realistic daytime sky
 
-    // Zoom: maps peninsula to screen
-    // At altScale=0: very zoomed out (peninsula tiny in center)
-    // At altScale=1: peninsula fills screen nicely
-    const baseScale=Math.min(W,H);
-    const zoom=0.18+altScale*0.70; // fraction of screen the peninsula spans
-    const peninsulaW=baseScale*zoom;
-    const peninsulaH=peninsulaW*0.85;
+  // ── Clouds (sprite-based, invisible until explore mode) ──
+  const clouds=[];
+  const cloudCanvas=document.createElement('canvas');
+  cloudCanvas.width=128;cloudCanvas.height=64;
+  const cctx=cloudCanvas.getContext('2d');
+  const cgrad=cctx.createRadialGradient(64,32,0,64,32,56);
+  cgrad.addColorStop(0,'rgba(255,255,255,0.7)');
+  cgrad.addColorStop(0.5,'rgba(255,255,255,0.3)');
+  cgrad.addColorStop(1,'rgba(255,255,255,0)');
+  cctx.fillStyle=cgrad;
+  cctx.fillRect(0,0,128,64);
+  const cloudTex=new THREE.CanvasTexture(cloudCanvas);
 
-    // Camera center drifts in orbit
-    const orbitR=baseScale*0.03*(altScale);
-    const camX=W/2+Math.cos(orbitAngle)*orbitR+(mx-W/2)*0.012*altScale;
-    const camY=H/2+Math.sin(orbitAngle*0.7)*orbitR+(my-H/2)*0.012*altScale;
+  for(let i=0;i<18;i++){
+    const cMat=new THREE.SpriteMaterial({map:cloudTex,transparent:true,opacity:0,fog:false,depthWrite:false});
+    const sprite=new THREE.Sprite(cMat);
+    const angle=Math.random()*Math.PI*2;
+    const radius=40+Math.random()*150;
+    sprite.position.set(Math.cos(angle)*radius,35+Math.random()*30,Math.sin(angle)*radius);
+    sprite.scale.set(30+Math.random()*40,8+Math.random()*10,1);
+    sprite.userData={speed:0.3+Math.random()*0.5,baseX:sprite.position.x};
+    scene.add(sprite);
+    clouds.push(sprite);
+  }
 
-    function mapX(nx){ return camX+(nx-0.5)*peninsulaW; }
-    function mapY(ny){ return camY+(ny-0.5)*peninsulaH; }
+  // ── Sun light (for explore mode, starts dim) ──
+  const sunLight=new THREE.DirectionalLight(0xfff4e0,0);
+  sunLight.position.set(60,80,40);
+  scene.add(sunLight);
 
-    // ── Sky / space background ──
-    const skyFrac=1-altScale*0.6; // 1=deep space, 0.4=dawn sky
-    const bg=ctx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0, `rgb(${Math.round(1*skyFrac)},${Math.round(6*skyFrac)},${Math.round(18*skyFrac)})`);
-    bg.addColorStop(1, `rgb(${Math.round(0+8*(1-skyFrac))},${Math.round(10+18*(1-skyFrac))},${Math.round(20+30*(1-skyFrac))})`);
-    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  // ── Hemisphere light (sky/ground bounce, starts off) ──
+  const hemiLight=new THREE.HemisphereLight(0x9ec5e8,0x4a6b3a,0);
+  scene.add(hemiLight);
 
-    // ── Stars (fade as we get closer) ──
-    const starAlpha=1-altScale*0.85;
-    sts.forEach(s=>{
-      ctx.fillStyle=`rgba(200,218,255,${(s.a+Math.sin(t*1.8+s.p)*0.15)*starAlpha})`;
-      ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2); ctx.fill();
+  // ── Explore mode lighting targets ──
+  const HERO_LIGHT={ambient:0.5,dir:0.5,teal1:0.8,teal2:0.4,sun:0,hemi:0,fog:0.002,cloudAlpha:0,groundCol:new THREE.Color(0x0a1810),waterCol:new THREE.Color(0x010c18)};
+  const EXPLORE_LIGHT={ambient:0.8,dir:0.9,teal1:0.15,teal2:0.1,sun:1.2,hemi:0.5,fog:0.0008,cloudAlpha:1,groundCol:new THREE.Color(0x3a6830),waterCol:new THREE.Color(0x2a6080)};
+  let lightTarget=HERO_LIGHT;
+  let lightLerp=0; // 0=hero, 1=explore
+
+  // ── Buildings ──
+  const buildingMeshes=[];
+  const windowMeshes=[];
+  const buildingGroup=new THREE.Group();
+
+  BUILDINGS.forEach((b,idx)=>{
+    // Building body
+    const geo=new THREE.BoxGeometry(b.w,b.h,b.d);
+    const mat=new THREE.MeshStandardMaterial({
+      color:b.col,roughness:0.6,metalness:0.2,
+      emissive:b.col,emissiveIntensity:0.08
+    });
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.set(b.x,b.h/2,b.z);
+    mesh.userData={type:'building',index:idx,data:b};
+    buildingGroup.add(mesh);
+    buildingMeshes.push(mesh);
+
+    // Roof accent
+    const roofGeo=new THREE.BoxGeometry(b.w+0.4,0.5,b.d+0.4);
+    const roofMat=new THREE.MeshStandardMaterial({color:b.col,roughness:0.4,metalness:0.3,emissive:b.col,emissiveIntensity:0.15});
+    const roof=new THREE.Mesh(roofGeo,roofMat);
+    roof.position.set(b.x,b.h+0.25,b.z);
+    buildingGroup.add(roof);
+
+    // Windows on each face
+    const faces=[
+      {axis:'x',dir:1,normal:new THREE.Vector3(1,0,0),rotY:-Math.PI/2,faceW:b.d,faceH:b.h},
+      {axis:'x',dir:-1,normal:new THREE.Vector3(-1,0,0),rotY:Math.PI/2,faceW:b.d,faceH:b.h},
+      {axis:'z',dir:1,normal:new THREE.Vector3(0,0,1),rotY:0,faceW:b.w,faceH:b.h},
+      {axis:'z',dir:-1,normal:new THREE.Vector3(0,0,-1),rotY:Math.PI,faceW:b.w,faceH:b.h},
+    ];
+    faces.forEach((face,fi)=>{
+      const cols=Math.max(2,Math.floor(face.faceW/3));
+      const rows=Math.max(2,Math.floor(face.faceH/3.5));
+      const winW=face.faceW/(cols+1)*0.5;
+      const winH=face.faceH/(rows+1)*0.5;
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const wGeo=new THREE.PlaneGeometry(winW,winH);
+          const lit=((idx+r+c+fi)%3)!==0;
+          const wMat=new THREE.MeshStandardMaterial({
+            color:lit?0xffdd88:0x112244,
+            emissive:lit?0xffdd88:0x000000,
+            emissiveIntensity:lit?0.3:0,
+            transparent:true,opacity:lit?0.7:0.3,
+            side:THREE.DoubleSide
+          });
+          const wMesh=new THREE.Mesh(wGeo,wMat);
+          // Position on building face
+          const cx=(-face.faceW/2+(c+1)*face.faceW/(cols+1));
+          const cy=(r+1)*b.h/(rows+1);
+          if(face.axis==='z'){
+            wMesh.position.set(b.x+cx,cy,b.z+face.dir*(b.d/2+0.05));
+          } else {
+            wMesh.position.set(b.x+face.dir*(b.w/2+0.05),cy,b.z+cx);
+            wMesh.rotation.y=face.rotY;
+          }
+          wMesh.userData={type:'window',buildingIndex:idx,building:b.name,face:fi,row:r,col:c};
+          buildingGroup.add(wMesh);
+          windowMeshes.push(wMesh);
+        }
+      }
+    });
+  });
+  scene.add(buildingGroup);
+
+  // ── OrbitControls ──
+  const controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;
+  controls.dampingFactor=0.08;
+  controls.minDistance=30;
+  controls.maxDistance=250;
+  controls.minPolarAngle=0.3;
+  controls.maxPolarAngle=Math.PI/2.1;
+  controls.target.set(0,0,0);
+  controls.enabled=false; // disabled during intro
+
+  // ── Raycaster ──
+  const raycaster=new THREE.Raycaster();
+  const mouse=new THREE.Vector2();
+  const allClickable=[...buildingMeshes,...windowMeshes];
+
+  function onCanvasClick(e){
+    if(!exploreMode) return; // only interactive in explore mode
+    const rect=renderer.domElement.getBoundingClientRect();
+    mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+    mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObjects(allClickable,false);
+    if(hits.length>0){
+      const obj=hits[0].object;
+      if(obj.userData.type==='building'){
+        openBuildingPanel(obj.userData.data);
+      } else if(obj.userData.type==='window'){
+        openWindowPhoto(obj.userData);
+      }
+    } else {
+      closeBuildingPanel();
+    }
+  }
+  renderer.domElement.addEventListener('click',onCanvasClick);
+
+  // ── Panel functions (global) ──
+  window.closeBuildingPanel=function(){
+    document.getElementById('building-panel').classList.remove('open');
+  };
+  window.closeLightbox=function(){
+    document.getElementById('photo-lightbox').classList.remove('open');
+  };
+
+  // ── 3D Explore mode ──
+  let exploreMode=false;
+  let camTween=null; // {from, to, start, dur, onDone}
+  const HERO_CAM={x:25,y:55,z:35};
+  const EXPLORE_CAM={x:30,y:30,z:40};
+
+  function animateCamTo(target,dur,onDone){
+    camTween={
+      from:{x:camera.position.x,y:camera.position.y,z:camera.position.z},
+      to:target,
+      start:clock.getElapsedTime(),
+      dur:dur,
+      onDone:onDone||null
+    };
+  }
+
+  window.enter3DMode=function(){
+    if(exploreMode) return;
+    exploreMode=true;
+    lightTarget=EXPLORE_LIGHT;
+    document.getElementById('hero').classList.add('explore-mode');
+    document.getElementById('btn-exit3d').classList.add('vis');
+    controls.enabled=true;
+    controls.minDistance=15;
+    controls.maxDistance=120;
+    controls.maxPolarAngle=Math.PI/2.05;
+    animateCamTo(EXPLORE_CAM,1.2);
+  };
+
+  window.exit3DMode=function(){
+    if(!exploreMode) return;
+    exploreMode=false;
+    lightTarget=HERO_LIGHT;
+    closeBuildingPanel();
+    document.getElementById('hero').classList.remove('explore-mode');
+    document.getElementById('btn-exit3d').classList.remove('vis');
+    animateCamTo(HERO_CAM,1.2,function(){
+      controls.enabled=false;
+      controls.minDistance=30;
+      controls.maxDistance=250;
+    });
+  };
+
+  function openBuildingPanel(data){
+    document.getElementById('bp-name').textContent=data.name;
+    document.getElementById('bp-desc').textContent=data.desc;
+    const link=document.getElementById('bp-link');
+    link.href=data.link;
+    // Photo grid placeholders
+    const grid=document.getElementById('bp-photo-grid');
+    grid.innerHTML='';
+    for(let i=0;i<6;i++){
+      const slot=document.createElement('div');
+      slot.className='bp-photo-slot';
+      slot.textContent='📷';
+      grid.appendChild(slot);
+    }
+    document.getElementById('building-panel').classList.add('open');
+  }
+
+  function openWindowPhoto(data){
+    const lb=document.getElementById('photo-lightbox');
+    const content=document.getElementById('lb-content');
+    content.innerHTML=`<div class="lb-msg">
+      Window photo for <strong style="color:var(--teal)">${data.building}</strong><br>
+      Face ${data.face+1}, Row ${data.row+1}, Col ${data.col+1}<br><br>
+      No photo uploaded yet — check back soon!
+    </div>`;
+    lb.classList.add('open');
+    // Try to fetch from API
+    fetch('/api/building-photos/'+encodeURIComponent(data.building)+'?face='+data.face+'&row='+data.row+'&col='+data.col)
+      .then(r=>r.json())
+      .then(res=>{
+        if(res.photos&&res.photos.length>0){
+          const p=res.photos[0];
+          content.innerHTML=`<img src="${p.photoUrl}" alt="${data.building} window photo">`;
+        }
+      })
+      .catch(()=>{});
+  }
+
+  // Close panel on Escape
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      closeBuildingPanel();
+      closeLightbox();
+    }
+  });
+
+  // ── Intro animation state ──
+  const INTRO_DURATION=4; // seconds
+  let introStart=null;
+  let introComplete=false;
+  const CAM_START_Y=400;
+  const CAM_END={x:25,y:55,z:35};
+
+  function easeOutCubic(t){return 1-Math.pow(1-t,3);}
+
+  // ── Water wave animation ──
+  const waterPosAttr=water.geometry.getAttribute('position');
+  const waterOrigY=new Float32Array(waterPosAttr.count);
+  for(let i=0;i<waterPosAttr.count;i++) waterOrigY[i]=waterPosAttr.getY(i);
+
+  // ── Animate ──
+  const clock=new THREE.Clock();
+  function animate(){
+    requestAnimationFrame(animate);
+    const elapsed=clock.getElapsedTime();
+
+    // Intro camera animation
+    if(!introComplete){
+      if(!introStart) introStart=elapsed;
+      const prog=Math.min(1,(elapsed-introStart)/INTRO_DURATION);
+      const e=easeOutCubic(prog);
+      camera.position.set(
+        CAM_END.x*e,
+        CAM_START_Y+(CAM_END.y-CAM_START_Y)*e,
+        CAM_END.z*e
+      );
+      camera.lookAt(0,0,0);
+      if(prog>=1){
+        introComplete=true;
+        // Don't enable controls here — user must click "Explore 3D"
+      }
+    }
+
+    // Camera tween (enter/exit 3D mode)
+    if(camTween){
+      const p=Math.min(1,(elapsed-camTween.start)/camTween.dur);
+      const e=easeOutCubic(p);
+      camera.position.set(
+        camTween.from.x+(camTween.to.x-camTween.from.x)*e,
+        camTween.from.y+(camTween.to.y-camTween.from.y)*e,
+        camTween.from.z+(camTween.to.z-camTween.from.z)*e
+      );
+      if(p>=1){
+        if(camTween.onDone) camTween.onDone();
+        camTween=null;
+      }
+    }
+
+    // Water wave animation
+    for(let i=0;i<waterPosAttr.count;i++){
+      const x=waterPosAttr.getX(i);
+      const z=waterPosAttr.getZ(i);
+      const wave=Math.sin(x*0.08+elapsed*0.8)*0.5+Math.sin(z*0.06+elapsed*0.6)*0.4;
+      waterPosAttr.setY(i,waterOrigY[i]+wave);
+    }
+    waterPosAttr.needsUpdate=true;
+
+    // Subtle building glow pulse
+    buildingMeshes.forEach((m,i)=>{
+      const pulse=0.06+Math.sin(elapsed*1.2+i*0.9)*0.04;
+      m.material.emissiveIntensity=pulse;
     });
 
-    // ── Ocean / harbor ──
-    const oceanAlpha=0.1+altScale*0.9;
-    ctx.globalAlpha=oceanAlpha;
-    const ocean=ctx.createRadialGradient(camX,camY,0,camX,camY,baseScale*0.8);
-    ocean.addColorStop(0,'#041c30');
-    ocean.addColorStop(0.5,'#021428');
-    ocean.addColorStop(1,'#010810');
-    ctx.fillStyle=ocean; ctx.fillRect(0,0,W,H);
-    ctx.globalAlpha=1;
+    // Teal light subtle movement
+    tealPoint.position.x=Math.sin(elapsed*0.3)*10;
+    tealPoint.position.z=Math.cos(elapsed*0.3)*10;
 
-    // ── Animated harbor waves ──
-    const waveAlpha=altScale*0.35;
-    if(waveAlpha>0.02){
-      for(let wi=0;wi<5;wi++){
-        ctx.strokeStyle=`rgba(28,110,164,${waveAlpha*(0.5-wi*0.08)})`;
-        ctx.lineWidth=1;
-        ctx.beginPath();
-        for(let wx=0;wx<W;wx+=6){
-          const wy=H*(0.3+wi*0.12)+Math.sin(wx/60+t*0.8+wi*1.2)*4*altScale+Math.sin(wx/120+t*0.4)*7*altScale;
-          wx===0?ctx.moveTo(wx,wy):ctx.lineTo(wx,wy);
-        }
-        ctx.stroke();
-      }
-    }
+    // ── Smooth lighting / sky / cloud transition ──
+    const targetLerp=exploreMode?1:0;
+    lightLerp+=(targetLerp-lightLerp)*0.03; // smooth ease
 
-    // ── Columbia Point land mass ──
-    ctx.globalAlpha=0.1+altScale*0.9;
-    // Draw peninsula polygon
-    ctx.beginPath();
-    peninsula.forEach((p,i)=>{ const fn=i===0?'moveTo':'lineTo'; ctx[fn](mapX(p[0]),mapY(p[1])); });
-    ctx.closePath();
-    const landG=ctx.createRadialGradient(camX,camY,0,camX,camY,peninsulaW*0.6);
-    landG.addColorStop(0,'#1a3020');
-    landG.addColorStop(0.6,'#142818');
-    landG.addColorStop(1,'#0e2012');
-    ctx.fillStyle=landG; ctx.fill();
-    // Peninsula border / coastline glow
-    ctx.strokeStyle=`rgba(28,110,164,${0.3+altScale*0.5})`;
-    ctx.lineWidth=1.5;
-    ctx.stroke();
-    ctx.globalAlpha=1;
+    ambient.intensity=HERO_LIGHT.ambient+(EXPLORE_LIGHT.ambient-HERO_LIGHT.ambient)*lightLerp;
+    dirLight.intensity=HERO_LIGHT.dir+(EXPLORE_LIGHT.dir-HERO_LIGHT.dir)*lightLerp;
+    tealPoint.intensity=HERO_LIGHT.teal1+(EXPLORE_LIGHT.teal1-HERO_LIGHT.teal1)*lightLerp;
+    tealPoint2.intensity=HERO_LIGHT.teal2+(EXPLORE_LIGHT.teal2-HERO_LIGHT.teal2)*lightLerp;
+    sunLight.intensity=HERO_LIGHT.sun+(EXPLORE_LIGHT.sun-HERO_LIGHT.sun)*lightLerp;
+    hemiLight.intensity=HERO_LIGHT.hemi+(EXPLORE_LIGHT.hemi-HERO_LIGHT.hemi)*lightLerp;
+    scene.fog.density=HERO_LIGHT.fog+(EXPLORE_LIGHT.fog-HERO_LIGHT.fog)*lightLerp;
 
-    // ── Roads ──
-    const roadAlpha=Math.max(0,(altScale-0.4)*2.5);
-    if(roadAlpha>0.02){
-      ctx.strokeStyle=`rgba(40,60,80,${roadAlpha*0.7})`;
-      ctx.lineWidth=Math.max(1,peninsulaW*0.005);
-      roads.forEach(r=>{
-        ctx.beginPath();
-        ctx.moveTo(mapX(r[0][0]),mapY(r[0][1]));
-        ctx.lineTo(mapX(r[1][0]),mapY(r[1][1]));
-        ctx.stroke();
-      });
-    }
+    // Sky color transition
+    skyMat.color.copy(SKY_DARK).lerp(SKY_DAY,lightLerp);
+    // Ground color transition
+    groundMat.color.copy(HERO_LIGHT.groundCol).lerp(EXPLORE_LIGHT.groundCol,lightLerp);
+    // Water color transition
+    waterMat.color.copy(HERO_LIGHT.waterCol).lerp(EXPLORE_LIGHT.waterCol,lightLerp);
+    // Renderer clear color transition (subtle — sky dome handles most of it)
+    const clearCol=SKY_DARK.clone().lerp(SKY_DAY,lightLerp*0.15);
+    renderer.setClearColor(clearCol);
 
-    // ── Buildings ──
-    const bldAlpha=Math.max(0,(altScale-0.3)*1.6);
-    if(bldAlpha>0.02){
-      buildings.forEach((b,i)=>{
-        const bx=mapX(b.x), by=mapY(b.y);
-        const bw=b.w*peninsulaW, bh=b.h*peninsulaH;
-        const pulse=Math.sin(t*1.2+i*0.9)*0.15+0.85;
-        // Glow
-        ctx.globalAlpha=bldAlpha*0.25*pulse;
-        const grd=ctx.createRadialGradient(bx,by,0,bx,by,bw*1.8);
-        grd.addColorStop(0,b.col); grd.addColorStop(1,'transparent');
-        ctx.fillStyle=grd; ctx.fillRect(bx-bw*2,by-bh*2,bw*4,bh*4);
-        // Building body
-        ctx.globalAlpha=bldAlpha*pulse;
-        ctx.fillStyle=b.col;
-        ctx.fillRect(bx-bw/2,by-bh/2,bw,bh);
-        // Roof highlight
-        ctx.fillStyle='rgba(255,255,255,0.15)';
-        ctx.fillRect(bx-bw/2,by-bh/2,bw,bh*0.3);
-        ctx.globalAlpha=1;
-        // Label (only when close enough)
-        if(altScale>0.75){
-          ctx.fillStyle=`rgba(180,215,255,${(altScale-0.75)*4*bldAlpha})`;
-          ctx.font=`${Math.round(peninsulaW*0.022)}px Space Mono,monospace`;
-          ctx.textAlign='center';
-          ctx.fillText(b.label,bx,by+bh/2+peninsulaW*0.022);
-          ctx.textAlign='left';
-        }
-      });
-    }
+    // Clouds fade + drift
+    const cAlpha=HERO_LIGHT.cloudAlpha+(EXPLORE_LIGHT.cloudAlpha-HERO_LIGHT.cloudAlpha)*lightLerp;
+    clouds.forEach(c=>{
+      c.material.opacity=cAlpha*0.5;
+      c.position.x=c.userData.baseX+Math.sin(elapsed*0.02*c.userData.speed)*20+elapsed*c.userData.speed*0.3;
+    });
 
-    // ── Harbor water shimmer ──
-    const shimmerAlpha=altScale*0.5;
-    for(let si=0;si<3;si++){
-      const sx=W*(0.1+si*0.35), sy=H*(0.7+si*0.06);
-      const shimW=baseScale*(0.1+si*0.04);
-      ctx.globalAlpha=shimmerAlpha*(0.2+Math.sin(t*2+si)*0.15);
-      ctx.strokeStyle='#1c6ea4'; ctx.lineWidth=1;
-      ctx.beginPath();
-      for(let wx2=0;wx2<shimW;wx2+=4){
-        const wy2=sy+Math.sin(wx2/20+t*1.5+si)*3;
-        wx2===0?ctx.moveTo(sx+wx2,wy2):ctx.lineTo(sx+wx2,wy2);
-      }
-      ctx.stroke(); ctx.globalAlpha=1;
-    }
-
-    // ── Altitude indicator (fades out) ──
-    const altTextAlpha=Math.max(0,1-altScale*3);
-    if(altTextAlpha>0.01){
-      ctx.fillStyle=`rgba(28,110,164,${altTextAlpha})`;
-      ctx.font=`bold ${Math.round(H*0.022)}px Space Mono,monospace`;
-      ctx.textAlign='center';
-      ctx.fillText('Columbia Point — Boston Harbor',W/2,H*0.88);
-      ctx.textAlign='left';
-    }
-
-    // ── Vignette ──
-    const vig=ctx.createRadialGradient(W/2,H/2,H*0.28,W/2,H/2,H*0.8);
-    vig.addColorStop(0,'transparent');
-    vig.addColorStop(1,'rgba(0,5,12,0.85)');
-    ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
-
-    requestAnimationFrame(draw);
+    controls.update();
+    renderer.render(scene,camera);
   }
-  requestAnimationFrame(draw);
+  animate();
+
+  // ── Resize ──
+  window.addEventListener('resize',()=>{
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
 })();
 
 // ────────────────────────────────────────────────

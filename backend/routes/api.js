@@ -1,7 +1,8 @@
-const express  = require('express');
-const router   = express.Router();
-const Visit    = require('../models/Visit');
-const ChatLog  = require('../models/ChatLog');
+const express       = require('express');
+const router        = express.Router();
+const Visit         = require('../models/Visit');
+const ChatLog       = require('../models/ChatLog');
+const BuildingPhoto = require('../models/BuildingPhoto');
 
 // ── POST /api/track ─────────────────────────────
 // Front-end fires this to log user interactions
@@ -73,6 +74,36 @@ router.get('/stats', async (req, res) => {
       ]),
     ]);
     res.json({ totalVisits, sectionBreakdown });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/building-photos/:building ──────────
+// Fetch photos for a specific building (optional face/floor/col query params)
+router.get('/building-photos/:building', async (req, res) => {
+  try {
+    const query = { building: req.params.building };
+    if (req.query.face  !== undefined) query.face  = Number(req.query.face);
+    if (req.query.floor !== undefined) query.floor = Number(req.query.floor);
+    if (req.query.col   !== undefined) query.col   = Number(req.query.col);
+    const photos = await BuildingPhoto.find(query).sort({ createdAt: -1 });
+    res.json({ photos });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/building-photos ───────────────────
+// Create a photo record (admin use, for later)
+router.post('/building-photos', async (req, res) => {
+  try {
+    const { building, face, floor, col, photoUrl, caption } = req.body;
+    if (!building || face === undefined || !photoUrl) {
+      return res.status(400).json({ error: 'building, face, and photoUrl are required' });
+    }
+    const photo = await BuildingPhoto.create({ building, face, floor, col, photoUrl, caption });
+    res.status(201).json({ photo });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

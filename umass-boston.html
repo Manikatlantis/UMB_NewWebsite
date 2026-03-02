@@ -1059,28 +1059,33 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   scene.add(water);
 
   // ── Walkways ──
-  const walkwayMat=new THREE.MeshStandardMaterial({color:0xaaa898,roughness:0.9,metalness:0.05});
+  const walkwayMat=new THREE.MeshStandardMaterial({color:0x8a8578,roughness:0.95,metalness:0.0});
   const walkways=[
-    {x:0,z:-4.5,w:2,d:9,r:0},   // Campus Center → Quinn
-    {x:-4,z:3,w:8,d:1.5,r:0},    // McCormack → Campus Center
-    {x:4,z:0,w:10,d:1.5,r:0},    // Campus Center → ISC
-    {x:3,z:-3,w:1.5,d:6,r:0},    // Wheatley → Campus Center
-    {x:-7,z:7,w:10,d:1.5,r:0},   // Clark → McCormack area
+    {x:0,z:-4.5,w:1.8,d:8,r:0},    // Campus Center → Quinn
+    {x:-4,z:1.5,w:8,d:1.2,r:0},     // McCormack → Campus Center
+    {x:4.5,z:-1,w:9,d:1.2,r:0},     // Campus Center → ISC
+    {x:3,z:-3,w:1.2,d:5,r:0},       // Wheatley → Campus Center
+    {x:-7,z:6.5,w:9,d:1.2,r:0},     // Clark → McCormack area
   ];
   walkways.forEach(wk=>{
-    const geo=new THREE.BoxGeometry(wk.w,0.1,wk.d);
+    const geo=new THREE.BoxGeometry(wk.w,0.15,wk.d);
     const mesh=new THREE.Mesh(geo,walkwayMat);
-    mesh.position.set(wk.x,0.15,wk.z);
+    mesh.position.set(wk.x,0.1,wk.z);
     if(wk.r) mesh.rotation.y=wk.r;
     scene.add(mesh);
   });
 
-  // ── Harborwalk (wider path along south coastline) ──
-  const hwGeo=new THREE.BoxGeometry(30,0.1,2);
-  const hwMesh=new THREE.Mesh(hwGeo,walkwayMat.clone());
-  hwMesh.material.color.setHex(0xbbb5a5);
-  hwMesh.position.set(-5,0.15,-20);
+  // ── Harborwalk (path along south coastline, ON the peninsula) ──
+  const hwMat=new THREE.MeshStandardMaterial({color:0x9a9488,roughness:0.95,metalness:0.0});
+  const hwGeo=new THREE.BoxGeometry(22,0.15,1.5);
+  const hwMesh=new THREE.Mesh(hwGeo,hwMat);
+  hwMesh.position.set(0,0.1,-15);
   scene.add(hwMesh);
+  // Second segment curving along east edge
+  const hw2Geo=new THREE.BoxGeometry(1.5,0.15,14);
+  const hw2Mesh=new THREE.Mesh(hw2Geo,hwMat);
+  hw2Mesh.position.set(16,0.1,-5);
+  scene.add(hw2Mesh);
 
   // ── Trees ──
   const treeTrunkMat=new THREE.MeshStandardMaterial({color:0x6b4226,roughness:0.9});
@@ -1179,7 +1184,7 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
 
       // Roof accent on each part
       const roofGeo=new THREE.BoxGeometry(part.w+0.2,0.15,part.d+0.2);
-      const roofMat=new THREE.MeshStandardMaterial({color:b.col,roughness:0.4,metalness:0.3,emissive:b.col,emissiveIntensity:0.15});
+      const roofMat=new THREE.MeshStandardMaterial({color:0x555555,roughness:0.85,metalness:0.05});
       const roof=new THREE.Mesh(roofGeo,roofMat);
       roof.position.set(b.x+part.ox,part.h+part.oy+0.075,b.z+part.oz);
       buildingGroup.add(roof);

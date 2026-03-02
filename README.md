@@ -165,6 +165,14 @@ Your site is now live at `http://YOUR_SERVER_IP`
 
 ### Part 4 — Deploying Updates
 
+#### Quick deploy (recommended)
+```bash
+# Commit your changes first, then:
+./deploy.sh
+```
+This pushes to GitHub and automatically pulls + restarts on the Vultr VPS in one step.
+
+#### Manual deploy
 ```bash
 # On your local machine:
 git add .
@@ -211,6 +219,7 @@ pm2 restart your-app-name
 
 ```
 ├── umass-boston.html        # Single-page frontend
+├── deploy.sh               # One-command deploy to Vultr VPS
 ├── Umass-Boston-Logo-01.png
 ├── umass_logo_2.jpg
 ├── DEPLOY.md               # Original deployment notes

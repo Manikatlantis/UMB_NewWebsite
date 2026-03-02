@@ -186,7 +186,8 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{background:var(--deep);color:var(--white);font-family:'Playfair Display',serif;overflow-x:hidden;cursor:none;}
+body{background:var(--deep);color:var(--white);font-family:'Playfair Display',serif;overflow-x:hidden;}
+body.custom-cursor{cursor:none;}
 
 /* ── COMPASS CURSOR ── */
 #compass-cursor{position:fixed;top:0;left:0;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:opacity 0.2s;}
@@ -209,7 +210,7 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 .nav-apply:hover{background:transparent;color:var(--crimson);}
 
 /* ── HERO ── */
-#hero{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#hero{position:relative;z-index:2;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 #webgl-canvas{position:absolute;inset:0;width:100%;height:100%;}
 .hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 60%,transparent 20%,rgba(0,10,22,0.5) 60%,rgba(0,10,22,0.95) 100%);}
 .hero-content{position:relative;z-index:10;text-align:center;padding:0 24px;max-width:960px;}
@@ -284,8 +285,8 @@ section{padding:110px 52px;}
 .prog-card:hover .prog-arrow{color:var(--teal);transform:translate(4px,-4px);}
 
 /* ── GOOGLE MAP ── */
-#campus{background:#020f1e;}
-.map-outer{position:relative;margin-top:56px;border:1px solid rgba(0,200,212,0.18);overflow:hidden;box-shadow:0 0 60px rgba(28,110,164,0.08);}
+#campus{background:#020f1e;position:relative;z-index:1;}
+.map-outer{position:relative;z-index:1;margin-top:56px;border:1px solid rgba(0,200,212,0.18);overflow:hidden;box-shadow:0 0 60px rgba(28,110,164,0.08);}
 #campus-map{height:580px;width:100%;}
 /* Style Google Maps info windows to match dark theme */
 .gm-style .gm-style-iw-c{background:rgba(0,16,32,0.97)!important;border:1px solid rgba(0,200,212,0.25)!important;border-radius:0!important;padding:0!important;box-shadow:0 0 30px rgba(0,0,0,0.7)!important;}
@@ -315,7 +316,7 @@ section{padding:110px 52px;}
 .btn-game:hover{background:#fff;}
 .btn-game.sec{background:transparent;color:var(--teal);border:1px solid var(--teal);}
 .btn-game.sec:hover{background:var(--teal);color:var(--deep);}
-#game-canvas{cursor:none!important;}
+body.custom-cursor #game-canvas{cursor:none!important;}
 
 /* ── CHATBOT ── */
 #chatbot-section{background:var(--deep);}
@@ -381,6 +382,81 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 .foot-bottom{padding-top:28px;border-top:1px solid rgba(255,255,255,0.04);display:flex;justify-content:space-between;}
 .foot-bottom p{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:rgba(238,243,248,0.25);}
 .foot-bottom a{color:var(--teal);text-decoration:none;}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤1024px)
+   ══════════════════════════════════════════════════ */
+@media(max-width:1024px){
+  section{padding:80px 32px;}
+  nav{padding:14px 24px;}
+  nav.scrolled{padding:10px 24px;}
+  .nav-links{gap:16px;}
+  .nav-links a{font-size:9px;letter-spacing:1.5px;}
+  #about{grid-template-columns:1fr;gap:48px;}
+  .about-frame{height:360px;}
+  .programs-grid{grid-template-columns:repeat(2,1fr);}
+  .news-grid{grid-template-columns:1fr 1fr;}
+  .news-card:first-child{grid-column:1/-1;}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:36px;}
+  #campus-map{height:450px;}
+  #game-canvas{height:400px;}
+}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤768px)
+   ══════════════════════════════════════════════════ */
+@media(max-width:768px){
+  section{padding:60px 18px;}
+  nav{padding:12px 16px;}
+  nav.scrolled{padding:10px 16px;}
+  .umb-logo-img{height:34px;}
+  .nav-links{display:none;}
+  .nav-apply{padding:7px 16px;font-size:9px;}
+  .hero-h1{letter-spacing:-1.5px;}
+  .hero-sub{font-size:15px;margin-bottom:32px;}
+  .hero-btns{flex-direction:column;gap:10px;align-items:center;}
+  .btn-r,.btn-o{width:220px;text-align:center;}
+  .ticker-item{padding:0 28px;}
+  .t-num{font-size:24px;}
+  #about{grid-template-columns:1fr;gap:36px;}
+  .about-frame{height:280px;}
+  .about-badge{width:80px;height:80px;bottom:-16px;right:-8px;}
+  .about-badge b{font-size:24px;}
+  .programs-intro{flex-direction:column;align-items:flex-start;gap:16px;}
+  .programs-grid{grid-template-columns:1fr;}
+  #campus-map{height:350px;}
+  .map-outer{margin-top:32px;}
+  #game-canvas{height:320px;}
+  .game-instructions{font-size:8px;padding:6px 14px;letter-spacing:1px;}
+  .bot-msgs{height:320px;}
+  .bubble{max-width:90%;}
+  .quick-chips{padding:0 14px 12px;gap:5px;}
+  .qchip{font-size:8px;padding:5px 10px;}
+  .news-grid{grid-template-columns:1fr;}
+  .foot-grid{grid-template-columns:1fr;gap:28px;}
+  .foot-bottom{flex-direction:column;gap:8px;text-align:center;}
+  /* Hide custom cursor on mobile */
+  #compass-cursor{display:none!important;}
+  body.custom-cursor{cursor:auto;}
+}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE — Small phones (≤480px)
+   ══════════════════════════════════════════════════ */
+@media(max-width:480px){
+  section{padding:48px 14px;}
+  .sec-title{letter-spacing:-1px;}
+  .hero-h1{letter-spacing:-1px;}
+  .hero-btns{gap:8px;}
+  .btn-r,.btn-o{width:100%;padding:12px 20px;}
+  #campus-map{height:280px;}
+  #game-canvas{height:260px;}
+  .bot-msgs{height:280px;}
+  .bot-head{padding:14px 16px;}
+  .bot-av{width:36px;height:36px;font-size:18px;}
+  .bot-info h3{font-size:14px;}
+  .bot-input input{padding:14px 16px;font-size:14px;}
+}
 </style>
 </head>
 <body>
@@ -627,6 +703,14 @@ const compCanvas = document.getElementById('compass-cursor');
 const compCtx = compCanvas.getContext('2d');
 let mx=300,my=300,pmx=300,pmy=300;
 let cursorAngle=0, targetAngle=0, pulseT=0;
+
+// Enable custom cursor only on non-touch devices
+if(!('ontouchstart' in window) && !navigator.maxTouchPoints){
+  document.body.classList.add('custom-cursor');
+  compCanvas.style.display='block';
+} else {
+  compCanvas.style.display='none';
+}
 
 document.addEventListener('mousemove', e=>{
   pmx=mx; pmy=my; mx=e.clientX; my=e.clientY;

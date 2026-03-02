@@ -847,36 +847,141 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   const canvas=document.getElementById('webgl-canvas');
   if(!window.THREE){console.warn('Three.js not loaded');return;}
 
-  // ── Building data (diorama scale — real campus colors) ──
+  // ── Procedural texture helper ──
+  function makeBuildingTexture(type){
+    const cv=document.createElement('canvas');
+    cv.width=256;cv.height=256;
+    const ctx=cv.getContext('2d');
+    if(type==='brick'){
+      // Maroon base with visible mortar grid
+      ctx.fillStyle='#7a2a2a';
+      ctx.fillRect(0,0,256,256);
+      const bh=32,bw=64;
+      for(let r=0;r<256/bh;r++){
+        const offset=(r%2)*(bw/2);
+        for(let c=-1;c<256/bw+2;c++){
+          // Individual brick with slight color variation
+          const v=Math.random()*20-10;
+          ctx.fillStyle=`rgb(${112+v|0},${36+v/2|0},${36+v/2|0})`;
+          ctx.fillRect(offset+c*bw+2,r*bh+2,bw-4,bh-4);
+        }
+      }
+      // Mortar lines
+      ctx.fillStyle='#4a1a1a';
+      for(let y=0;y<256;y+=bh){ctx.fillRect(0,y,256,3);}
+      for(let r=0;r<256/bh;r++){
+        const offset=(r%2)*(bw/2);
+        for(let c=-1;c<256/bw+2;c++){ctx.fillRect(offset+c*bw,r*bh,3,bh);}
+      }
+    } else if(type==='glass'){
+      // Blue-tint reflective base
+      ctx.fillStyle='#6eaaca';
+      ctx.fillRect(0,0,256,256);
+      // Panel gradient
+      const pw=64,ph=80;
+      for(let py=0;py<256;py+=ph){
+        for(let px=0;px<256;px+=pw){
+          const grd=ctx.createLinearGradient(px,py,px+pw,py+ph);
+          grd.addColorStop(0,'rgba(140,200,230,0.6)');
+          grd.addColorStop(0.5,'rgba(90,160,200,0.3)');
+          grd.addColorStop(1,'rgba(120,190,220,0.5)');
+          ctx.fillStyle=grd;
+          ctx.fillRect(px+3,py+3,pw-6,ph-6);
+        }
+      }
+      // Bold white mullion grid
+      ctx.fillStyle='#d0dde8';
+      for(let x=0;x<256;x+=pw){ctx.fillRect(x,0,4,256);}
+      for(let y=0;y<256;y+=ph){ctx.fillRect(0,y,256,4);}
+    } else if(type==='concrete'){
+      // Off-white concrete with panel lines
+      ctx.fillStyle='#ccc4b4';
+      ctx.fillRect(0,0,256,256);
+      // Noise grain
+      for(let i=0;i<4000;i++){
+        const gv=Math.random()*40-20;
+        ctx.fillStyle=`rgba(${140+gv|0},${132+gv|0},${120+gv|0},0.4)`;
+        ctx.fillRect(Math.random()*256,Math.random()*256,3,3);
+      }
+      // Bold horizontal panel joints
+      ctx.fillStyle='rgba(0,0,0,0.15)';
+      for(let y=0;y<=256;y+=64){ctx.fillRect(0,y,256,3);}
+      for(let x=0;x<=256;x+=128){ctx.fillRect(x,0,2,256);}
+    } else if(type==='garage'){
+      // White with bold blue horizontal stripes
+      ctx.fillStyle='#e8e8e8';
+      ctx.fillRect(0,0,256,256);
+      for(let y=0;y<256;y+=48){
+        ctx.fillStyle='#3366aa';
+        ctx.fillRect(0,y,256,24);
+        ctx.fillStyle='#e8e8e8';
+        ctx.fillRect(0,y+24,256,24);
+      }
+      // Floor separation lines
+      ctx.fillStyle='rgba(0,0,0,0.2)';
+      for(let y=0;y<=256;y+=48){ctx.fillRect(0,y,256,3);}
+    } else if(type==='stone'){
+      // Warm tan stone panels
+      ctx.fillStyle='#e0dace';
+      ctx.fillRect(0,0,256,256);
+      // Panel grid
+      const sw=80,sh=52;
+      for(let py=0;py<256;py+=sh){
+        for(let px=0;px<256;px+=sw){
+          const v=Math.random()*12-6;
+          ctx.fillStyle=`rgb(${220+v|0},${214+v|0},${200+v|0})`;
+          ctx.fillRect(px+2,py+2,sw-4,sh-4);
+        }
+      }
+      ctx.fillStyle='rgba(160,150,130,0.4)';
+      for(let y=0;y<256;y+=sh){ctx.fillRect(0,y,256,3);}
+      for(let x=0;x<256;x+=sw){ctx.fillRect(x,0,3,256);}
+    }
+    const tex=new THREE.CanvasTexture(cv);
+    tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+    return tex;
+  }
+
+  // ── Building data (diorama scale — real campus architecture) ──
   const BUILDINGS=[
-    {name:'Campus Center',x:0,z:0,w:4,h:3,d:3,col:0xd4cfc0,
+    {name:'Campus Center',x:0,z:0,col:0xd4cfc0,texType:'concrete',
+     parts:[{w:4,h:3,d:3,ox:0,oy:0,oz:0},{w:2.5,h:1.5,d:2,ox:0,oy:3,oz:0}],
      desc:'The heart of student life — dining, organizations, and events.',
      link:'https://www.umb.edu/campus-life/'},
-    {name:'Integrated Sciences Complex',x:9,z:-2,w:3,h:5,d:3,col:0xb8d8e8,
+    {name:'Integrated Sciences Complex',x:9,z:-2,col:0xb8d8e8,texType:'glass',
+     parts:[{w:2.5,h:5.5,d:2.5,ox:0,oy:0,oz:0},{w:3,h:3.5,d:2.5,ox:1.5,oy:0,oz:0}],
      desc:'State-of-the-art research labs — biology, chemistry & physics.',
      link:'https://www.umb.edu/academics/csm/'},
-    {name:'Healey Library',x:-3,z:7,w:4,h:4,d:4,col:0x6b2020,
+    {name:'Healey Library',x:-3,z:7,col:0x6b2020,texType:'brick',
+     parts:[{w:2,h:5,d:2,ox:0,oy:0,oz:0},{w:4,h:2.5,d:4,ox:0,oy:0,oz:0}],
      desc:'Main library with 700,000+ volumes and digital resources.',
      link:'https://www.umb.edu/library/'},
-    {name:'Quinn Administration',x:3,z:-9,w:3,h:2.5,d:3,col:0x6b2020,
+    {name:'Quinn Administration',x:3,z:-9,col:0x6b2020,texType:'brick',
+     parts:[{w:3,h:2.5,d:3,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.5,ox:0,oy:2.5,oz:0}],
      desc:'Administrative offices, Registrar, Bursar, and leadership.',
      link:'https://www.umb.edu/about/'},
-    {name:'Wheatley Hall',x:5,z:-6,w:3,h:3.5,d:2.5,col:0x6b2020,
+    {name:'Wheatley Hall',x:5,z:-6,col:0x6b2020,texType:'brick',
+     parts:[{w:3,h:3.5,d:2.5,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.2,ox:0,oy:3.5,oz:0}],
      desc:'College of Education, Nursing and Social Work.',
      link:'https://www.umb.edu/academics/nursing/'},
-    {name:'McCormack Hall',x:-8,z:3,w:3,h:4,d:3,col:0x6b2020,
+    {name:'McCormack Hall',x:-8,z:3,col:0x6b2020,texType:'brick',
+     parts:[{w:3,h:4,d:2,ox:0,oy:0,oz:0},{w:2,h:4,d:3,ox:1.5,oy:0,oz:1}],
      desc:'Graduate studies, College of Liberal Arts offices and classrooms.',
      link:'https://www.umb.edu/academics/cla/'},
-    {name:'Clark Athletic Center',x:-12,z:10,w:4,h:2,d:4,col:0xc8c0b0,
+    {name:'Clark Athletic Center',x:-12,z:10,col:0xc8c0b0,texType:'concrete',
+     parts:[{w:5,h:2,d:5,ox:0,oy:0,oz:0}],
      desc:'Full recreation center — gym, pool, courts, fitness facilities.',
      link:'https://www.umb.edu/athletics/'},
-    {name:'University Hall',x:7,z:4,w:3,h:3,d:2.5,col:0xd4cfc0,
+    {name:'University Hall',x:7,z:4,col:0xd4cfc0,texType:'concrete',
+     parts:[{w:3,h:3,d:2.5,ox:0,oy:0,oz:0},{w:2,h:1.5,d:1.8,ox:0,oy:3,oz:0}],
      desc:'Computer Science, Math, and Sciences classrooms and labs.',
      link:'https://www.umb.edu/academics/cts/'},
-    {name:'West Garage',x:14,z:-7,w:3,h:4,d:3,col:0xe0e0e0,
+    {name:'West Garage',x:14,z:-7,col:0xe0e0e0,texType:'garage',
+     parts:[{w:4,h:4.5,d:4,ox:0,oy:0,oz:0}],
      desc:'Campus parking garage with blue-stripe exterior.',
      link:'https://www.umb.edu/campus-life/'},
-    {name:'JFK Presidential Library',x:-10,z:-8,w:5,h:2.5,d:4,col:0xe8e4dc,
+    {name:'JFK Presidential Library',x:-10,z:-8,col:0xe8e4dc,texType:'stone',
+     parts:[{w:5,h:2.5,d:4,ox:0,oy:0,oz:0},{w:2,h:2.5,d:3,ox:2.5,oy:0,oz:0}],
      desc:'Iconic landmark dedicated to President John F. Kennedy.',
      link:'https://www.jfklibrary.org'},
   ];
@@ -953,6 +1058,51 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   water.position.y=-2;
   scene.add(water);
 
+  // ── Walkways ──
+  const walkwayMat=new THREE.MeshStandardMaterial({color:0xaaa898,roughness:0.9,metalness:0.05});
+  const walkways=[
+    {x:0,z:-4.5,w:2,d:9,r:0},   // Campus Center → Quinn
+    {x:-4,z:3,w:8,d:1.5,r:0},    // McCormack → Campus Center
+    {x:4,z:0,w:10,d:1.5,r:0},    // Campus Center → ISC
+    {x:3,z:-3,w:1.5,d:6,r:0},    // Wheatley → Campus Center
+    {x:-7,z:7,w:10,d:1.5,r:0},   // Clark → McCormack area
+  ];
+  walkways.forEach(wk=>{
+    const geo=new THREE.BoxGeometry(wk.w,0.1,wk.d);
+    const mesh=new THREE.Mesh(geo,walkwayMat);
+    mesh.position.set(wk.x,0.15,wk.z);
+    if(wk.r) mesh.rotation.y=wk.r;
+    scene.add(mesh);
+  });
+
+  // ── Harborwalk (wider path along south coastline) ──
+  const hwGeo=new THREE.BoxGeometry(30,0.1,2);
+  const hwMesh=new THREE.Mesh(hwGeo,walkwayMat.clone());
+  hwMesh.material.color.setHex(0xbbb5a5);
+  hwMesh.position.set(-5,0.15,-20);
+  scene.add(hwMesh);
+
+  // ── Trees ──
+  const treeTrunkMat=new THREE.MeshStandardMaterial({color:0x6b4226,roughness:0.9});
+  const treeCanopyMat=new THREE.MeshStandardMaterial({color:0x2d8a2d,roughness:0.7});
+  const treePositions=[
+    [-6,0,-4],[-2,0,-7],[2,0,4],[6,0,-3],[-4,0,12],
+    [10,0,1],[-14,0,6],[-1,0,10],[8,0,-10],[12,0,2],
+    [-9,0,-3],[4,0,8],[-6,0,5],[14,0,-3],[-11,0,12]
+  ];
+  treePositions.forEach(tp=>{
+    const trunk=new THREE.Mesh(
+      new THREE.CylinderGeometry(0.2,0.3,1.6,6),treeTrunkMat
+    );
+    trunk.position.set(tp[0],0.8,tp[2]);
+    scene.add(trunk);
+    const canopy=new THREE.Mesh(
+      new THREE.ConeGeometry(1.2,2.4,7),treeCanopyMat
+    );
+    canopy.position.set(tp[0],2.8,tp[2]);
+    scene.add(canopy);
+  });
+
   // ── Sky dome (hidden in hero mode, shown in explore mode) ──
   const skyGeo=new THREE.SphereGeometry(500,32,16);
   const skyMat=new THREE.MeshBasicMaterial({
@@ -1010,66 +1160,92 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   const windowMeshes=[];
   const buildingGroup=new THREE.Group();
 
-  BUILDINGS.forEach((b,idx)=>{
-    // Building body
-    const geo=new THREE.BoxGeometry(b.w,b.h,b.d);
-    const mat=new THREE.MeshStandardMaterial({
-      color:b.col,roughness:0.6,metalness:0.2,
-      emissive:b.col,emissiveIntensity:0.08
-    });
-    const mesh=new THREE.Mesh(geo,mat);
-    mesh.position.set(b.x,b.h/2,b.z);
-    mesh.userData={type:'building',index:idx,data:b};
-    buildingGroup.add(mesh);
-    buildingMeshes.push(mesh);
+  function buildStructure(b,idx){
+    const isGarage=b.texType==='garage';
+    const isGlass=b.texType==='glass';
 
-    // Roof accent
-    const roofGeo=new THREE.BoxGeometry(b.w+0.4,0.5,b.d+0.4);
-    const roofMat=new THREE.MeshStandardMaterial({color:b.col,roughness:0.4,metalness:0.3,emissive:b.col,emissiveIntensity:0.15});
-    const roof=new THREE.Mesh(roofGeo,roofMat);
-    roof.position.set(b.x,b.h+0.25,b.z);
-    buildingGroup.add(roof);
+    b.parts.forEach((part,pi)=>{
+      const tex=makeBuildingTexture(b.texType);
+      const geo=new THREE.BoxGeometry(part.w,part.h,part.d);
+      const mat=new THREE.MeshStandardMaterial({
+        map:tex,roughness:isGlass?0.2:0.6,
+        metalness:isGlass?0.4:0.2,emissive:b.col,emissiveIntensity:0.08
+      });
+      const mesh=new THREE.Mesh(geo,mat);
+      mesh.position.set(b.x+part.ox,part.h/2+part.oy,b.z+part.oz);
+      mesh.userData={type:'building',index:idx,data:b};
+      buildingGroup.add(mesh);
+      buildingMeshes.push(mesh);
 
-    // Windows on each face
-    const faces=[
-      {axis:'x',dir:1,normal:new THREE.Vector3(1,0,0),rotY:-Math.PI/2,faceW:b.d,faceH:b.h},
-      {axis:'x',dir:-1,normal:new THREE.Vector3(-1,0,0),rotY:Math.PI/2,faceW:b.d,faceH:b.h},
-      {axis:'z',dir:1,normal:new THREE.Vector3(0,0,1),rotY:0,faceW:b.w,faceH:b.h},
-      {axis:'z',dir:-1,normal:new THREE.Vector3(0,0,-1),rotY:Math.PI,faceW:b.w,faceH:b.h},
-    ];
-    faces.forEach((face,fi)=>{
-      const cols=Math.max(2,Math.floor(face.faceW/3));
-      const rows=Math.max(2,Math.floor(face.faceH/3.5));
-      const winW=face.faceW/(cols+1)*0.5;
-      const winH=face.faceH/(rows+1)*0.5;
-      for(let r=0;r<rows;r++){
-        for(let c=0;c<cols;c++){
-          const wGeo=new THREE.PlaneGeometry(winW,winH);
-          const lit=((idx+r+c+fi)%3)!==0;
-          const wMat=new THREE.MeshStandardMaterial({
-            color:lit?0xffdd88:0x112244,
-            emissive:lit?0xffdd88:0x000000,
-            emissiveIntensity:lit?0.3:0,
-            transparent:true,opacity:lit?0.7:0.3,
-            side:THREE.DoubleSide
-          });
-          const wMesh=new THREE.Mesh(wGeo,wMat);
-          // Position on building face
-          const cx=(-face.faceW/2+(c+1)*face.faceW/(cols+1));
-          const cy=(r+1)*b.h/(rows+1);
-          if(face.axis==='z'){
-            wMesh.position.set(b.x+cx,cy,b.z+face.dir*(b.d/2+0.05));
-          } else {
-            wMesh.position.set(b.x+face.dir*(b.w/2+0.05),cy,b.z+cx);
-            wMesh.rotation.y=face.rotY;
-          }
-          wMesh.userData={type:'window',buildingIndex:idx,building:b.name,face:fi,row:r,col:c};
-          buildingGroup.add(wMesh);
-          windowMeshes.push(wMesh);
-        }
+      // Roof accent on each part
+      const roofGeo=new THREE.BoxGeometry(part.w+0.2,0.15,part.d+0.2);
+      const roofMat=new THREE.MeshStandardMaterial({color:b.col,roughness:0.4,metalness:0.3,emissive:b.col,emissiveIntensity:0.15});
+      const roof=new THREE.Mesh(roofGeo,roofMat);
+      roof.position.set(b.x+part.ox,part.h+part.oy+0.075,b.z+part.oz);
+      buildingGroup.add(roof);
+
+      // Rooftop mechanical box on taller parts
+      if(pi===0&&part.h>=3.5){
+        const mechGeo=new THREE.BoxGeometry(0.6,0.5,0.6);
+        const mechMat=new THREE.MeshStandardMaterial({color:0x333333,roughness:0.9});
+        const mech=new THREE.Mesh(mechGeo,mechMat);
+        mech.position.set(b.x+part.ox,part.h+part.oy+0.4,b.z+part.oz);
+        buildingGroup.add(mech);
       }
+
+      // Windows per part (skip garage)
+      if(isGarage) return;
+
+      const faces=[
+        {axis:'x',dir:1,rotY:-Math.PI/2,faceW:part.d,faceH:part.h},
+        {axis:'x',dir:-1,rotY:Math.PI/2,faceW:part.d,faceH:part.h},
+        {axis:'z',dir:1,rotY:0,faceW:part.w,faceH:part.h},
+        {axis:'z',dir:-1,rotY:Math.PI,faceW:part.w,faceH:part.h},
+      ];
+      faces.forEach((face,fi)=>{
+        let cols,rows,winW,winH;
+        if(isGlass){
+          cols=Math.max(2,Math.floor(face.faceW/0.8));
+          rows=Math.max(2,Math.floor(face.faceH/1.2));
+          winW=face.faceW/(cols+1)*0.7;
+          winH=face.faceH/(rows+1)*0.85;
+        } else {
+          cols=Math.max(2,Math.floor(face.faceW/1.2));
+          rows=Math.max(2,Math.floor(face.faceH/1.5));
+          winW=face.faceW/(cols+1)*0.4;
+          winH=face.faceH/(rows+1)*0.45;
+        }
+        for(let r=0;r<rows;r++){
+          for(let c=0;c<cols;c++){
+            const wGeo=new THREE.PlaneGeometry(winW,winH);
+            const lit=((idx+r+c+fi)%3)!==0;
+            const wMat=new THREE.MeshStandardMaterial({
+              color:lit?(isGlass?0xaaddff:0xffdd88):0x112244,
+              emissive:lit?(isGlass?0x88bbdd:0xffdd88):0x000000,
+              emissiveIntensity:lit?0.3:0,
+              transparent:true,opacity:lit?0.7:0.3,
+              side:THREE.DoubleSide
+            });
+            const wMesh=new THREE.Mesh(wGeo,wMat);
+            const cx=(-face.faceW/2+(c+1)*face.faceW/(cols+1));
+            const cy=part.oy+(r+1)*part.h/(rows+1);
+            const inset=0.06; // slightly proud of face
+            if(face.axis==='z'){
+              wMesh.position.set(b.x+part.ox+cx,cy,b.z+part.oz+face.dir*(part.d/2+inset));
+            } else {
+              wMesh.position.set(b.x+part.ox+face.dir*(part.w/2+inset),cy,b.z+part.oz+cx);
+              wMesh.rotation.y=face.rotY;
+            }
+            wMesh.userData={type:'window',buildingIndex:idx,building:b.name,face:fi,row:r,col:c};
+            buildingGroup.add(wMesh);
+            windowMeshes.push(wMesh);
+          }
+        }
+      });
     });
-  });
+  }
+
+  BUILDINGS.forEach((b,idx)=>buildStructure(b,idx));
   scene.add(buildingGroup);
 
   // ── OrbitControls ──

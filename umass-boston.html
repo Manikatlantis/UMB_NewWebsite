@@ -239,6 +239,7 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 .btn-exit3d{position:absolute;top:80px;left:24px;z-index:20;padding:10px 22px;background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.25);color:var(--teal);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;opacity:0;pointer-events:none;backdrop-filter:blur(10px);}
 .btn-exit3d:hover{background:rgba(0,212,184,0.1);}
 .btn-exit3d.vis{opacity:1;pointer-events:all;}
+#hero.explore-mode{cursor:crosshair;}
 #hero.explore-mode .hero-overlay{opacity:0;pointer-events:none;transition:opacity 0.6s;}
 #hero.explore-mode .hero-content{opacity:0;pointer-events:none;transition:opacity 0.5s;}
 #hero.explore-mode .scroll-hint{opacity:0!important;pointer-events:none;transition:opacity 0.3s;}
@@ -1059,7 +1060,7 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   scene.add(water);
 
   // ── Walkways (raised, wider, visible tan color) ──
-  const walkwayMat=new THREE.MeshStandardMaterial({color:0xc2b8a0,roughness:0.9,metalness:0.0});
+  const walkwayMat=new THREE.MeshStandardMaterial({color:0x9e9585,roughness:0.95,metalness:0.0});
   const walkways=[
     {x:0,z:-4.5,w:2,d:9},       // Campus Center → Quinn
     {x:-4,z:1.5,w:8,d:1.8},     // McCormack → Campus Center
@@ -1075,7 +1076,7 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   });
 
   // ── Harborwalk (wider path along south coastline) ──
-  const hwMat=new THREE.MeshStandardMaterial({color:0xd0c8b0,roughness:0.9,metalness:0.0});
+  const hwMat=new THREE.MeshStandardMaterial({color:0xa89e8a,roughness:0.95,metalness:0.0});
   const hwSegs=[
     {x:0,z:-13,w:24,d:2.5},     // south edge
     {x:17,z:-5,w:2.5,d:16},     // east edge

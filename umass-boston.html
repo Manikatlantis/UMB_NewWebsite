@@ -1058,42 +1058,45 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   water.position.y=-2;
   scene.add(water);
 
-  // ── Walkways ──
-  const walkwayMat=new THREE.MeshStandardMaterial({color:0x8a8578,roughness:0.95,metalness:0.0});
+  // ── Walkways (raised, wider, visible tan color) ──
+  const walkwayMat=new THREE.MeshStandardMaterial({color:0xc2b8a0,roughness:0.9,metalness:0.0});
   const walkways=[
-    {x:0,z:-4.5,w:1.8,d:8,r:0},    // Campus Center → Quinn
-    {x:-4,z:1.5,w:8,d:1.2,r:0},     // McCormack → Campus Center
-    {x:4.5,z:-1,w:9,d:1.2,r:0},     // Campus Center → ISC
-    {x:3,z:-3,w:1.2,d:5,r:0},       // Wheatley → Campus Center
-    {x:-7,z:6.5,w:9,d:1.2,r:0},     // Clark → McCormack area
+    {x:0,z:-4.5,w:2,d:9},       // Campus Center → Quinn
+    {x:-4,z:1.5,w:8,d:1.8},     // McCormack → Campus Center
+    {x:4.5,z:-1,w:9,d:1.8},     // Campus Center → ISC
+    {x:3,z:-3,w:1.8,d:6},       // Wheatley → Campus Center
+    {x:-7,z:6.5,w:9,d:1.8},     // Clark → McCormack area
   ];
   walkways.forEach(wk=>{
-    const geo=new THREE.BoxGeometry(wk.w,0.15,wk.d);
+    const geo=new THREE.BoxGeometry(wk.w,0.25,wk.d);
     const mesh=new THREE.Mesh(geo,walkwayMat);
-    mesh.position.set(wk.x,0.1,wk.z);
-    if(wk.r) mesh.rotation.y=wk.r;
+    mesh.position.set(wk.x,0.2,wk.z);
     scene.add(mesh);
   });
 
-  // ── Harborwalk (path along south coastline, ON the peninsula) ──
-  const hwMat=new THREE.MeshStandardMaterial({color:0x9a9488,roughness:0.95,metalness:0.0});
-  const hwGeo=new THREE.BoxGeometry(22,0.15,1.5);
-  const hwMesh=new THREE.Mesh(hwGeo,hwMat);
-  hwMesh.position.set(0,0.1,-15);
-  scene.add(hwMesh);
-  // Second segment curving along east edge
-  const hw2Geo=new THREE.BoxGeometry(1.5,0.15,14);
-  const hw2Mesh=new THREE.Mesh(hw2Geo,hwMat);
-  hw2Mesh.position.set(16,0.1,-5);
-  scene.add(hw2Mesh);
+  // ── Harborwalk (wider path along south coastline) ──
+  const hwMat=new THREE.MeshStandardMaterial({color:0xd0c8b0,roughness:0.9,metalness:0.0});
+  const hwSegs=[
+    {x:0,z:-13,w:24,d:2.5},     // south edge
+    {x:17,z:-5,w:2.5,d:16},     // east edge
+  ];
+  hwSegs.forEach(s=>{
+    const geo=new THREE.BoxGeometry(s.w,0.25,s.d);
+    const mesh=new THREE.Mesh(geo,hwMat);
+    mesh.position.set(s.x,0.2,s.z);
+    scene.add(mesh);
+  });
 
   // ── Trees ──
   const treeTrunkMat=new THREE.MeshStandardMaterial({color:0x6b4226,roughness:0.9});
   const treeCanopyMat=new THREE.MeshStandardMaterial({color:0x2d8a2d,roughness:0.7});
+  // Tree positions — placed in open spaces away from buildings
   const treePositions=[
-    [-6,0,-4],[-2,0,-7],[2,0,4],[6,0,-3],[-4,0,12],
-    [10,0,1],[-14,0,6],[-1,0,10],[8,0,-10],[12,0,2],
-    [-9,0,-3],[4,0,8],[-6,0,5],[14,0,-3],[-11,0,12]
+    [-16,0,2],[-15,0,-4],[-17,0,10],  // west edge
+    [-5,0,-12],[-1,0,-14],[4,0,-14],   // south edge
+    [12,0,6],[15,0,2],[16,0,-1],       // east side
+    [-4,0,16],[-8,0,14],[2,0,14],      // north edge
+    [0,0,8],[-12,0,-2],[8,0,8],        // scattered open areas
   ];
   treePositions.forEach(tp=>{
     const trunk=new THREE.Mesh(

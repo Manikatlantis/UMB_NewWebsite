@@ -12,8 +12,8 @@
 <script>
   async function initCampusMap(){
     if(typeof google==='undefined') return;
-    // Hide the standalone 3D campus map when Google Maps loads
-    if(typeof window._hide3DCampusMap==='function') window._hide3DCampusMap();
+    const ph=document.getElementById('map-placeholder');
+    if(ph) ph.style.display='none';
 
     const DARK_STYLE=[
       {elementType:'geometry',stylers:[{color:'#060e1a'}]},
@@ -175,61 +175,6 @@
       }catch(e){ console.warn('Place search failed for:',loc.q,e); }
     }
 
-    // ── WebGLOverlayView — 3D buildings on Google Maps ──
-    if(window.THREE && google.maps.WebGLOverlayView){
-      try{
-        const webglOverlay=new google.maps.WebGLOverlayView();
-        let mapScene,mapCamera,mapRenderer,mapBldgMeshes=[];
-
-        webglOverlay.onAdd=function(){
-          mapScene=new THREE.Scene();
-          mapScene.add(new THREE.AmbientLight(0x5577aa,0.7));
-          const sun=new THREE.DirectionalLight(0xfff4e0,1.0);
-          sun.position.set(60,80,40);
-          mapScene.add(sun);
-          mapScene.add(new THREE.HemisphereLight(0x9ec5e8,0x4a6b3a,0.4));
-          mapCamera=new THREE.PerspectiveCamera();
-
-          // Convert lat/lng to local coordinates relative to campus center
-          const center={lat:42.3133,lng:-71.0390};
-          const METERS_PER_DEG_LAT=111320;
-          const METERS_PER_DEG_LNG=111320*Math.cos(center.lat*Math.PI/180);
-          const SCALE=0.4; // scale buildings to look right on the map
-
-          const bldgGroup=new THREE.Group();
-          CAMPUS_BUILDINGS.forEach((b,idx)=>{
-            // Convert lat/lng offset to meters
-            const mx=(b.lng-center.lng)*METERS_PER_DEG_LNG;
-            const mz=-(b.lat-center.lat)*METERS_PER_DEG_LAT; // north is -z
-            b._wx=mx*SCALE;
-            b._wz=mz*SCALE;
-            buildStructure3D(b,idx,bldgGroup,mapBldgMeshes,null,SCALE*8);
-          });
-          mapScene.add(bldgGroup);
-        };
-
-        webglOverlay.onContextRestored=function({gl}){
-          mapRenderer=new THREE.WebGLRenderer({
-            canvas:gl.canvas,
-            context:gl,
-            ...gl.getContextAttributes()
-          });
-          mapRenderer.autoClear=false;
-        };
-
-        webglOverlay.onDraw=function({gl,transformer}){
-          if(!mapRenderer) return;
-          const matrix=transformer.fromLatLngAltitude({lat:42.3133,lng:-71.0390,altitude:0});
-          mapCamera.projectionMatrix=new THREE.Matrix4().fromArray(matrix);
-          mapRenderer.render(mapScene,mapCamera);
-          mapRenderer.resetState();
-        };
-
-        webglOverlay.setMap(map);
-        // Enable tilt for 3D perspective
-        map.setTilt(45);
-      }catch(e){ console.warn('WebGLOverlayView not available:',e); }
-    }
   }
 </script>
 <style>
@@ -360,7 +305,7 @@ section{padding:110px 52px;}
 /* ── GOOGLE MAP ── */
 #campus{background:#020f1e;position:relative;z-index:1;}
 .map-outer{position:relative;z-index:1;margin-top:56px;border:1px solid rgba(0,200,212,0.18);overflow:hidden;box-shadow:0 0 60px rgba(28,110,164,0.08);}
-#campus-map{height:580px;width:100%;position:relative;}
+#campus-map{height:580px;width:100%;}
 /* Style Google Maps info windows to match dark theme */
 .gm-style .gm-style-iw-c{background:rgba(0,16,32,0.97)!important;border:1px solid rgba(0,200,212,0.25)!important;border-radius:0!important;padding:0!important;box-shadow:0 0 30px rgba(0,0,0,0.7)!important;}
 .gm-style .gm-style-iw-d{overflow:hidden!important;}
@@ -688,15 +633,15 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 <section id="campus">
   <div class="sec-tag" style="justify-content:center">Interactive Campus</div>
   <h2 class="sec-title reveal" style="text-align:center">Explore UMass Boston<br>on the <em>Harbor</em></h2>
-  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto">Explore the campus in interactive 3D. Click any building for details. Drag to rotate, scroll to zoom.</p>
+  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto">Click any marker to discover buildings, services, and links. Our campus sits on Columbia Point, surrounded by Boston Harbor.</p>
   <div class="map-outer reveal">
     <div id="campus-map">
-      <!-- 3D interactive campus map (Three.js) — replaced by Google Maps when API key is set -->
-      <canvas id="campus-3d-canvas" style="width:100%;height:580px;display:block;cursor:grab;"></canvas>
-      <!-- Tooltip for hovering buildings -->
-      <div id="campus-3d-tooltip" style="position:absolute;top:0;left:0;pointer-events:none;display:none;background:rgba(0,16,32,0.92);border:1px solid rgba(0,212,184,0.3);padding:8px 14px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:#00c8d4;white-space:nowrap;z-index:10;backdrop-filter:blur(8px);"></div>
-      <!-- Hint overlay -->
-      <div id="campus-3d-hint" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.15);padding:8px 20px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(238,243,248,0.4);white-space:nowrap;z-index:10;transition:opacity 1s;pointer-events:none;">Drag to rotate · Scroll to zoom · Click a building for details</div>
+      <!-- Shown until Google Maps API key is added -->
+      <div id="map-placeholder" style="height:580px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#020f1e;color:rgba(238,243,248,0.4);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;text-align:center;gap:12px;">
+        <div style="font-size:32px">🗺️</div>
+        <div>INTERACTIVE CAMPUS MAP</div>
+        <div style="font-size:9px;color:rgba(238,243,248,0.25)">Add a Google Maps API key to enable the live map</div>
+      </div>
     </div>
   </div>
 </section>
@@ -976,64 +921,218 @@ function makeBuildingTexture(type){
     ctx.fillStyle='rgba(160,150,130,0.4)';
     for(let y=0;y<256;y+=sh){ctx.fillRect(0,y,256,3);}
     for(let x=0;x<256;x+=sw){ctx.fillRect(x,0,3,256);}
+  } else if(type==='jfk_glass'){
+    // Dark tinted glass for JFK pavilion
+    ctx.fillStyle='#1a2a3a';
+    ctx.fillRect(0,0,256,256);
+    const pw=64,ph=80;
+    for(let py=0;py<256;py+=ph){
+      for(let px=0;px<256;px+=pw){
+        const grd=ctx.createLinearGradient(px,py,px+pw,py+ph);
+        grd.addColorStop(0,'rgba(60,90,120,0.5)');
+        grd.addColorStop(0.5,'rgba(30,50,70,0.3)');
+        grd.addColorStop(1,'rgba(50,80,110,0.4)');
+        ctx.fillStyle=grd;
+        ctx.fillRect(px+2,py+2,pw-4,ph-4);
+      }
+    }
+    ctx.fillStyle='rgba(80,100,120,0.5)';
+    for(let x=0;x<256;x+=pw){ctx.fillRect(x,0,3,256);}
+    for(let y=0;y<256;y+=ph){ctx.fillRect(0,y,256,3);}
+  } else if(type==='jfk_white'){
+    // Stark white precast concrete for JFK tower
+    ctx.fillStyle='#f0ece4';
+    ctx.fillRect(0,0,256,256);
+    for(let i=0;i<2000;i++){
+      const gv=Math.random()*15-7;
+      ctx.fillStyle=`rgba(${230+gv|0},${226+gv|0},${218+gv|0},0.3)`;
+      ctx.fillRect(Math.random()*256,Math.random()*256,4,4);
+    }
+    ctx.fillStyle='rgba(0,0,0,0.06)';
+    for(let y=0;y<=256;y+=64){ctx.fillRect(0,y,256,2);}
   }
   const tex=new THREE.CanvasTexture(cv);
   tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
   return tex;
 }
 
-// Building data with diorama coords (hero) + real lat/lng (map)
+// Building data with diorama coords (hero) + real lat/lng
+// Architecture researched from real campus — shapes, stories, materials
 const CAMPUS_BUILDINGS=[
-  {name:'Campus Center',x:0,z:0,lat:42.3133,lng:-71.0387,col:0xd4cfc0,texType:'concrete',
-   parts:[{w:4,h:3,d:3,ox:0,oy:0,oz:0},{w:2.5,h:1.5,d:2,ox:0,oy:3,oz:0}],
+  // Campus Center: 3-story curved limestone/glass, wide and low (KMW 2004, 331k SF)
+  {name:'Campus Center',x:0,z:0,lat:42.3133,lng:-71.0387,col:0xd4cfc0,texType:'stone',
+   parts:[
+     {w:6,h:2.8,d:3.5,ox:0,oy:0,oz:0},            // main wide body
+     {w:3,h:2.8,d:2.5,ox:3.5,oy:0,oz:-0.5},        // east wing
+     {w:2,h:1.2,d:6,ox:0,oy:2.8,oz:0},             // upper level glassy center
+   ],
    desc:'The heart of student life — dining, organizations, and events.',
    link:'https://www.umb.edu/campus-life/'},
+
+  // ISC: 5-story glass curtain wall, angular crystalline atrium (Goody Clancy 2015)
   {name:'Integrated Sciences Complex',x:9,z:-2,lat:42.3138,lng:-71.0367,col:0xb8d8e8,texType:'glass',
-   parts:[{w:2.5,h:5.5,d:2.5,ox:0,oy:0,oz:0},{w:3,h:3.5,d:2.5,ox:1.5,oy:0,oz:0}],
+   parts:[
+     {w:3.5,h:5,d:3,ox:0,oy:0,oz:0},               // tall lab wing
+     {w:3,h:3.5,d:3,ox:2,oy:0,oz:0},                // shorter east wing
+     {w:2,h:5.5,d:2,ox:0.8,oy:0,oz:-1.5},           // crystalline glass atrium tower
+   ],
    desc:'State-of-the-art research labs — biology, chemistry & physics.',
    link:'https://www.umb.edu/academics/csm/'},
-  {name:'Healey Library',x:-3,z:7,lat:42.3127,lng:-71.0397,col:0x6b2020,texType:'brick',
-   parts:[{w:2,h:5,d:2,ox:0,oy:0,oz:0},{w:4,h:2.5,d:4,ox:0,oy:0,oz:0}],
+
+  // Healey Library: 11-story Brutalist concrete tower (Harry Weese 1974) — tallest on campus
+  {name:'Healey Library',x:-3,z:7,lat:42.3127,lng:-71.0397,col:0x8a8070,texType:'concrete',
+   parts:[
+     {w:3.5,h:10,d:3.5,ox:0,oy:0,oz:0},            // main tower (11 floors)
+     {w:5,h:2.5,d:4.5,ox:0,oy:0,oz:0},             // 2-story podium base
+     {w:1,h:0.6,d:1,ox:0,oy:10,oz:0},              // rooftop observatory housing
+   ],
    desc:'Main library with 700,000+ volumes and digital resources.',
    link:'https://www.umb.edu/library/'},
+
+  // Quinn Admin: 3-story brick, wide and low (1974 original campus)
   {name:'Quinn Administration',x:3,z:-9,lat:42.3148,lng:-71.0385,col:0x6b2020,texType:'brick',
-   parts:[{w:3,h:2.5,d:3,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.5,ox:0,oy:2.5,oz:0}],
+   parts:[
+     {w:5,h:2.5,d:3,ox:0,oy:0,oz:0},               // main wide body
+     {w:2,h:2.5,d:2,ox:2.5,oy:0,oz:1},              // small wing
+     {w:1.5,h:0.6,d:1.5,ox:0,oy:2.5,oz:0},         // rooftop mechanical
+   ],
    desc:'Administrative offices, Registrar, Bursar, and leadership.',
    link:'https://www.umb.edu/about/'},
+
+  // Wheatley Hall: 6-story brick, compact footprint (1974)
   {name:'Wheatley Hall',x:5,z:-6,lat:42.3143,lng:-71.0378,col:0x6b2020,texType:'brick',
-   parts:[{w:3,h:3.5,d:2.5,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.2,ox:0,oy:3.5,oz:0}],
+   parts:[
+     {w:3,h:5.5,d:3,ox:0,oy:0,oz:0},               // main 6-story block
+     {w:1.8,h:1,d:1.8,ox:0,oy:5.5,oz:0},           // rooftop mechanical
+   ],
    desc:'College of Education, Nursing and Social Work.',
    link:'https://www.umb.edu/academics/nursing/'},
+
+  // McCormack Hall: 5-story brick, wider and lower than Wheatley (1974)
   {name:'McCormack Hall',x:-8,z:3,lat:42.3130,lng:-71.0405,col:0x6b2020,texType:'brick',
-   parts:[{w:3,h:4,d:2,ox:0,oy:0,oz:0},{w:2,h:4,d:3,ox:1.5,oy:0,oz:1}],
+   parts:[
+     {w:4,h:4.5,d:2.5,ox:0,oy:0,oz:0},             // main block
+     {w:2.5,h:4.5,d:3,ox:2,oy:0,oz:1.5},            // L-wing extension
+     {w:1.2,h:0.7,d:1.2,ox:0,oy:4.5,oz:0},         // rooftop
+   ],
    desc:'Graduate studies, College of Liberal Arts offices and classrooms.',
    link:'https://www.umb.edu/academics/cla/'},
+
+  // Clark Athletic Center: 2-story wide low-rise with high interior (1979)
   {name:'Clark Athletic Center',x:-12,z:10,lat:42.3122,lng:-71.0420,col:0xc8c0b0,texType:'concrete',
-   parts:[{w:5,h:2,d:5,ox:0,oy:0,oz:0}],
+   parts:[
+     {w:6,h:2.2,d:6,ox:0,oy:0,oz:0},               // main gym floor
+     {w:4,h:3,d:3,ox:0,oy:0,oz:-1.5},              // tall arena volume
+     {w:2.5,h:1.2,d:4,ox:-2,oy:0,oz:0},            // ice rink wing
+   ],
    desc:'Full recreation center — gym, pool, courts, fitness facilities.',
    link:'https://www.umb.edu/athletics/'},
-  {name:'University Hall',x:7,z:4,lat:42.3135,lng:-71.0372,col:0xd4cfc0,texType:'concrete',
+
+  // University Hall: 4-story triangular wedge, glass atrium (Wilson HGA 2016, LEED Gold)
+  {name:'University Hall',x:7,z:4,lat:42.3135,lng:-71.0372,col:0xd4cfc0,texType:'glass',
    parts:[
-     {w:5.5,h:2.8,d:2,ox:0,oy:0,oz:-1},
-     {w:4,h:2.8,d:2,ox:0,oy:0,oz:1},
-     {w:2.2,h:2.8,d:2,ox:0,oy:0,oz:3},
-     {w:1.5,h:4.5,d:1.8,ox:-2.2,oy:0,oz:-1},
+     {w:6,h:3.5,d:2.5,ox:0,oy:0,oz:-1.5},          // wide north base
+     {w:4.5,h:3.5,d:2.5,ox:0,oy:0,oz:0.5},         // middle section
+     {w:2.5,h:3.5,d:2,ox:0,oy:0,oz:2.5},           // narrow south tip (wedge taper)
+     {w:1.5,h:4.5,d:1.5,ox:-2.5,oy:0,oz:-1.5},    // NW atrium tower element
    ],
    desc:'Computer Science, Math, and Sciences classrooms and labs.',
    link:'https://www.umb.edu/academics/cts/'},
+
+  // West Garage: 8-level parking with colored panels (Fennick McCredie 2018, 1400 spaces)
   {name:'West Garage',x:14,z:-7,lat:42.3145,lng:-71.0360,col:0xe0e0e0,texType:'garage',
-   parts:[{w:4,h:4.5,d:4,ox:0,oy:0,oz:0}],
-   desc:'Campus parking garage with blue-stripe exterior.',
+   parts:[
+     {w:5,h:7,d:5,ox:0,oy:0,oz:0},                 // main 8-level garage
+     {w:1.5,h:7,d:1.5,ox:-2,oy:0,oz:-2},           // stair/elevator tower
+   ],
+   desc:'Campus parking garage — 8 levels, 1,400 spaces.',
    link:'https://www.umb.edu/campus-life/'},
+
+  // JFK Library: I.M. Pei 1979 — triangular white tower + glass pavilion + cylindrical base
   {name:'JFK Presidential Library',x:-10,z:-8,lat:42.3098,lng:-71.0370,col:0xe8e4dc,texType:'stone',
-   parts:[{w:5,h:2.5,d:4,ox:0,oy:0,oz:0},{w:2,h:2.5,d:3,ox:2.5,oy:0,oz:0}],
-   desc:'Iconic landmark dedicated to President John F. Kennedy.',
+   parts:[
+     {w:2.5,h:8,d:2.5,ox:0,oy:0,oz:0},             // triangular white concrete tower (10 stories)
+     {w:3.5,h:5,d:3.5,ox:3,oy:0,oz:0},             // tall glass memorial pavilion
+     {w:5,h:2,d:3,ox:1.5,oy:0,oz:2.5},             // low exhibition wing / cylindrical base area
+   ],
+   customBuild:true, // uses special geometry below
+   desc:'Iconic I.M. Pei landmark dedicated to President John F. Kennedy.',
    link:'https://www.jfklibrary.org'},
 ];
+
+// Build JFK Library with special geometry (triangular tower, glass pavilion, cylindrical base)
+function buildJFK(b,idx,group,meshList,scale){
+  scale=scale||1;
+  const wx=b._wx, wz=b._wz;
+
+  // 1) Triangular white concrete tower (I.M. Pei signature — 10 stories)
+  const triShape=new THREE.Shape();
+  const ts=2.5*scale;
+  triShape.moveTo(-ts,0); triShape.lineTo(ts,0); triShape.lineTo(0,ts*1.7); triShape.closePath();
+  const triGeo=new THREE.ExtrudeGeometry(triShape,{depth:8*scale,bevelEnabled:false});
+  triGeo.rotateX(-Math.PI/2);
+  const triTex=makeBuildingTexture('jfk_white');
+  const triMat=new THREE.MeshStandardMaterial({map:triTex,roughness:0.4,metalness:0.1,emissive:0xe8e4dc,emissiveIntensity:0.08});
+  const triMesh=new THREE.Mesh(triGeo,triMat);
+  triMesh.position.set(wx,0,wz);
+  triMesh.userData={type:'building',index:idx,data:b};
+  group.add(triMesh);
+  if(meshList) meshList.push(triMesh);
+
+  // Roof cap for tower
+  const triRoof=new THREE.Mesh(
+    new THREE.BoxGeometry(ts*2+0.2*scale,0.15*scale,0.15*scale),
+    new THREE.MeshStandardMaterial({color:0xdddddd,roughness:0.5})
+  );
+  triRoof.position.set(wx,8*scale+0.08*scale,wz);
+  group.add(triRoof);
+
+  // 2) Glass memorial pavilion (tall dark glass cube — 115ft)
+  const glassTex=makeBuildingTexture('jfk_glass');
+  const glassMat=new THREE.MeshStandardMaterial({map:glassTex,roughness:0.15,metalness:0.5,transparent:true,opacity:0.8,emissive:0x1a3050,emissiveIntensity:0.1});
+  const glassGeo=new THREE.BoxGeometry(3.5*scale,6*scale,3.5*scale);
+  const glassMesh=new THREE.Mesh(glassGeo,glassMat);
+  glassMesh.position.set(wx+3*scale,3*scale,wz);
+  glassMesh.userData={type:'building',index:idx,data:b};
+  group.add(glassMesh);
+  if(meshList) meshList.push(glassMesh);
+
+  // Glass pavilion steel frame accent lines
+  const frameMat=new THREE.MeshStandardMaterial({color:0x444444,roughness:0.6,metalness:0.4});
+  for(let fy=0;fy<6*scale;fy+=1.2*scale){
+    const frame=new THREE.Mesh(new THREE.BoxGeometry(3.6*scale,0.08*scale,0.08*scale),frameMat);
+    frame.position.set(wx+3*scale,fy,wz+1.8*scale);
+    group.add(frame);
+  }
+
+  // 3) Cylindrical base (2-story theater section)
+  const cylGeo=new THREE.CylinderGeometry(2.5*scale,2.5*scale,2*scale,24);
+  const cylTex=makeBuildingTexture('concrete');
+  const cylMat=new THREE.MeshStandardMaterial({map:cylTex,roughness:0.7,metalness:0.1,emissive:0xd0ccc0,emissiveIntensity:0.06});
+  const cylMesh=new THREE.Mesh(cylGeo,cylMat);
+  cylMesh.position.set(wx+1.5*scale,1*scale,wz+3*scale);
+  cylMesh.userData={type:'building',index:idx,data:b};
+  group.add(cylMesh);
+  if(meshList) meshList.push(cylMesh);
+
+  // Low exhibition wing connecting tower to cylinder
+  const connGeo=new THREE.BoxGeometry(4*scale,1.5*scale,2.5*scale);
+  const connMat=new THREE.MeshStandardMaterial({map:makeBuildingTexture('concrete'),roughness:0.7,metalness:0.1,emissive:0xc0bbb0,emissiveIntensity:0.06});
+  const connMesh=new THREE.Mesh(connGeo,connMat);
+  connMesh.position.set(wx+1.5*scale,0.75*scale,wz+1.5*scale);
+  group.add(connMesh);
+}
 
 // Shared function to build a 3D structure from building data
 function buildStructure3D(b,idx,group,meshList,winList,scale){
   scale=scale||1;
+
+  // JFK Library gets special geometry
+  if(b.customBuild){
+    buildJFK(b,idx,group,meshList,scale);
+    return;
+  }
+
   const isGarage=b.texType==='garage';
   const isGlass=b.texType==='glass';
   b.parts.forEach((part,pi)=>{
@@ -1637,22 +1736,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
 // Google Maps is initialized via the initCampusMap() callback
 // defined in the <head> script tag.
-
-// ────────────────────────────────────────────────
-// INTERACTIVE 3D CAMPUS MAP (standalone Three.js)
-// ────────────────────────────────────────────────
-(function(){
-  const canvas=document.getElementById('campus-3d-canvas');
-  if(!canvas||!window.THREE) return;
-
-  const container=document.getElementById('campus-map');
-  const tooltip=document.getElementById('campus-3d-tooltip');
-  const hint=document.getElementById('campus-3d-hint');
-
-  // ── Renderer ──
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setClearColor(0x020f1e);
+/* REMOVED: standalone 3D campus map
   function syncSize(){
     const w=container.clientWidth,h=container.clientHeight||580;
     renderer.setSize(w,h);
@@ -1917,9 +2001,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
   window._hide3DCampusMap=function(){
     canvas.style.display='none';
     if(tooltip) tooltip.style.display='none';
-    if(hint) hint.style.display='none';
-  };
-})();
+REMOVED_3D_MAP_END*/
 
 // ────────────────────────────────────────────────
 // HARBOR FISHING GAME

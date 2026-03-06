@@ -124,20 +124,18 @@
 
     const infoWindow=new google.maps.InfoWindow();
 
-    function makePinElement(color,emoji){
-      const div=document.createElement('div');
-      div.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="44" height="54" viewBox="0 0 44 54">
-        <path d="M22 2C12.06 2 4 10.06 4 20c0 14.25 18 32 18 32s18-17.75 18-32C40 10.06 31.94 2 22 2z"
-              fill="${color}" opacity="0.92"/>
-        <circle cx="22" cy="20" r="13" fill="rgba(0,0,0,0.40)"/>
-        <text x="22" y="26" text-anchor="middle" font-size="15">${emoji}</text>
-      </svg>`;
-      return div;
+    function makeSvgPin(color,emoji){
+      return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="54" viewBox="0 0 44 54">
+          <path d="M22 2C12.06 2 4 10.06 4 20c0 14.25 18 32 18 32s18-17.75 18-32C40 10.06 31.94 2 22 2z"
+                fill="${color}" opacity="0.92"/>
+          <circle cx="22" cy="20" r="13" fill="rgba(0,0,0,0.40)"/>
+          <text x="22" y="26" text-anchor="middle" font-size="15">${emoji}</text>
+        </svg>`
+      );
     }
 
     // ── Places API (New) — searchByText ──────────────────────────────
-    const {AdvancedMarkerElement}=await google.maps.importLibrary('marker');
-
     for(const loc of locations){
       try{
         const {places}=await google.maps.places.Place.searchByText({
@@ -150,13 +148,17 @@
         const pos=places[0].location;
         const placeName=places[0].displayName||loc.q;
 
-        const marker=new AdvancedMarkerElement({
+        const marker=new google.maps.Marker({
           position:pos,map,
-          content:makePinElement(loc.color,loc.emoji),
+          icon:{
+            url:makeSvgPin(loc.color,loc.emoji),
+            scaledSize:new google.maps.Size(44,54),
+            anchor:new google.maps.Point(22,54),
+          },
           title:placeName,
         });
 
-        marker.addEventListener('gmp-click',()=>{
+        marker.addListener('click',()=>{
           infoWindow.setContent(
             `<div style="font-family:'Space Mono',monospace;background:rgba(0,16,32,0.97);
               color:#eef3f8;padding:14px 16px;min-width:200px;max-width:240px;">
@@ -168,7 +170,7 @@
                 style="font-size:9px;letter-spacing:1px;text-transform:uppercase;
                 color:#00c8d4;text-decoration:none;">Learn more →</a>
             </div>`);
-          infoWindow.open({anchor:marker,map});
+          infoWindow.open(map,marker);
         });
       }catch(e){ console.warn('Place search failed for:',loc.q,e); }
     }
@@ -2580,7 +2582,7 @@ chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
     .then(r => r.json())
     .then(({ key }) => {
       const s = document.createElement('script');
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places,marker&loading=async&callback=initCampusMap`;
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&loading=async&callback=initCampusMap`;
       s.async = true;
       s.defer = true;
       document.head.appendChild(s);

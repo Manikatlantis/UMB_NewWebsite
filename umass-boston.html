@@ -12,8 +12,8 @@
 <script>
   async function initCampusMap(){
     if(typeof google==='undefined') return;
-    const ph=document.getElementById('map-placeholder');
-    if(ph) ph.style.display='none';
+    // Hide the standalone 3D campus map when Google Maps loads
+    if(typeof window._hide3DCampusMap==='function') window._hide3DCampusMap();
 
     const DARK_STYLE=[
       {elementType:'geometry',stylers:[{color:'#060e1a'}]},
@@ -174,6 +174,62 @@
         });
       }catch(e){ console.warn('Place search failed for:',loc.q,e); }
     }
+
+    // ── WebGLOverlayView — 3D buildings on Google Maps ──
+    if(window.THREE && google.maps.WebGLOverlayView){
+      try{
+        const webglOverlay=new google.maps.WebGLOverlayView();
+        let mapScene,mapCamera,mapRenderer,mapBldgMeshes=[];
+
+        webglOverlay.onAdd=function(){
+          mapScene=new THREE.Scene();
+          mapScene.add(new THREE.AmbientLight(0x5577aa,0.7));
+          const sun=new THREE.DirectionalLight(0xfff4e0,1.0);
+          sun.position.set(60,80,40);
+          mapScene.add(sun);
+          mapScene.add(new THREE.HemisphereLight(0x9ec5e8,0x4a6b3a,0.4));
+          mapCamera=new THREE.PerspectiveCamera();
+
+          // Convert lat/lng to local coordinates relative to campus center
+          const center={lat:42.3133,lng:-71.0390};
+          const METERS_PER_DEG_LAT=111320;
+          const METERS_PER_DEG_LNG=111320*Math.cos(center.lat*Math.PI/180);
+          const SCALE=0.4; // scale buildings to look right on the map
+
+          const bldgGroup=new THREE.Group();
+          CAMPUS_BUILDINGS.forEach((b,idx)=>{
+            // Convert lat/lng offset to meters
+            const mx=(b.lng-center.lng)*METERS_PER_DEG_LNG;
+            const mz=-(b.lat-center.lat)*METERS_PER_DEG_LAT; // north is -z
+            b._wx=mx*SCALE;
+            b._wz=mz*SCALE;
+            buildStructure3D(b,idx,bldgGroup,mapBldgMeshes,null,SCALE*8);
+          });
+          mapScene.add(bldgGroup);
+        };
+
+        webglOverlay.onContextRestored=function({gl}){
+          mapRenderer=new THREE.WebGLRenderer({
+            canvas:gl.canvas,
+            context:gl,
+            ...gl.getContextAttributes()
+          });
+          mapRenderer.autoClear=false;
+        };
+
+        webglOverlay.onDraw=function({gl,transformer}){
+          if(!mapRenderer) return;
+          const matrix=transformer.fromLatLngAltitude({lat:42.3133,lng:-71.0390,altitude:0});
+          mapCamera.projectionMatrix=new THREE.Matrix4().fromArray(matrix);
+          mapRenderer.render(mapScene,mapCamera);
+          mapRenderer.resetState();
+        };
+
+        webglOverlay.setMap(map);
+        // Enable tilt for 3D perspective
+        map.setTilt(45);
+      }catch(e){ console.warn('WebGLOverlayView not available:',e); }
+    }
   }
 </script>
 <style>
@@ -304,7 +360,7 @@ section{padding:110px 52px;}
 /* ── GOOGLE MAP ── */
 #campus{background:#020f1e;position:relative;z-index:1;}
 .map-outer{position:relative;z-index:1;margin-top:56px;border:1px solid rgba(0,200,212,0.18);overflow:hidden;box-shadow:0 0 60px rgba(28,110,164,0.08);}
-#campus-map{height:580px;width:100%;}
+#campus-map{height:580px;width:100%;position:relative;}
 /* Style Google Maps info windows to match dark theme */
 .gm-style .gm-style-iw-c{background:rgba(0,16,32,0.97)!important;border:1px solid rgba(0,200,212,0.25)!important;border-radius:0!important;padding:0!important;box-shadow:0 0 30px rgba(0,0,0,0.7)!important;}
 .gm-style .gm-style-iw-d{overflow:hidden!important;}
@@ -538,7 +594,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     </div>
     <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()">Explore Campus 3D &rarr;</button>
   </div>
-  <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
+  <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button> 
   <div class="scroll-hint"><span>Scroll</span><div class="scroll-bar"></div></div>
 </section>
 
@@ -632,15 +688,15 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 <section id="campus">
   <div class="sec-tag" style="justify-content:center">Interactive Campus</div>
   <h2 class="sec-title reveal" style="text-align:center">Explore UMass Boston<br>on the <em>Harbor</em></h2>
-  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto">Click any marker to discover buildings, services, and links. Our campus sits on Columbia Point, surrounded by Boston Harbor.</p>
+  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto">Explore the campus in interactive 3D. Click any building for details. Drag to rotate, scroll to zoom.</p>
   <div class="map-outer reveal">
     <div id="campus-map">
-      <!-- Shown until Google Maps API key is added -->
-      <div id="map-placeholder" style="height:580px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#020f1e;color:rgba(238,243,248,0.4);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;text-align:center;gap:12px;">
-        <div style="font-size:32px">🗺️</div>
-        <div>ADD YOUR GOOGLE MAPS API KEY</div>
-        <div style="font-size:9px;color:rgba(238,243,248,0.25)">Replace <code style="color:#00c8d4">YOUR_GOOGLE_MAPS_API_KEY</code> in the HTML &lt;head&gt;</div>
-      </div>
+      <!-- 3D interactive campus map (Three.js) — replaced by Google Maps when API key is set -->
+      <canvas id="campus-3d-canvas" style="width:100%;height:580px;display:block;cursor:grab;"></canvas>
+      <!-- Tooltip for hovering buildings -->
+      <div id="campus-3d-tooltip" style="position:absolute;top:0;left:0;pointer-events:none;display:none;background:rgba(0,16,32,0.92);border:1px solid rgba(0,212,184,0.3);padding:8px 14px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:#00c8d4;white-space:nowrap;z-index:10;backdrop-filter:blur(8px);"></div>
+      <!-- Hint overlay -->
+      <div id="campus-3d-hint" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.15);padding:8px 20px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(238,243,248,0.4);white-space:nowrap;z-index:10;transition:opacity 1s;pointer-events:none;">Drag to rotate · Scroll to zoom · Click a building for details</div>
     </div>
   </div>
 </section>
@@ -842,155 +898,234 @@ const obs=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.
 document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
 
 // ────────────────────────────────────────────────
+// SHARED: Building data + procedural texture helper
+// (used by both hero 3D scene and interactive map)
+// ────────────────────────────────────────────────
+function makeBuildingTexture(type){
+  const cv=document.createElement('canvas');
+  cv.width=256;cv.height=256;
+  const ctx=cv.getContext('2d');
+  if(type==='brick'){
+    ctx.fillStyle='#7a2a2a';
+    ctx.fillRect(0,0,256,256);
+    const bh=32,bw=64;
+    for(let r=0;r<256/bh;r++){
+      const offset=(r%2)*(bw/2);
+      for(let c=-1;c<256/bw+2;c++){
+        const v=Math.random()*20-10;
+        ctx.fillStyle=`rgb(${112+v|0},${36+v/2|0},${36+v/2|0})`;
+        ctx.fillRect(offset+c*bw+2,r*bh+2,bw-4,bh-4);
+      }
+    }
+    ctx.fillStyle='#4a1a1a';
+    for(let y=0;y<256;y+=bh){ctx.fillRect(0,y,256,3);}
+    for(let r=0;r<256/bh;r++){
+      const offset=(r%2)*(bw/2);
+      for(let c=-1;c<256/bw+2;c++){ctx.fillRect(offset+c*bw,r*bh,3,bh);}
+    }
+  } else if(type==='glass'){
+    ctx.fillStyle='#6eaaca';
+    ctx.fillRect(0,0,256,256);
+    const pw=64,ph=80;
+    for(let py=0;py<256;py+=ph){
+      for(let px=0;px<256;px+=pw){
+        const grd=ctx.createLinearGradient(px,py,px+pw,py+ph);
+        grd.addColorStop(0,'rgba(140,200,230,0.6)');
+        grd.addColorStop(0.5,'rgba(90,160,200,0.3)');
+        grd.addColorStop(1,'rgba(120,190,220,0.5)');
+        ctx.fillStyle=grd;
+        ctx.fillRect(px+3,py+3,pw-6,ph-6);
+      }
+    }
+    ctx.fillStyle='#d0dde8';
+    for(let x=0;x<256;x+=pw){ctx.fillRect(x,0,4,256);}
+    for(let y=0;y<256;y+=ph){ctx.fillRect(0,y,256,4);}
+  } else if(type==='concrete'){
+    ctx.fillStyle='#ccc4b4';
+    ctx.fillRect(0,0,256,256);
+    for(let i=0;i<4000;i++){
+      const gv=Math.random()*40-20;
+      ctx.fillStyle=`rgba(${140+gv|0},${132+gv|0},${120+gv|0},0.4)`;
+      ctx.fillRect(Math.random()*256,Math.random()*256,3,3);
+    }
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    for(let y=0;y<=256;y+=64){ctx.fillRect(0,y,256,3);}
+    for(let x=0;x<=256;x+=128){ctx.fillRect(x,0,2,256);}
+  } else if(type==='garage'){
+    ctx.fillStyle='#e8e8e8';
+    ctx.fillRect(0,0,256,256);
+    for(let y=0;y<256;y+=48){
+      ctx.fillStyle='#3366aa';
+      ctx.fillRect(0,y,256,24);
+      ctx.fillStyle='#e8e8e8';
+      ctx.fillRect(0,y+24,256,24);
+    }
+    ctx.fillStyle='rgba(0,0,0,0.2)';
+    for(let y=0;y<=256;y+=48){ctx.fillRect(0,y,256,3);}
+  } else if(type==='stone'){
+    ctx.fillStyle='#e0dace';
+    ctx.fillRect(0,0,256,256);
+    const sw=80,sh=52;
+    for(let py=0;py<256;py+=sh){
+      for(let px=0;px<256;px+=sw){
+        const v=Math.random()*12-6;
+        ctx.fillStyle=`rgb(${220+v|0},${214+v|0},${200+v|0})`;
+        ctx.fillRect(px+2,py+2,sw-4,sh-4);
+      }
+    }
+    ctx.fillStyle='rgba(160,150,130,0.4)';
+    for(let y=0;y<256;y+=sh){ctx.fillRect(0,y,256,3);}
+    for(let x=0;x<256;x+=sw){ctx.fillRect(x,0,3,256);}
+  }
+  const tex=new THREE.CanvasTexture(cv);
+  tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
+  return tex;
+}
+
+// Building data with diorama coords (hero) + real lat/lng (map)
+const CAMPUS_BUILDINGS=[
+  {name:'Campus Center',x:0,z:0,lat:42.3133,lng:-71.0387,col:0xd4cfc0,texType:'concrete',
+   parts:[{w:4,h:3,d:3,ox:0,oy:0,oz:0},{w:2.5,h:1.5,d:2,ox:0,oy:3,oz:0}],
+   desc:'The heart of student life — dining, organizations, and events.',
+   link:'https://www.umb.edu/campus-life/'},
+  {name:'Integrated Sciences Complex',x:9,z:-2,lat:42.3138,lng:-71.0367,col:0xb8d8e8,texType:'glass',
+   parts:[{w:2.5,h:5.5,d:2.5,ox:0,oy:0,oz:0},{w:3,h:3.5,d:2.5,ox:1.5,oy:0,oz:0}],
+   desc:'State-of-the-art research labs — biology, chemistry & physics.',
+   link:'https://www.umb.edu/academics/csm/'},
+  {name:'Healey Library',x:-3,z:7,lat:42.3127,lng:-71.0397,col:0x6b2020,texType:'brick',
+   parts:[{w:2,h:5,d:2,ox:0,oy:0,oz:0},{w:4,h:2.5,d:4,ox:0,oy:0,oz:0}],
+   desc:'Main library with 700,000+ volumes and digital resources.',
+   link:'https://www.umb.edu/library/'},
+  {name:'Quinn Administration',x:3,z:-9,lat:42.3148,lng:-71.0385,col:0x6b2020,texType:'brick',
+   parts:[{w:3,h:2.5,d:3,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.5,ox:0,oy:2.5,oz:0}],
+   desc:'Administrative offices, Registrar, Bursar, and leadership.',
+   link:'https://www.umb.edu/about/'},
+  {name:'Wheatley Hall',x:5,z:-6,lat:42.3143,lng:-71.0378,col:0x6b2020,texType:'brick',
+   parts:[{w:3,h:3.5,d:2.5,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.2,ox:0,oy:3.5,oz:0}],
+   desc:'College of Education, Nursing and Social Work.',
+   link:'https://www.umb.edu/academics/nursing/'},
+  {name:'McCormack Hall',x:-8,z:3,lat:42.3130,lng:-71.0405,col:0x6b2020,texType:'brick',
+   parts:[{w:3,h:4,d:2,ox:0,oy:0,oz:0},{w:2,h:4,d:3,ox:1.5,oy:0,oz:1}],
+   desc:'Graduate studies, College of Liberal Arts offices and classrooms.',
+   link:'https://www.umb.edu/academics/cla/'},
+  {name:'Clark Athletic Center',x:-12,z:10,lat:42.3122,lng:-71.0420,col:0xc8c0b0,texType:'concrete',
+   parts:[{w:5,h:2,d:5,ox:0,oy:0,oz:0}],
+   desc:'Full recreation center — gym, pool, courts, fitness facilities.',
+   link:'https://www.umb.edu/athletics/'},
+  {name:'University Hall',x:7,z:4,lat:42.3135,lng:-71.0372,col:0xd4cfc0,texType:'concrete',
+   parts:[
+     {w:5.5,h:2.8,d:2,ox:0,oy:0,oz:-1},
+     {w:4,h:2.8,d:2,ox:0,oy:0,oz:1},
+     {w:2.2,h:2.8,d:2,ox:0,oy:0,oz:3},
+     {w:1.5,h:4.5,d:1.8,ox:-2.2,oy:0,oz:-1},
+   ],
+   desc:'Computer Science, Math, and Sciences classrooms and labs.',
+   link:'https://www.umb.edu/academics/cts/'},
+  {name:'West Garage',x:14,z:-7,lat:42.3145,lng:-71.0360,col:0xe0e0e0,texType:'garage',
+   parts:[{w:4,h:4.5,d:4,ox:0,oy:0,oz:0}],
+   desc:'Campus parking garage with blue-stripe exterior.',
+   link:'https://www.umb.edu/campus-life/'},
+  {name:'JFK Presidential Library',x:-10,z:-8,lat:42.3098,lng:-71.0370,col:0xe8e4dc,texType:'stone',
+   parts:[{w:5,h:2.5,d:4,ox:0,oy:0,oz:0},{w:2,h:2.5,d:3,ox:2.5,oy:0,oz:0}],
+   desc:'Iconic landmark dedicated to President John F. Kennedy.',
+   link:'https://www.jfklibrary.org'},
+];
+
+// Shared function to build a 3D structure from building data
+function buildStructure3D(b,idx,group,meshList,winList,scale){
+  scale=scale||1;
+  const isGarage=b.texType==='garage';
+  const isGlass=b.texType==='glass';
+  b.parts.forEach((part,pi)=>{
+    const tex=makeBuildingTexture(b.texType);
+    const pw=part.w*scale,ph=part.h*scale,pd=part.d*scale;
+    const pox=part.ox*scale,poy=part.oy*scale,poz=part.oz*scale;
+    const geo=new THREE.BoxGeometry(pw,ph,pd);
+    const mat=new THREE.MeshStandardMaterial({
+      map:tex,roughness:isGlass?0.2:0.6,
+      metalness:isGlass?0.4:0.2,emissive:b.col,emissiveIntensity:0.08
+    });
+    const mesh=new THREE.Mesh(geo,mat);
+    mesh.position.set(b._wx+pox,ph/2+poy,b._wz+poz);
+    mesh.userData={type:'building',index:idx,data:b};
+    group.add(mesh);
+    if(meshList) meshList.push(mesh);
+
+    // Roof accent
+    const roofGeo=new THREE.BoxGeometry(pw+0.2*scale,0.15*scale,pd+0.2*scale);
+    const roofMat=new THREE.MeshStandardMaterial({color:0x555555,roughness:0.85,metalness:0.05});
+    const roof=new THREE.Mesh(roofGeo,roofMat);
+    roof.position.set(b._wx+pox,ph+poy+0.075*scale,b._wz+poz);
+    group.add(roof);
+
+    // Rooftop mechanical box
+    if(pi===0&&part.h>=3.5){
+      const mechGeo=new THREE.BoxGeometry(0.6*scale,0.5*scale,0.6*scale);
+      const mechMat=new THREE.MeshStandardMaterial({color:0x333333,roughness:0.9});
+      const mech=new THREE.Mesh(mechGeo,mechMat);
+      mech.position.set(b._wx+pox,ph+poy+0.4*scale,b._wz+poz);
+      group.add(mech);
+    }
+
+    // Windows (skip garage)
+    if(isGarage) return;
+    const faces=[
+      {axis:'x',dir:1,rotY:-Math.PI/2,faceW:part.d,faceH:part.h},
+      {axis:'x',dir:-1,rotY:Math.PI/2,faceW:part.d,faceH:part.h},
+      {axis:'z',dir:1,rotY:0,faceW:part.w,faceH:part.h},
+      {axis:'z',dir:-1,rotY:Math.PI,faceW:part.w,faceH:part.h},
+    ];
+    faces.forEach((face,fi)=>{
+      let cols,rows,winW,winH;
+      if(isGlass){
+        cols=Math.max(2,Math.floor(face.faceW/0.8));
+        rows=Math.max(2,Math.floor(face.faceH/1.2));
+        winW=face.faceW/(cols+1)*0.7*scale;
+        winH=face.faceH/(rows+1)*0.85*scale;
+      } else {
+        cols=Math.max(2,Math.floor(face.faceW/1.2));
+        rows=Math.max(2,Math.floor(face.faceH/1.5));
+        winW=face.faceW/(cols+1)*0.4*scale;
+        winH=face.faceH/(rows+1)*0.45*scale;
+      }
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          const wGeo=new THREE.PlaneGeometry(winW,winH);
+          const lit=((idx+r+c+fi)%3)!==0;
+          const wMat=new THREE.MeshStandardMaterial({
+            color:lit?(isGlass?0xaaddff:0xffdd88):0x112244,
+            emissive:lit?(isGlass?0x88bbdd:0xffdd88):0x000000,
+            emissiveIntensity:lit?0.3:0,
+            transparent:true,opacity:lit?0.7:0.3,
+            side:THREE.DoubleSide
+          });
+          const wMesh=new THREE.Mesh(wGeo,wMat);
+          const cx=(-face.faceW/2+(c+1)*face.faceW/(cols+1))*scale;
+          const cy=poy+(r+1)*ph/(rows+1);
+          const inset=0.06*scale;
+          if(face.axis==='z'){
+            wMesh.position.set(b._wx+pox+cx,cy,b._wz+poz+face.dir*(pd/2+inset));
+          } else {
+            wMesh.position.set(b._wx+pox+face.dir*(pw/2+inset),cy,b._wz+poz+cx);
+            wMesh.rotation.y=face.rotY;
+          }
+          wMesh.userData={type:'window',buildingIndex:idx,building:b.name,face:fi,row:r,col:c};
+          group.add(wMesh);
+          if(winList) winList.push(wMesh);
+        }
+      }
+    });
+  });
+}
+
+// ────────────────────────────────────────────────
 // HERO — Three.js 3D Low-Poly Campus
 // ────────────────────────────────────────────────
 (function(){
   const canvas=document.getElementById('webgl-canvas');
   if(!window.THREE){console.warn('Three.js not loaded');return;}
 
-  // ── Procedural texture helper ──
-  function makeBuildingTexture(type){
-    const cv=document.createElement('canvas');
-    cv.width=256;cv.height=256;
-    const ctx=cv.getContext('2d');
-    if(type==='brick'){
-      // Maroon base with visible mortar grid
-      ctx.fillStyle='#7a2a2a';
-      ctx.fillRect(0,0,256,256);
-      const bh=32,bw=64;
-      for(let r=0;r<256/bh;r++){
-        const offset=(r%2)*(bw/2);
-        for(let c=-1;c<256/bw+2;c++){
-          // Individual brick with slight color variation
-          const v=Math.random()*20-10;
-          ctx.fillStyle=`rgb(${112+v|0},${36+v/2|0},${36+v/2|0})`;
-          ctx.fillRect(offset+c*bw+2,r*bh+2,bw-4,bh-4);
-        }
-      }
-      // Mortar lines
-      ctx.fillStyle='#4a1a1a';
-      for(let y=0;y<256;y+=bh){ctx.fillRect(0,y,256,3);}
-      for(let r=0;r<256/bh;r++){
-        const offset=(r%2)*(bw/2);
-        for(let c=-1;c<256/bw+2;c++){ctx.fillRect(offset+c*bw,r*bh,3,bh);}
-      }
-    } else if(type==='glass'){
-      // Blue-tint reflective base
-      ctx.fillStyle='#6eaaca';
-      ctx.fillRect(0,0,256,256);
-      // Panel gradient
-      const pw=64,ph=80;
-      for(let py=0;py<256;py+=ph){
-        for(let px=0;px<256;px+=pw){
-          const grd=ctx.createLinearGradient(px,py,px+pw,py+ph);
-          grd.addColorStop(0,'rgba(140,200,230,0.6)');
-          grd.addColorStop(0.5,'rgba(90,160,200,0.3)');
-          grd.addColorStop(1,'rgba(120,190,220,0.5)');
-          ctx.fillStyle=grd;
-          ctx.fillRect(px+3,py+3,pw-6,ph-6);
-        }
-      }
-      // Bold white mullion grid
-      ctx.fillStyle='#d0dde8';
-      for(let x=0;x<256;x+=pw){ctx.fillRect(x,0,4,256);}
-      for(let y=0;y<256;y+=ph){ctx.fillRect(0,y,256,4);}
-    } else if(type==='concrete'){
-      // Off-white concrete with panel lines
-      ctx.fillStyle='#ccc4b4';
-      ctx.fillRect(0,0,256,256);
-      // Noise grain
-      for(let i=0;i<4000;i++){
-        const gv=Math.random()*40-20;
-        ctx.fillStyle=`rgba(${140+gv|0},${132+gv|0},${120+gv|0},0.4)`;
-        ctx.fillRect(Math.random()*256,Math.random()*256,3,3);
-      }
-      // Bold horizontal panel joints
-      ctx.fillStyle='rgba(0,0,0,0.15)';
-      for(let y=0;y<=256;y+=64){ctx.fillRect(0,y,256,3);}
-      for(let x=0;x<=256;x+=128){ctx.fillRect(x,0,2,256);}
-    } else if(type==='garage'){
-      // White with bold blue horizontal stripes
-      ctx.fillStyle='#e8e8e8';
-      ctx.fillRect(0,0,256,256);
-      for(let y=0;y<256;y+=48){
-        ctx.fillStyle='#3366aa';
-        ctx.fillRect(0,y,256,24);
-        ctx.fillStyle='#e8e8e8';
-        ctx.fillRect(0,y+24,256,24);
-      }
-      // Floor separation lines
-      ctx.fillStyle='rgba(0,0,0,0.2)';
-      for(let y=0;y<=256;y+=48){ctx.fillRect(0,y,256,3);}
-    } else if(type==='stone'){
-      // Warm tan stone panels
-      ctx.fillStyle='#e0dace';
-      ctx.fillRect(0,0,256,256);
-      // Panel grid
-      const sw=80,sh=52;
-      for(let py=0;py<256;py+=sh){
-        for(let px=0;px<256;px+=sw){
-          const v=Math.random()*12-6;
-          ctx.fillStyle=`rgb(${220+v|0},${214+v|0},${200+v|0})`;
-          ctx.fillRect(px+2,py+2,sw-4,sh-4);
-        }
-      }
-      ctx.fillStyle='rgba(160,150,130,0.4)';
-      for(let y=0;y<256;y+=sh){ctx.fillRect(0,y,256,3);}
-      for(let x=0;x<256;x+=sw){ctx.fillRect(x,0,3,256);}
-    }
-    const tex=new THREE.CanvasTexture(cv);
-    tex.wrapS=THREE.RepeatWrapping;tex.wrapT=THREE.RepeatWrapping;
-    return tex;
-  }
-
-  // ── Building data (diorama scale — real campus architecture) ──
-  const BUILDINGS=[
-    {name:'Campus Center',x:0,z:0,col:0xd4cfc0,texType:'concrete',
-     parts:[{w:4,h:3,d:3,ox:0,oy:0,oz:0},{w:2.5,h:1.5,d:2,ox:0,oy:3,oz:0}],
-     desc:'The heart of student life — dining, organizations, and events.',
-     link:'https://www.umb.edu/campus-life/'},
-    {name:'Integrated Sciences Complex',x:9,z:-2,col:0xb8d8e8,texType:'glass',
-     parts:[{w:2.5,h:5.5,d:2.5,ox:0,oy:0,oz:0},{w:3,h:3.5,d:2.5,ox:1.5,oy:0,oz:0}],
-     desc:'State-of-the-art research labs — biology, chemistry & physics.',
-     link:'https://www.umb.edu/academics/csm/'},
-    {name:'Healey Library',x:-3,z:7,col:0x6b2020,texType:'brick',
-     parts:[{w:2,h:5,d:2,ox:0,oy:0,oz:0},{w:4,h:2.5,d:4,ox:0,oy:0,oz:0}],
-     desc:'Main library with 700,000+ volumes and digital resources.',
-     link:'https://www.umb.edu/library/'},
-    {name:'Quinn Administration',x:3,z:-9,col:0x6b2020,texType:'brick',
-     parts:[{w:3,h:2.5,d:3,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.5,ox:0,oy:2.5,oz:0}],
-     desc:'Administrative offices, Registrar, Bursar, and leadership.',
-     link:'https://www.umb.edu/about/'},
-    {name:'Wheatley Hall',x:5,z:-6,col:0x6b2020,texType:'brick',
-     parts:[{w:3,h:3.5,d:2.5,ox:0,oy:0,oz:0},{w:1.5,h:0.8,d:1.2,ox:0,oy:3.5,oz:0}],
-     desc:'College of Education, Nursing and Social Work.',
-     link:'https://www.umb.edu/academics/nursing/'},
-    {name:'McCormack Hall',x:-8,z:3,col:0x6b2020,texType:'brick',
-     parts:[{w:3,h:4,d:2,ox:0,oy:0,oz:0},{w:2,h:4,d:3,ox:1.5,oy:0,oz:1}],
-     desc:'Graduate studies, College of Liberal Arts offices and classrooms.',
-     link:'https://www.umb.edu/academics/cla/'},
-    {name:'Clark Athletic Center',x:-12,z:10,col:0xc8c0b0,texType:'concrete',
-     parts:[{w:5,h:2,d:5,ox:0,oy:0,oz:0}],
-     desc:'Full recreation center — gym, pool, courts, fitness facilities.',
-     link:'https://www.umb.edu/athletics/'},
-    {name:'University Hall',x:7,z:4,col:0xd4cfc0,texType:'concrete',
-     parts:[
-       {w:5.5,h:2.8,d:2,ox:0,oy:0,oz:-1},    // wide north base
-       {w:4,h:2.8,d:2,ox:0,oy:0,oz:1},         // middle section
-       {w:2.2,h:2.8,d:2,ox:0,oy:0,oz:3},       // narrow south tip
-       {w:1.5,h:4.5,d:1.8,ox:-2.2,oy:0,oz:-1}, // NW tower
-     ],
-     desc:'Computer Science, Math, and Sciences classrooms and labs.',
-     link:'https://www.umb.edu/academics/cts/'},
-    {name:'West Garage',x:14,z:-7,col:0xe0e0e0,texType:'garage',
-     parts:[{w:4,h:4.5,d:4,ox:0,oy:0,oz:0}],
-     desc:'Campus parking garage with blue-stripe exterior.',
-     link:'https://www.umb.edu/campus-life/'},
-    {name:'JFK Presidential Library',x:-10,z:-8,col:0xe8e4dc,texType:'stone',
-     parts:[{w:5,h:2.5,d:4,ox:0,oy:0,oz:0},{w:2,h:2.5,d:3,ox:2.5,oy:0,oz:0}],
-     desc:'Iconic landmark dedicated to President John F. Kennedy.',
-     link:'https://www.jfklibrary.org'},
-  ];
+  const BUILDINGS=CAMPUS_BUILDINGS;
 
   // ── Renderer ──
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
@@ -1174,92 +1309,9 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
   const windowMeshes=[];
   const buildingGroup=new THREE.Group();
 
-  function buildStructure(b,idx){
-    const isGarage=b.texType==='garage';
-    const isGlass=b.texType==='glass';
-
-    b.parts.forEach((part,pi)=>{
-      const tex=makeBuildingTexture(b.texType);
-      const geo=new THREE.BoxGeometry(part.w,part.h,part.d);
-      const mat=new THREE.MeshStandardMaterial({
-        map:tex,roughness:isGlass?0.2:0.6,
-        metalness:isGlass?0.4:0.2,emissive:b.col,emissiveIntensity:0.08
-      });
-      const mesh=new THREE.Mesh(geo,mat);
-      mesh.position.set(b.x+part.ox,part.h/2+part.oy,b.z+part.oz);
-      mesh.userData={type:'building',index:idx,data:b};
-      buildingGroup.add(mesh);
-      buildingMeshes.push(mesh);
-
-      // Roof accent on each part
-      const roofGeo=new THREE.BoxGeometry(part.w+0.2,0.15,part.d+0.2);
-      const roofMat=new THREE.MeshStandardMaterial({color:0x555555,roughness:0.85,metalness:0.05});
-      const roof=new THREE.Mesh(roofGeo,roofMat);
-      roof.position.set(b.x+part.ox,part.h+part.oy+0.075,b.z+part.oz);
-      buildingGroup.add(roof);
-
-      // Rooftop mechanical box on taller parts
-      if(pi===0&&part.h>=3.5){
-        const mechGeo=new THREE.BoxGeometry(0.6,0.5,0.6);
-        const mechMat=new THREE.MeshStandardMaterial({color:0x333333,roughness:0.9});
-        const mech=new THREE.Mesh(mechGeo,mechMat);
-        mech.position.set(b.x+part.ox,part.h+part.oy+0.4,b.z+part.oz);
-        buildingGroup.add(mech);
-      }
-
-      // Windows per part (skip garage)
-      if(isGarage) return;
-
-      const faces=[
-        {axis:'x',dir:1,rotY:-Math.PI/2,faceW:part.d,faceH:part.h},
-        {axis:'x',dir:-1,rotY:Math.PI/2,faceW:part.d,faceH:part.h},
-        {axis:'z',dir:1,rotY:0,faceW:part.w,faceH:part.h},
-        {axis:'z',dir:-1,rotY:Math.PI,faceW:part.w,faceH:part.h},
-      ];
-      faces.forEach((face,fi)=>{
-        let cols,rows,winW,winH;
-        if(isGlass){
-          cols=Math.max(2,Math.floor(face.faceW/0.8));
-          rows=Math.max(2,Math.floor(face.faceH/1.2));
-          winW=face.faceW/(cols+1)*0.7;
-          winH=face.faceH/(rows+1)*0.85;
-        } else {
-          cols=Math.max(2,Math.floor(face.faceW/1.2));
-          rows=Math.max(2,Math.floor(face.faceH/1.5));
-          winW=face.faceW/(cols+1)*0.4;
-          winH=face.faceH/(rows+1)*0.45;
-        }
-        for(let r=0;r<rows;r++){
-          for(let c=0;c<cols;c++){
-            const wGeo=new THREE.PlaneGeometry(winW,winH);
-            const lit=((idx+r+c+fi)%3)!==0;
-            const wMat=new THREE.MeshStandardMaterial({
-              color:lit?(isGlass?0xaaddff:0xffdd88):0x112244,
-              emissive:lit?(isGlass?0x88bbdd:0xffdd88):0x000000,
-              emissiveIntensity:lit?0.3:0,
-              transparent:true,opacity:lit?0.7:0.3,
-              side:THREE.DoubleSide
-            });
-            const wMesh=new THREE.Mesh(wGeo,wMat);
-            const cx=(-face.faceW/2+(c+1)*face.faceW/(cols+1));
-            const cy=part.oy+(r+1)*part.h/(rows+1);
-            const inset=0.06; // slightly proud of face
-            if(face.axis==='z'){
-              wMesh.position.set(b.x+part.ox+cx,cy,b.z+part.oz+face.dir*(part.d/2+inset));
-            } else {
-              wMesh.position.set(b.x+part.ox+face.dir*(part.w/2+inset),cy,b.z+part.oz+cx);
-              wMesh.rotation.y=face.rotY;
-            }
-            wMesh.userData={type:'window',buildingIndex:idx,building:b.name,face:fi,row:r,col:c};
-            buildingGroup.add(wMesh);
-            windowMeshes.push(wMesh);
-          }
-        }
-      });
-    });
-  }
-
-  BUILDINGS.forEach((b,idx)=>buildStructure(b,idx));
+  // Set world positions for hero diorama (use x,z directly)
+  BUILDINGS.forEach(b=>{b._wx=b.x;b._wz=b.z;});
+  BUILDINGS.forEach((b,idx)=>buildStructure3D(b,idx,buildingGroup,buildingMeshes,windowMeshes,1));
   scene.add(buildingGroup);
 
   // ── OrbitControls ──
@@ -1349,7 +1401,7 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
     });
   };
 
-  function openBuildingPanel(data){
+  window.openBuildingPanel=function(data){
     document.getElementById('bp-name').textContent=data.name;
     document.getElementById('bp-desc').textContent=data.desc;
     const link=document.getElementById('bp-link');
@@ -1364,7 +1416,7 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
       grid.appendChild(slot);
     }
     document.getElementById('building-panel').classList.add('open');
-  }
+  };
 
   function openWindowPhoto(data){
     const lb=document.getElementById('photo-lightbox');
@@ -1585,6 +1637,289 @@ document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
 
 // Google Maps is initialized via the initCampusMap() callback
 // defined in the <head> script tag.
+
+// ────────────────────────────────────────────────
+// INTERACTIVE 3D CAMPUS MAP (standalone Three.js)
+// ────────────────────────────────────────────────
+(function(){
+  const canvas=document.getElementById('campus-3d-canvas');
+  if(!canvas||!window.THREE) return;
+
+  const container=document.getElementById('campus-map');
+  const tooltip=document.getElementById('campus-3d-tooltip');
+  const hint=document.getElementById('campus-3d-hint');
+
+  // ── Renderer ──
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x020f1e);
+  function syncSize(){
+    const w=container.clientWidth,h=container.clientHeight||580;
+    renderer.setSize(w,h);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  }
+
+  // ── Scene ──
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x020f1e,0.004);
+
+  // ── Camera ──
+  const camera=new THREE.PerspectiveCamera(50,1,0.1,800);
+  camera.position.set(40,45,50);
+  camera.lookAt(0,0,0);
+  syncSize();
+
+  // ── Lights — daytime feel ──
+  scene.add(new THREE.AmbientLight(0x5577aa,0.7));
+  const sun=new THREE.DirectionalLight(0xfff4e0,1.0);
+  sun.position.set(60,80,40);
+  scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0x9ec5e8,0x4a6b3a,0.4));
+  const accent=new THREE.PointLight(0x00c8d4,0.3,80);
+  accent.position.set(0,12,0);
+  scene.add(accent);
+
+  // ── Sky dome ──
+  const skyMat=new THREE.MeshBasicMaterial({color:0x5a9ec8,side:THREE.BackSide,fog:false});
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(350,32,16),skyMat));
+
+  // ── Ground — campus peninsula ──
+  const peninsulaShape=new THREE.Shape();
+  const ptsRaw=[
+    [-50,-40],[-30,-50],[-5,-52],[20,-48],[38,-40],
+    [48,-25],[52,-5],[50,15],[42,30],[30,42],
+    [15,48],[0,50],[-18,46],[-32,38],[-42,25],
+    [-48,10],[-50,-10],[-50,-25]
+  ];
+  const S=0.5;
+  const pts=ptsRaw.map(p=>[p[0]*S,p[1]*S]);
+  peninsulaShape.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) peninsulaShape.lineTo(pts[i][0],pts[i][1]);
+  peninsulaShape.closePath();
+
+  const groundGeo=new THREE.ExtrudeGeometry(peninsulaShape,{depth:1,bevelEnabled:true,bevelThickness:0.3,bevelSize:0.3,bevelSegments:2});
+  const groundMat=new THREE.MeshStandardMaterial({color:0x3a6830,roughness:0.95,metalness:0.05});
+  const ground=new THREE.Mesh(groundGeo,groundMat);
+  ground.rotation.x=-Math.PI/2;
+  ground.position.y=-1;
+  scene.add(ground);
+
+  // ── Coastline glow ──
+  const coastPts=pts.map(p=>new THREE.Vector2(p[0],p[1]));
+  coastPts.push(coastPts[0].clone());
+  const coastGeo=new THREE.BufferGeometry().setFromPoints(new THREE.SplineCurve(coastPts).getPoints(100));
+  const coastLine=new THREE.Line(coastGeo,new THREE.LineBasicMaterial({color:0x00c8d4,transparent:true,opacity:0.35}));
+  coastLine.rotation.x=-Math.PI/2;
+  coastLine.position.y=0.3;
+  scene.add(coastLine);
+
+  // ── Water ──
+  const waterGeo=new THREE.PlaneGeometry(400,400,40,40);
+  const waterMat=new THREE.MeshStandardMaterial({color:0x2a6080,roughness:0.8,metalness:0.2,transparent:true,opacity:0.92});
+  const water=new THREE.Mesh(waterGeo,waterMat);
+  water.rotation.x=-Math.PI/2;
+  water.position.y=-2;
+  scene.add(water);
+
+  // ── Walkways ──
+  const wkMat=new THREE.MeshStandardMaterial({color:0xb5a994,roughness:0.95});
+  [{x:0,z:-4.5,w:2,d:9},{x:-4,z:1.5,w:8,d:1.8},{x:4.5,z:-1,w:9,d:1.8},{x:3,z:-3,w:1.8,d:6},{x:-7,z:6.5,w:9,d:1.8}]
+  .forEach(wk=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(wk.w,0.25,wk.d),wkMat);
+    m.position.set(wk.x,0.2,wk.z);
+    scene.add(m);
+  });
+
+  // ── Harborwalk ──
+  const hwMat=new THREE.MeshStandardMaterial({color:0xb5a994,roughness:0.95});
+  [{x:0,z:-13,w:24,d:2.5},{x:17,z:-5,w:2.5,d:16}].forEach(s=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(s.w,0.25,s.d),hwMat);
+    m.position.set(s.x,0.2,s.z);
+    scene.add(m);
+  });
+
+  // ── Trees ──
+  const trunkMat=new THREE.MeshStandardMaterial({color:0x6b4226,roughness:0.9});
+  const canopyMat=new THREE.MeshStandardMaterial({color:0x2d8a2d,roughness:0.7});
+  [[-16,0,2],[-15,0,-4],[-17,0,10],[-5,0,-12],[-1,0,-14],[4,0,-14],
+   [12,0,6],[15,0,2],[16,0,-1],[-4,0,16],[-8,0,14],[2,0,14],
+   [0,0,8],[-12,0,-2],[8,0,8]].forEach(tp=>{
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.3,1.6,6),trunkMat);
+    trunk.position.set(tp[0],0.8,tp[2]);
+    scene.add(trunk);
+    const canopy=new THREE.Mesh(new THREE.ConeGeometry(1.2,2.4,7),canopyMat);
+    canopy.position.set(tp[0],2.8,tp[2]);
+    scene.add(canopy);
+  });
+
+  // ── Buildings ──
+  const mapBldgMeshes=[];
+  const mapWinMeshes=[];
+  const bldgGroup=new THREE.Group();
+  // Use same diorama coords as hero for the standalone map
+  CAMPUS_BUILDINGS.forEach(b=>{b._wx=b.x;b._wz=b.z;});
+  CAMPUS_BUILDINGS.forEach((b,idx)=>buildStructure3D(b,idx,bldgGroup,mapBldgMeshes,mapWinMeshes,1));
+  scene.add(bldgGroup);
+
+  // ── Floating labels (sprites) ──
+  CAMPUS_BUILDINGS.forEach(b=>{
+    const cv2=document.createElement('canvas');
+    cv2.width=512;cv2.height=64;
+    const c2=cv2.getContext('2d');
+    c2.fillStyle='rgba(0,16,32,0.75)';
+    c2.fillRect(0,0,512,64);
+    c2.strokeStyle='rgba(0,212,184,0.4)';
+    c2.lineWidth=2;
+    c2.strokeRect(1,1,510,62);
+    c2.font='bold 24px sans-serif';
+    c2.fillStyle='#00c8d4';
+    c2.textAlign='center';
+    c2.textBaseline='middle';
+    c2.fillText(b.name,256,32);
+    const tex=new THREE.CanvasTexture(cv2);
+    const spMat=new THREE.SpriteMaterial({map:tex,transparent:true,opacity:0.85,depthWrite:false,sizeAttenuation:true});
+    const sprite=new THREE.Sprite(spMat);
+    const maxH=Math.max(...b.parts.map(p=>p.h+p.oy));
+    sprite.position.set(b.x,maxH+1.8,b.z);
+    sprite.scale.set(6,0.75,1);
+    scene.add(sprite);
+  });
+
+  // ── Clouds ──
+  const cloudCv=document.createElement('canvas');
+  cloudCv.width=128;cloudCv.height=64;
+  const cctx=cloudCv.getContext('2d');
+  const cg=cctx.createRadialGradient(64,32,0,64,32,56);
+  cg.addColorStop(0,'rgba(255,255,255,0.7)');
+  cg.addColorStop(0.5,'rgba(255,255,255,0.3)');
+  cg.addColorStop(1,'rgba(255,255,255,0)');
+  cctx.fillStyle=cg;
+  cctx.fillRect(0,0,128,64);
+  const cloudTex=new THREE.CanvasTexture(cloudCv);
+  const clouds=[];
+  for(let i=0;i<14;i++){
+    const cm=new THREE.SpriteMaterial({map:cloudTex,transparent:true,opacity:0.4,fog:false,depthWrite:false});
+    const sp=new THREE.Sprite(cm);
+    const a=Math.random()*Math.PI*2,r=40+Math.random()*120;
+    sp.position.set(Math.cos(a)*r,30+Math.random()*25,Math.sin(a)*r);
+    sp.scale.set(20+Math.random()*30,6+Math.random()*8,1);
+    sp.userData={spd:0.3+Math.random()*0.5,baseX:sp.position.x};
+    scene.add(sp);
+    clouds.push(sp);
+  }
+
+  // ── OrbitControls ──
+  const controls=new THREE.OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;
+  controls.dampingFactor=0.08;
+  controls.minDistance=15;
+  controls.maxDistance=120;
+  controls.minPolarAngle=0.2;
+  controls.maxPolarAngle=Math.PI/2.1;
+  controls.target.set(0,0,0);
+
+  // ── Raycaster ──
+  const raycaster=new THREE.Raycaster();
+  const mouse=new THREE.Vector2();
+  let hoveredMesh=null;
+
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();
+    mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+    mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObjects(mapBldgMeshes,false);
+    if(hits.length>0){
+      const obj=hits[0].object;
+      if(hoveredMesh!==obj){
+        if(hoveredMesh) hoveredMesh.material.emissiveIntensity=0.08;
+        hoveredMesh=obj;
+        hoveredMesh.material.emissiveIntensity=0.35;
+      }
+      tooltip.style.display='block';
+      tooltip.textContent=obj.userData.data.name;
+      tooltip.style.left=(e.clientX-rect.left+14)+'px';
+      tooltip.style.top=(e.clientY-rect.top-10)+'px';
+      canvas.style.cursor='pointer';
+    } else {
+      if(hoveredMesh){hoveredMesh.material.emissiveIntensity=0.08;hoveredMesh=null;}
+      tooltip.style.display='none';
+      canvas.style.cursor='grab';
+    }
+  });
+
+  canvas.addEventListener('click',e=>{
+    const rect=canvas.getBoundingClientRect();
+    mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+    mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObjects(mapBldgMeshes,false);
+    if(hits.length>0){
+      const data=hits[0].object.userData.data;
+      // Reuse the building panel from the hero section
+      if(typeof openBuildingPanel==='function'){
+        openBuildingPanel(data);
+      } else {
+        // Fallback: open panel manually
+        document.getElementById('bp-name').textContent=data.name;
+        document.getElementById('bp-desc').textContent=data.desc;
+        document.getElementById('bp-link').href=data.link;
+        const grid=document.getElementById('bp-photo-grid');
+        grid.innerHTML='';
+        for(let i=0;i<6;i++){const s=document.createElement('div');s.className='bp-photo-slot';s.textContent='📷';grid.appendChild(s);}
+        document.getElementById('building-panel').classList.add('open');
+      }
+    }
+  });
+
+  // Fade hint after 6 seconds
+  setTimeout(()=>{if(hint)hint.style.opacity='0';},6000);
+
+  // ── Water wave animation ──
+  const waterPos=water.geometry.getAttribute('position');
+  const waterOrigY=new Float32Array(waterPos.count);
+  for(let i=0;i<waterPos.count;i++) waterOrigY[i]=waterPos.getY(i);
+
+  // ── Animate ──
+  const clock=new THREE.Clock();
+  function animate(){
+    requestAnimationFrame(animate);
+    const t=clock.getElapsedTime();
+
+    // Water waves
+    for(let i=0;i<waterPos.count;i++){
+      const x=waterPos.getX(i),z=waterPos.getZ(i);
+      waterPos.setY(i,waterOrigY[i]+Math.sin(x*0.08+t*0.8)*0.5+Math.sin(z*0.06+t*0.6)*0.4);
+    }
+    waterPos.needsUpdate=true;
+
+    // Building pulse
+    mapBldgMeshes.forEach((m,i)=>{
+      if(m===hoveredMesh) return;
+      m.material.emissiveIntensity=0.06+Math.sin(t*1.2+i*0.9)*0.04;
+    });
+
+    // Cloud drift
+    clouds.forEach(c=>{
+      c.position.x=c.userData.baseX+Math.sin(t*0.02*c.userData.spd)*20+t*c.userData.spd*0.3;
+    });
+
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  // ── Resize ──
+  window.addEventListener('resize',syncSize);
+
+  // If Google Maps loads later, hide this canvas
+  window._hide3DCampusMap=function(){
+    canvas.style.display='none';
+    if(tooltip) tooltip.style.display='none';
+    if(hint) hint.style.display='none';
+  };
+})();
 
 // ────────────────────────────────────────────────
 // HARBOR FISHING GAME

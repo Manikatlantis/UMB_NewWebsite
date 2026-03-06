@@ -40,7 +40,6 @@
     const map=new google.maps.Map(document.getElementById('campus-map'),{
       center:{lat:42.3133,lng:-71.0390},
       zoom:16,
-      mapId:'umass_boston_campus',
       mapTypeId:'roadmap',
       styles:DARK_STYLE,
       zoomControl:true,
@@ -157,7 +156,7 @@
           title:placeName,
         });
 
-        marker.addListener('click',()=>{
+        marker.addEventListener('gmp-click',()=>{
           infoWindow.setContent(
             `<div style="font-family:'Space Mono',monospace;background:rgba(0,16,32,0.97);
               color:#eef3f8;padding:14px 16px;min-width:200px;max-width:240px;">

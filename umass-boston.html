@@ -1731,18 +1731,18 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     const MAX_PITCH = Cesium.Math.toRadians(-12); // never go flatter than 12° below horizon
 
     let exploreMode = false;
+    let currentCenter = CAMPUS_CENTER; // orbit target — shifts when a building is selected
 
-    // After the user finishes a drag/scroll, snap range & pitch back into campus bounds.
-    // Using moveEnd (not preRender) so there's zero per-frame fighting/jitter.
+    // After the user finishes a drag/scroll, snap range & pitch back into bounds.
     viewer.camera.moveEnd.addEventListener(()=>{
       if(!exploreMode) return;
-      const dist  = Cesium.Cartesian3.distance(viewer.camera.position, CAMPUS_CENTER);
+      const dist  = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
       const pitch = viewer.camera.pitch;
       const clampedDist  = Math.max(MIN_RANGE, Math.min(MAX_RANGE, dist));
-      const clampedPitch = Math.min(MAX_PITCH, pitch); // pitch is negative (looking down)
+      const clampedPitch = Math.min(MAX_PITCH, pitch);
       if(Math.abs(dist - clampedDist) > 2 || pitch > MAX_PITCH + 0.01){
         viewer.camera.lookAt(
-          CAMPUS_CENTER,
+          currentCenter,
           new Cesium.HeadingPitchRange(viewer.camera.heading, clampedPitch, clampedDist)
         );
       }
@@ -1788,17 +1788,99 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       });
     },300);
 
+    // ── Building picking ──
+    let highlightEntity = null;
+
+    function clearHighlight(){
+      if(highlightEntity){ viewer.entities.remove(highlightEntity); highlightEntity=null; }
+      currentCenter = CAMPUS_CENTER;
+    }
+
+    function findNearestBuilding(lat, lng){
+      let best=null, minD=Infinity;
+      for(const b of CAMPUS_BUILDINGS){
+        const d=Math.hypot(b.lat-lat, b.lng-lng);
+        if(d<minD){ minD=d; best=b; }
+      }
+      return minD < 0.002 ? best : null; // ~200m radius threshold
+    }
+
+    function selectBuilding(building){
+      // Remove previous highlight
+      if(highlightEntity) viewer.entities.remove(highlightEntity);
+
+      // Floating label + dot above the building
+      highlightEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 120),
+        label:{
+          text: building.name,
+          font: 'bold 14px "Space Mono", monospace',
+          fillColor: Cesium.Color.fromCssColorString('#00c8d4'),
+          outlineColor: Cesium.Color.fromCssColorString('#000d1a'),
+          outlineWidth: 4,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          showBackground: true,
+          backgroundColor: new Cesium.Color(0, 0.05, 0.12, 0.88),
+          backgroundPadding: new Cesium.Cartesian2(12, 8),
+        },
+        point:{
+          pixelSize: 12,
+          color: Cesium.Color.fromCssColorString('#00c8d4'),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        }
+      });
+
+      // Shift orbit center to this building and smoothly fly in
+      currentCenter = Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 10);
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 320),
+        orientation:{
+          heading: viewer.camera.heading,
+          pitch: Cesium.Math.toRadians(-38),
+          roll: 0
+        },
+        duration: 1.2,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_OUT,
+        complete: ()=>{
+          // Re-establish lookAt orbit around the building after fly-in
+          viewer.camera.lookAt(
+            currentCenter,
+            new Cesium.HeadingPitchRange(viewer.camera.heading, Cesium.Math.toRadians(-38), 320)
+          );
+        }
+      });
+
+      openBuildingPanel(building);
+    }
+
+    // Double-click to pick a building from the 3D tiles
+    viewer.screenSpaceEventHandler.setInputAction(e=>{
+      if(!exploreMode) return;
+      const pick = viewer.scene.pickPosition(e.position);
+      if(!pick){ clearHighlight(); closeBuildingPanel(); return; }
+      const carto = Cesium.Cartographic.fromCartesian(pick);
+      const lat = Cesium.Math.toDegrees(carto.latitude);
+      const lng = Cesium.Math.toDegrees(carto.longitude);
+      const building = findNearestBuilding(lat, lng);
+      if(building){ selectBuilding(building); }
+      else { clearHighlight(); closeBuildingPanel(); }
+    }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
     // ── Enter 3D explore mode ──
     window.enter3DMode=function(){
       exploreMode=true;
       document.getElementById('hero').classList.add('explore-mode');
       document.getElementById('btn-exit3d').classList.add('vis');
+      currentCenter = CAMPUS_CENTER; // reset to campus center on each entry
       ctrl.enableRotate=true;
-      ctrl.enableTranslate=false; // no panning — keeps campus centered
+      ctrl.enableTranslate=false;
       ctrl.enableZoom=true;
       ctrl.enableTilt=true;
       ctrl.enableLook=false;
-      // lookAt pins the orbit center to the campus — left-drag = orbit, scroll = zoom
       viewer.camera.lookAt(
         CAMPUS_CENTER,
         new Cesium.HeadingPitchRange(
@@ -1814,8 +1896,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       exploreMode=false;
       document.getElementById('hero').classList.remove('explore-mode');
       document.getElementById('btn-exit3d').classList.remove('vis');
+      clearHighlight();
       closeBuildingPanel();
-      // Release lookAt so the passive fly-in can resume freely
       viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
       ctrl.enableRotate=false;
       ctrl.enableTranslate=false;

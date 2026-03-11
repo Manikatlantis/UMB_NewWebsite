@@ -1721,24 +1721,29 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Remove default imagery — photorealistic tiles replace it
     viewer.imageryLayers.removeAll();
 
-    // Match globe base color to site dark theme (visible at horizon when tilted)
+    // Dark base color so the globe horizon blends with the site theme
     viewer.scene.globe.baseColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);
 
-    // Atmospheric fog — softens horizon edge and hides tile seams
-    viewer.scene.fog.enabled = true;
-    viewer.scene.fog.density = 0.00035;
-    viewer.scene.fog.minimumBrightness = 0.2;
+    // Campus anchor — all orbit constraints are relative to this point
+    const CAMPUS_CENTER = Cesium.Cartesian3.fromDegrees(-71.0390, 42.3133, 10);
+    const MIN_RANGE = 150;   // closest zoom (~150m — street level)
+    const MAX_RANGE = 1600;  // furthest zoom (~1.6km — full campus fits in view)
+    const MAX_PITCH = Cesium.Math.toRadians(-12); // never go flatter than 12° below horizon
 
-    // Prevent camera going below horizon in explore mode (clamp pitch in preRender)
     let exploreMode = false;
-    viewer.scene.preRender.addEventListener(()=>{
+
+    // After the user finishes a drag/scroll, snap range & pitch back into campus bounds.
+    // Using moveEnd (not preRender) so there's zero per-frame fighting/jitter.
+    viewer.camera.moveEnd.addEventListener(()=>{
       if(!exploreMode) return;
-      // Don't let pitch go above -5° (near-horizontal) to prevent underground view
-      if(viewer.camera.pitch > Cesium.Math.toRadians(-5)){
-        const dist = Cesium.Cartesian3.distance(viewer.camera.position, CAMPUS_CENTER);
+      const dist  = Cesium.Cartesian3.distance(viewer.camera.position, CAMPUS_CENTER);
+      const pitch = viewer.camera.pitch;
+      const clampedDist  = Math.max(MIN_RANGE, Math.min(MAX_RANGE, dist));
+      const clampedPitch = Math.min(MAX_PITCH, pitch); // pitch is negative (looking down)
+      if(Math.abs(dist - clampedDist) > 2 || pitch > MAX_PITCH + 0.01){
         viewer.camera.lookAt(
           CAMPUS_CENTER,
-          new Cesium.HeadingPitchRange(viewer.camera.heading, Cesium.Math.toRadians(-5), dist)
+          new Cesium.HeadingPitchRange(viewer.camera.heading, clampedPitch, clampedDist)
         );
       }
     });
@@ -1783,26 +1788,23 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       });
     },300);
 
-    // Campus center point for orbit
-    const CAMPUS_CENTER=Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,10);
-
     // ── Enter 3D explore mode ──
     window.enter3DMode=function(){
       exploreMode=true;
       document.getElementById('hero').classList.add('explore-mode');
       document.getElementById('btn-exit3d').classList.add('vis');
       ctrl.enableRotate=true;
-      ctrl.enableTranslate=true;
+      ctrl.enableTranslate=false; // no panning — keeps campus centered
       ctrl.enableZoom=true;
       ctrl.enableTilt=true;
-      ctrl.enableLook=true;
-      // lookAt locks orbit around the campus center — gives proper orbit-controls feel
+      ctrl.enableLook=false;
+      // lookAt pins the orbit center to the campus — left-drag = orbit, scroll = zoom
       viewer.camera.lookAt(
         CAMPUS_CENTER,
         new Cesium.HeadingPitchRange(
           Cesium.Math.toRadians(20),
-          Cesium.Math.toRadians(-30),
-          600
+          Cesium.Math.toRadians(-35),
+          700
         )
       );
     };
@@ -1813,7 +1815,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('hero').classList.remove('explore-mode');
       document.getElementById('btn-exit3d').classList.remove('vis');
       closeBuildingPanel();
-      // Release lookAt constraint so we can fly freely
+      // Release lookAt so the passive fly-in can resume freely
       viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
       ctrl.enableRotate=false;
       ctrl.enableTranslate=false;

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UMass Boston — Harbor of Knowledge</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Space+Mono:wght@400;700&family=Unbounded:wght@300;400;700&display=swap" rel="stylesheet">
-<!-- Three.js for 3D campus hero (r128 — last version with full UMD/script-tag support) -->
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<!-- CesiumJS for photorealistic 3D campus (Google Photorealistic 3D Tiles) -->
+<link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Widgets/widgets.css">
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
 <!-- Google Maps JavaScript API — replace YOUR_GOOGLE_MAPS_API_KEY with your real key -->
 <script>
   async function initCampusMap(){
@@ -216,6 +216,9 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 /* ── HERO ── */
 #hero{position:relative;z-index:2;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 #webgl-canvas{position:absolute;inset:0;width:100%;height:100%;}
+#cesium-container{position:absolute;inset:0;width:100%;height:100%;}
+#cesium-container .cesium-viewer,#cesium-container .cesium-widget{width:100%;height:100%;}
+.cesium-viewer-toolbar,.cesium-viewer-animationContainer,.cesium-viewer-timelineContainer{display:none!important;}
 .hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 60%,transparent 20%,rgba(0,10,22,0.5) 60%,rgba(0,10,22,0.95) 100%);}
 .hero-content{position:relative;z-index:10;text-align:center;padding:0 24px;max-width:960px;}
 .hero-kicker{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--teal);margin-bottom:24px;opacity:0;animation:fup 1s 0.4s forwards;}
@@ -527,7 +530,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ─── HERO ─── -->
 <section id="hero">
-  <canvas id="webgl-canvas"></canvas>
+  <div id="cesium-container"></div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
     <p class="hero-kicker">Boston Harbor's Premier Public Research University</p>
@@ -1218,9 +1221,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 }
 
 // ────────────────────────────────────────────────
-// HERO — Three.js 3D Low-Poly Campus
+// HERO — Three.js 3D Low-Poly Campus (disabled — replaced by Cesium below)
 // ────────────────────────────────────────────────
 (function(){
+  return; // replaced by Cesium photorealistic 3D tiles
   const canvas=document.getElementById('webgl-canvas');
   if(!window.THREE){console.warn('Three.js not loaded');return;}
 
@@ -1657,6 +1661,161 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth,window.innerHeight);
   });
+})();
+
+// ────────────────────────────────────────────────
+// HERO — Cesium Photorealistic 3D Campus
+// ────────────────────────────────────────────────
+(function(){
+  // Panel / lightbox helpers needed before Cesium loads
+  window.closeBuildingPanel=function(){
+    document.getElementById('building-panel').classList.remove('open');
+  };
+  window.closeLightbox=function(){
+    document.getElementById('photo-lightbox').classList.remove('open');
+  };
+  window.openBuildingPanel=function(data){
+    document.getElementById('bp-name').textContent=data.name;
+    document.getElementById('bp-desc').textContent=data.desc;
+    const link=document.getElementById('bp-link');
+    link.href=data.link||'#';
+    const grid=document.getElementById('bp-photo-grid');
+    grid.innerHTML='';
+    for(let i=0;i<6;i++){
+      const slot=document.createElement('div');
+      slot.className='bp-photo-slot';
+      slot.textContent='📷';
+      grid.appendChild(slot);
+    }
+    document.getElementById('building-panel').classList.add('open');
+  };
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closeBuildingPanel();closeLightbox();}
+  });
+
+  // Stub enter/exit so buttons don't throw before Cesium loads
+  window.enter3DMode=function(){};
+  window.exit3DMode=function(){};
+
+  async function initCesiumHero(googleApiKey){
+    Cesium.GoogleMaps.defaultApiKey=googleApiKey;
+
+    // Use ellipsoid terrain so we don't need a Cesium ion token
+    Cesium.Ion.defaultAccessToken = '';
+    const viewer=new Cesium.Viewer('cesium-container',{
+      animation:false,
+      baseLayerPicker:false,
+      fullscreenButton:false,
+      geocoder:false,
+      homeButton:false,
+      infoBox:false,
+      sceneModePicker:false,
+      selectionIndicator:false,
+      timeline:false,
+      navigationHelpButton:false,
+      navigationInstructionsInitiallyVisible:false,
+      skyBox:false,
+      skyAtmosphere:false,
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+    });
+
+    // Remove default imagery — photorealistic tiles replace it
+    viewer.imageryLayers.removeAll();
+
+    // Load Google Photorealistic 3D Tiles
+    try{
+      const tileset=await Cesium.createGooglePhotorealistic3DTileset();
+      viewer.scene.primitives.add(tileset);
+    }catch(err){
+      console.warn('Google Photorealistic 3D Tiles unavailable:',err);
+    }
+
+    // Disable user interaction initially (passive hero background)
+    const ctrl=viewer.scene.screenSpaceCameraController;
+    ctrl.enableRotate=false;
+    ctrl.enableTranslate=false;
+    ctrl.enableZoom=false;
+    ctrl.enableTilt=false;
+    ctrl.enableLook=false;
+
+    // Initial view: high oblique satellite over UMass Boston
+    viewer.camera.setView({
+      destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,900),
+      orientation:{
+        heading:Cesium.Math.toRadians(20),
+        pitch:Cesium.Math.toRadians(-55),
+        roll:0.0
+      }
+    });
+
+    // Intro fly-in
+    setTimeout(()=>{
+      viewer.camera.flyTo({
+        destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,450),
+        orientation:{
+          heading:Cesium.Math.toRadians(20),
+          pitch:Cesium.Math.toRadians(-40),
+          roll:0.0
+        },
+        duration:4,
+        easingFunction:Cesium.EasingFunction.QUADRATIC_OUT
+      });
+    },300);
+
+    // Campus center point for orbit
+    const CAMPUS_CENTER=Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,10);
+
+    // ── Enter 3D explore mode ──
+    window.enter3DMode=function(){
+      document.getElementById('hero').classList.add('explore-mode');
+      document.getElementById('btn-exit3d').classList.add('vis');
+      ctrl.enableRotate=true;
+      ctrl.enableTranslate=true;
+      ctrl.enableZoom=true;
+      ctrl.enableTilt=true;
+      ctrl.enableLook=true;
+      // lookAt locks orbit around the campus center — gives proper orbit-controls feel
+      viewer.camera.lookAt(
+        CAMPUS_CENTER,
+        new Cesium.HeadingPitchRange(
+          Cesium.Math.toRadians(20),
+          Cesium.Math.toRadians(-30),
+          600
+        )
+      );
+    };
+
+    // ── Exit 3D explore mode ──
+    window.exit3DMode=function(){
+      document.getElementById('hero').classList.remove('explore-mode');
+      document.getElementById('btn-exit3d').classList.remove('vis');
+      closeBuildingPanel();
+      // Release lookAt constraint so we can fly freely
+      viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      ctrl.enableRotate=false;
+      ctrl.enableTranslate=false;
+      ctrl.enableZoom=false;
+      ctrl.enableTilt=false;
+      ctrl.enableLook=false;
+      viewer.camera.flyTo({
+        destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,450),
+        orientation:{
+          heading:Cesium.Math.toRadians(20),
+          pitch:Cesium.Math.toRadians(-40),
+          roll:0.0
+        },
+        duration:1.5,
+        easingFunction:Cesium.EasingFunction.QUADRATIC_OUT
+      });
+    };
+  }
+
+  // Fetch the Google Maps API key (already used for 2D map) and init Cesium
+  fetch('/api/maps-key')
+    .then(r=>r.json())
+    .then(({key})=>initCesiumHero(key))
+    .catch(()=>console.warn('Cesium 3D map unavailable — check Google Maps API key'));
 })();
 
 // ────────────────────────────────────────────────

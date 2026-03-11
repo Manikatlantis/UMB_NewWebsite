@@ -1715,13 +1715,33 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       timeline:false,
       navigationHelpButton:false,
       navigationInstructionsInitiallyVisible:false,
-      skyBox:false,
-      skyAtmosphere:false,
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     });
 
     // Remove default imagery — photorealistic tiles replace it
     viewer.imageryLayers.removeAll();
+
+    // Match globe base color to site dark theme (visible at horizon when tilted)
+    viewer.scene.globe.baseColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);
+
+    // Atmospheric fog — softens horizon edge and hides tile seams
+    viewer.scene.fog.enabled = true;
+    viewer.scene.fog.density = 0.00035;
+    viewer.scene.fog.minimumBrightness = 0.2;
+
+    // Prevent camera going below horizon in explore mode (clamp pitch in preRender)
+    let exploreMode = false;
+    viewer.scene.preRender.addEventListener(()=>{
+      if(!exploreMode) return;
+      // Don't let pitch go above -5° (near-horizontal) to prevent underground view
+      if(viewer.camera.pitch > Cesium.Math.toRadians(-5)){
+        const dist = Cesium.Cartesian3.distance(viewer.camera.position, CAMPUS_CENTER);
+        viewer.camera.lookAt(
+          CAMPUS_CENTER,
+          new Cesium.HeadingPitchRange(viewer.camera.heading, Cesium.Math.toRadians(-5), dist)
+        );
+      }
+    });
 
     // Load Google Photorealistic 3D Tiles
     try{
@@ -1768,6 +1788,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // ── Enter 3D explore mode ──
     window.enter3DMode=function(){
+      exploreMode=true;
       document.getElementById('hero').classList.add('explore-mode');
       document.getElementById('btn-exit3d').classList.add('vis');
       ctrl.enableRotate=true;
@@ -1788,6 +1809,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // ── Exit 3D explore mode ──
     window.exit3DMode=function(){
+      exploreMode=false;
       document.getElementById('hero').classList.remove('explore-mode');
       document.getElementById('btn-exit3d').classList.remove('vis');
       closeBuildingPanel();

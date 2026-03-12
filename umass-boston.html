@@ -1856,6 +1856,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Enter 3D explore mode ──
     window.enter3DMode=function(){
       exploreMode=true;
+      document.body.style.overflow='hidden'; // lock page scroll — all gestures go to the map
       document.getElementById('hero').classList.add('explore-mode');
       document.getElementById('btn-exit3d').classList.add('vis');
       currentCenter = CAMPUS_CENTER; // reset to campus center on each entry
@@ -1873,6 +1874,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Exit 3D explore mode ──
     window.exit3DMode=function(){
       exploreMode=false;
+      document.body.style.overflow=''; // restore page scroll
       document.getElementById('hero').classList.remove('explore-mode');
       document.getElementById('btn-exit3d').classList.remove('vis');
       clearHighlight();

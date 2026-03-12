@@ -1733,17 +1733,15 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     let exploreMode = false;
     let currentCenter = CAMPUS_CENTER; // orbit target — shifts when a building is selected
 
-    // After the user finishes a drag/scroll, snap range & pitch back into bounds.
+    // Only prevent camera from tilting past horizontal (going underground).
+    // No range snapping — let the user zoom freely.
     viewer.camera.moveEnd.addEventListener(()=>{
       if(!exploreMode) return;
-      const dist  = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
-      const pitch = viewer.camera.pitch;
-      const clampedDist  = Math.max(MIN_RANGE, Math.min(MAX_RANGE, dist));
-      const clampedPitch = Math.min(MAX_PITCH, pitch);
-      if(Math.abs(dist - clampedDist) > 2 || pitch > MAX_PITCH + 0.01){
+      if(viewer.camera.pitch > MAX_PITCH){
+        const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
         viewer.camera.lookAt(
           currentCenter,
-          new Cesium.HeadingPitchRange(viewer.camera.heading, clampedPitch, clampedDist)
+          new Cesium.HeadingPitchRange(viewer.camera.heading, MAX_PITCH, dist)
         );
       }
     });
@@ -1793,7 +1791,6 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     function clearHighlight(){
       if(highlightEntity){ viewer.entities.remove(highlightEntity); highlightEntity=null; }
-      currentCenter = CAMPUS_CENTER;
     }
 
     function findNearestBuilding(lat, lng){
@@ -1836,17 +1833,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         }
       });
 
-      // Shift orbit center then reorient camera directly — no flyTo arc
-      currentCenter = Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 10);
-      viewer.camera.lookAt(
-        currentCenter,
-        new Cesium.HeadingPitchRange(
-          viewer.camera.heading,
-          Cesium.Math.toRadians(-40),
-          350
-        )
-      );
-
+      // Camera stays exactly where it is — label appears in-place, no jump
       openBuildingPanel(building);
     }
 

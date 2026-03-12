@@ -1726,7 +1726,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // Campus anchor — all orbit constraints are relative to this point
     const CAMPUS_CENTER = Cesium.Cartesian3.fromDegrees(-71.0390, 42.3133, 10);
-    const MAX_RANGE = 800;   // max orbital radius
+    const MAX_RANGE = 1500;  // max orbital radius — generous enough for free zoom
     const HARBOR_HEADING = Cesium.Math.toRadians(300);
     const HARBOR_PITCH   = Cesium.Math.toRadians(-28);
 

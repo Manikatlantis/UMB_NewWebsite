@@ -1760,10 +1760,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // Initial view: from SE harbor looking at campus
     viewer.camera.setView({
-      destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3075,220),
+      destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3080,70),
       orientation:{
         heading:Cesium.Math.toRadians(305),
-        pitch:Cesium.Math.toRadians(-18),
+        pitch:Cesium.Math.toRadians(-12),
         roll:0.0
       }
     });
@@ -1771,13 +1771,24 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Cinematic hero flyover: continuous looping camera path ──
     const heroWaypoints = [
       // [lng, lat, alt, heading°, pitch°, duration, easing]
-      [-71.0310, 42.3090, 140, 305, -18, 4, 'QUADRATIC_OUT'],     // approach from harbor
-      [-71.0370, 42.3120, 90,  340, -14, 6, 'QUADRATIC_IN_OUT'],  // sweep left, drop low
-      [-71.0420, 42.3150, 160, 20,  -22, 7, 'QUADRATIC_IN_OUT'],  // rise a bit, orbit north
-      [-71.0400, 42.3170, 100, 80,  -12, 6, 'QUADRATIC_IN_OUT'],  // dip down, look east
-      [-71.0350, 42.3140, 140, 150, -18, 7, 'QUADRATIC_IN_OUT'],  // pull back south
-      [-71.0310, 42.3100, 180, 240, -20, 6, 'QUADRATIC_IN_OUT'],  // sweep from west
-      [-71.0290, 42.3075, 220, 305, -18, 5, 'QUADRATIC_IN_OUT'],  // return to start
+      [-71.0312, 42.3092, 55,  310, -10, 4, 'QUADRATIC_OUT'],     // harbor approach
+      [-71.0330, 42.3105, 20,  320, -4,  5, 'QUADRATIC_IN_OUT'],  // street-level through campus center
+      [-71.0355, 42.3118, 50,  350, -8,  4, 'QUADRATIC_IN_OUT'],  // rise up past Healey Library
+      [-71.0340, 42.3080, 30,  180, -3,  5, 'QUADRATIC_IN_OUT'],  // drop to harbor walkway, look south
+      [-71.0300, 42.3065, 40,  230, -6,  6, 'QUADRATIC_IN_OUT'],  // glide along harbor waterfront
+      [-71.0270, 42.3055, 25,  280, -2,  5, 'QUADRATIC_IN_OUT'],  // low over the water, look west
+      [-71.0285, 42.3085, 60,  350, -12, 5, 'QUADRATIC_IN_OUT'],  // rise from harbor toward campus
+      [-71.0378, 42.3132, 18,  10,  -2,  6, 'QUADRATIC_IN_OUT'],  // street-level Science Center
+      [-71.0402, 42.3148, 45,  55,  -7,  4, 'QUADRATIC_IN_OUT'],  // up to McCormack
+      [-71.0420, 42.3162, 22,  90,  -3,  5, 'QUADRATIC_IN_OUT'],  // street-level Wheatley
+      [-71.0400, 42.3180, 50,  140, -8,  4, 'QUADRATIC_IN_OUT'],  // rise over Clark Athletic
+      [-71.0370, 42.3170, 25,  200, -2,  5, 'QUADRATIC_IN_OUT'],  // drop between buildings heading south
+      [-71.0345, 42.3150, 55,  230, -10, 4, 'QUADRATIC_IN_OUT'],  // pull up over ISC
+      [-71.0320, 42.3130, 18,  250, -2,  5, 'QUADRATIC_IN_OUT'],  // street-level University Hall
+      [-71.0305, 42.3100, 40,  280, -6,  4, 'QUADRATIC_IN_OUT'],  // toward harbor edge
+      [-71.0280, 42.3070, 20,  310, -2,  6, 'QUADRATIC_IN_OUT'],  // low cruise along harbor
+      [-71.0260, 42.3050, 35,  340, -5,  5, 'QUADRATIC_IN_OUT'],  // out over the water, look north at campus
+      [-71.0290, 42.3080, 65,  305, -10, 5, 'QUADRATIC_IN_OUT'],  // sweep back to start
     ];
     let heroAnimActive = true;
     let heroWpIndex = 0;
@@ -1911,7 +1922,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       // Fly back to hero position, then resume cinematic loop
       heroWpIndex = 0;
       viewer.camera.flyTo({
-        destination:Cesium.Cartesian3.fromDegrees(-71.0290, 42.3075, 400),
+        destination:Cesium.Cartesian3.fromDegrees(-71.0290, 42.3080, 70),
         orientation:{
           heading:Cesium.Math.toRadians(305),
           pitch:Cesium.Math.toRadians(-25),

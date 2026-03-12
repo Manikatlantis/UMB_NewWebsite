@@ -1746,16 +1746,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
     }, { capture: true, passive: false });
 
-    // ── Safety net: only snap back if truly escaped (2× max range) ──
-    // No pitch constraint — full tilt freedom, no bouncing.
-    viewer.camera.moveEnd.addEventListener(()=>{
-      if(!exploreMode) return;
-      const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
-      if(dist > MAX_RANGE * 2){
-        viewer.camera.lookAt(currentCenter,
-          new Cesium.HeadingPitchRange(HARBOR_HEADING, HARBOR_PITCH, MAX_RANGE));
-      }
-    });
+    // No moveEnd snapping at all — wheel intercept handles zoom ceiling,
+    // and the user gets full freedom to tilt/orbit without camera resetting.
 
     // Load Google Photorealistic 3D Tiles
     try{

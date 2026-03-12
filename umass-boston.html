@@ -1726,43 +1726,38 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // Campus anchor — all orbit constraints are relative to this point
     const CAMPUS_CENTER = Cesium.Cartesian3.fromDegrees(-71.0390, 42.3133, 10);
-    const MIN_RANGE = 150;   // closest zoom (~150m — street level)
-    const MAX_RANGE = 1600;  // furthest zoom (~1.6km — full campus fits in view)
-    const MAX_PITCH = Cesium.Math.toRadians(-12); // never go flatter than 12° below horizon
+    const MAX_RANGE = 900;   // max orbital radius — campus fills view nicely
+    const MAX_PITCH = Cesium.Math.toRadians(-15); // pitch floor (15° below horizon)
+    // View from SE harbor looking NW at the campus
+    const HARBOR_HEADING = Cesium.Math.toRadians(300);
+    const HARBOR_PITCH   = Cesium.Math.toRadians(-28);
 
     let exploreMode = false;
-    let currentCenter = CAMPUS_CENTER; // orbit target — shifts when a building is selected
+    let currentCenter = CAMPUS_CENTER;
 
-    // ── Zoom ceiling: block wheel events that would push camera above MAX_ALT ──
-    const MAX_ALT = 1600; // metres above ground — keeps campus in frame
+    // ── Zoom ceiling: block wheel-out when orbital DISTANCE exceeds MAX_RANGE ──
+    // (altitude check was wrong — at low pitch, orbit radius can be huge while altitude stays small)
     viewer.canvas.addEventListener('wheel', e => {
       if (!exploreMode) return;
-      const carto = Cesium.Cartographic.fromCartesian(viewer.camera.position);
-      // deltaY > 0 = scroll out (zoom out). Block if already at ceiling.
-      if (e.deltaY > 0 && carto.height > MAX_ALT) {
+      const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
+      if (e.deltaY > 0 && dist > MAX_RANGE) {
         e.stopImmediatePropagation();
       }
     }, { capture: true, passive: false });
 
-    // ── Safety net: if camera escapes to space via tilt/drag, snap back ──
+    // ── Safety net: snap back if orbital radius escaped (via tilt/drag gesture) ──
     viewer.camera.moveEnd.addEventListener(()=>{
       if(!exploreMode) return;
-      const carto = Cesium.Cartographic.fromCartesian(viewer.camera.position);
-      if(carto.height > MAX_ALT * 1.5){
-        // Escaped — return to campus at safe distance
-        viewer.camera.lookAt(
-          currentCenter,
-          new Cesium.HeadingPitchRange(viewer.camera.heading, Cesium.Math.toRadians(-35), MAX_ALT)
-        );
+      const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
+      if(dist > MAX_RANGE * 2){
+        viewer.camera.lookAt(currentCenter,
+          new Cesium.HeadingPitchRange(HARBOR_HEADING, HARBOR_PITCH, MAX_RANGE));
         return;
       }
-      // Pitch floor — prevent looking sideways/up
       if(viewer.camera.pitch > MAX_PITCH){
-        const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
-        viewer.camera.lookAt(
-          currentCenter,
-          new Cesium.HeadingPitchRange(viewer.camera.heading, MAX_PITCH, dist)
-        );
+        viewer.camera.lookAt(currentCenter,
+          new Cesium.HeadingPitchRange(viewer.camera.heading, MAX_PITCH,
+            Math.min(dist, MAX_RANGE)));
       }
     });
 
@@ -1782,23 +1777,23 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     ctrl.enableTilt=false;
     ctrl.enableLook=false;
 
-    // Initial view: high oblique satellite over UMass Boston
+    // Initial view: from SE harbor looking at campus
     viewer.camera.setView({
-      destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,900),
+      destination:Cesium.Cartesian3.fromDegrees(-71.0270,42.3060,700),
       orientation:{
-        heading:Cesium.Math.toRadians(20),
-        pitch:Cesium.Math.toRadians(-55),
+        heading:Cesium.Math.toRadians(305),
+        pitch:Cesium.Math.toRadians(-30),
         roll:0.0
       }
     });
 
-    // Intro fly-in
+    // Intro fly-in: approach from the harbor
     setTimeout(()=>{
       viewer.camera.flyTo({
-        destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,450),
+        destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3075,380),
         orientation:{
-          heading:Cesium.Math.toRadians(20),
-          pitch:Cesium.Math.toRadians(-40),
+          heading:Cesium.Math.toRadians(305),
+          pitch:Cesium.Math.toRadians(-28),
           roll:0.0
         },
         duration:4,
@@ -1883,11 +1878,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       ctrl.enableLook=false;
       viewer.camera.lookAt(
         CAMPUS_CENTER,
-        new Cesium.HeadingPitchRange(
-          Cesium.Math.toRadians(20),
-          Cesium.Math.toRadians(-35),
-          700
-        )
+        new Cesium.HeadingPitchRange(HARBOR_HEADING, HARBOR_PITCH, 750)
       );
     };
 

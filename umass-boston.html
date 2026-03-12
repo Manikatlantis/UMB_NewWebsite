@@ -1733,10 +1733,30 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     let exploreMode = false;
     let currentCenter = CAMPUS_CENTER; // orbit target — shifts when a building is selected
 
-    // Only prevent camera from tilting past horizontal (going underground).
-    // No range snapping — let the user zoom freely.
+    // ── Zoom ceiling: block wheel events that would push camera above MAX_ALT ──
+    const MAX_ALT = 1600; // metres above ground — keeps campus in frame
+    viewer.canvas.addEventListener('wheel', e => {
+      if (!exploreMode) return;
+      const carto = Cesium.Cartographic.fromCartesian(viewer.camera.position);
+      // deltaY > 0 = scroll out (zoom out). Block if already at ceiling.
+      if (e.deltaY > 0 && carto.height > MAX_ALT) {
+        e.stopImmediatePropagation();
+      }
+    }, { capture: true, passive: false });
+
+    // ── Safety net: if camera escapes to space via tilt/drag, snap back ──
     viewer.camera.moveEnd.addEventListener(()=>{
       if(!exploreMode) return;
+      const carto = Cesium.Cartographic.fromCartesian(viewer.camera.position);
+      if(carto.height > MAX_ALT * 1.5){
+        // Escaped — return to campus at safe distance
+        viewer.camera.lookAt(
+          currentCenter,
+          new Cesium.HeadingPitchRange(viewer.camera.heading, Cesium.Math.toRadians(-35), MAX_ALT)
+        );
+        return;
+      }
+      // Pitch floor — prevent looking sideways/up
       if(viewer.camera.pitch > MAX_PITCH){
         const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
         viewer.camera.lookAt(

@@ -1724,30 +1724,23 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Dark base color so the globe horizon blends with the site theme
     viewer.scene.globe.baseColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);
 
-    // Campus anchor — all orbit constraints are relative to this point
     const CAMPUS_CENTER = Cesium.Cartesian3.fromDegrees(-71.0390, 42.3133, 10);
-    const MAX_RANGE = 1500;  // max orbital radius — generous enough for free zoom
-    const HARBOR_HEADING = Cesium.Math.toRadians(300);
-    const HARBOR_PITCH   = Cesium.Math.toRadians(-28);
 
     let exploreMode = false;
-    let currentCenter = CAMPUS_CENTER;
 
     // Hide bare globe — 3D tiles provide the ground. Prevents void/blue surface at low angles.
     viewer.scene.globe.show = false;
     viewer.scene.backgroundColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);
 
-    // ── Zoom ceiling: block scroll-out past MAX_RANGE ──
+    // ── Zoom ceiling: block scroll-out past max altitude ──
+    const MAX_ALT = 1200; // meters above ellipsoid
     viewer.canvas.addEventListener('wheel', e => {
       if (!exploreMode) return;
-      const dist = Cesium.Cartesian3.distance(viewer.camera.position, currentCenter);
-      if (e.deltaY > 0 && dist > MAX_RANGE) {
+      const carto = Cesium.Cartographic.fromCartesian(viewer.camera.position);
+      if (e.deltaY > 0 && carto && carto.height > MAX_ALT) {
         e.stopImmediatePropagation();
       }
     }, { capture: true, passive: false });
-
-    // No moveEnd snapping at all — wheel intercept handles zoom ceiling,
-    // and the user gets full freedom to tilt/orbit without camera resetting.
 
     // Load Google Photorealistic 3D Tiles
     try{
@@ -1767,27 +1760,49 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // Initial view: from SE harbor looking at campus
     viewer.camera.setView({
-      destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3075,400),
+      destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3075,220),
       orientation:{
         heading:Cesium.Math.toRadians(305),
-        pitch:Cesium.Math.toRadians(-25),
+        pitch:Cesium.Math.toRadians(-18),
         roll:0.0
       }
     });
 
-    // Intro fly-in: approach from the harbor, lower
-    setTimeout(()=>{
+    // ── Cinematic hero flyover: continuous looping camera path ──
+    const heroWaypoints = [
+      // [lng, lat, alt, heading°, pitch°, duration, easing]
+      [-71.0310, 42.3090, 140, 305, -18, 4, 'QUADRATIC_OUT'],     // approach from harbor
+      [-71.0370, 42.3120, 90,  340, -14, 6, 'QUADRATIC_IN_OUT'],  // sweep left, drop low
+      [-71.0420, 42.3150, 160, 20,  -22, 7, 'QUADRATIC_IN_OUT'],  // rise a bit, orbit north
+      [-71.0400, 42.3170, 100, 80,  -12, 6, 'QUADRATIC_IN_OUT'],  // dip down, look east
+      [-71.0350, 42.3140, 140, 150, -18, 7, 'QUADRATIC_IN_OUT'],  // pull back south
+      [-71.0310, 42.3100, 180, 240, -20, 6, 'QUADRATIC_IN_OUT'],  // sweep from west
+      [-71.0290, 42.3075, 220, 305, -18, 5, 'QUADRATIC_IN_OUT'],  // return to start
+    ];
+    let heroAnimActive = true;
+    let heroWpIndex = 0;
+
+    function flyNextHeroWaypoint(){
+      if(!heroAnimActive) return;
+      const wp = heroWaypoints[heroWpIndex];
       viewer.camera.flyTo({
-        destination:Cesium.Cartesian3.fromDegrees(-71.0310,42.3090,220),
-        orientation:{
-          heading:Cesium.Math.toRadians(305),
-          pitch:Cesium.Math.toRadians(-22),
-          roll:0.0
+        destination: Cesium.Cartesian3.fromDegrees(wp[0], wp[1], wp[2]),
+        orientation: {
+          heading: Cesium.Math.toRadians(wp[3]),
+          pitch: Cesium.Math.toRadians(wp[4]),
+          roll: 0.0
         },
-        duration:4,
-        easingFunction:Cesium.EasingFunction.QUADRATIC_OUT
+        duration: wp[5],
+        easingFunction: Cesium.EasingFunction[wp[6]],
+        complete: function(){
+          heroWpIndex = (heroWpIndex + 1) % heroWaypoints.length;
+          flyNextHeroWaypoint();
+        }
       });
-    },300);
+    }
+
+    // Start cinematic after a brief pause for tiles to load
+    setTimeout(flyNextHeroWaypoint, 300);
 
     // ── Building picking ──
     let highlightEntity = null;
@@ -1856,19 +1871,28 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Enter 3D explore mode ──
     window.enter3DMode=function(){
       exploreMode=true;
+      heroAnimActive=false; // stop cinematic loop
+      viewer.camera.cancelFlight(); // cancel any in-progress flyTo
       document.body.style.overflow='hidden'; // lock page scroll — all gestures go to the map
       document.getElementById('hero').classList.add('explore-mode');
       document.getElementById('btn-exit3d').classList.add('vis');
-      currentCenter = CAMPUS_CENTER; // reset to campus center on each entry
+      // Free camera — no lookAt lock. User can pan, rotate, zoom, tilt freely.
       ctrl.enableRotate=true;
-      ctrl.enableTranslate=false;
+      ctrl.enableTranslate=true;
       ctrl.enableZoom=true;
       ctrl.enableTilt=true;
       ctrl.enableLook=false;
-      viewer.camera.lookAt(
-        CAMPUS_CENTER,
-        new Cesium.HeadingPitchRange(HARBOR_HEADING, HARBOR_PITCH, 500)
-      );
+      // Fly to a nice starting position over campus
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-71.0380, 42.3130, 350),
+        orientation: {
+          heading: Cesium.Math.toRadians(300),
+          pitch: Cesium.Math.toRadians(-30),
+          roll: 0.0
+        },
+        duration: 1.2,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_OUT
+      });
     };
 
     // ── Exit 3D explore mode ──
@@ -1879,21 +1903,26 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('btn-exit3d').classList.remove('vis');
       clearHighlight();
       closeBuildingPanel();
-      viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
       ctrl.enableRotate=false;
       ctrl.enableTranslate=false;
       ctrl.enableZoom=false;
       ctrl.enableTilt=false;
       ctrl.enableLook=false;
+      // Fly back to hero position, then resume cinematic loop
+      heroWpIndex = 0;
       viewer.camera.flyTo({
-        destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3133,450),
+        destination:Cesium.Cartesian3.fromDegrees(-71.0290, 42.3075, 400),
         orientation:{
-          heading:Cesium.Math.toRadians(20),
-          pitch:Cesium.Math.toRadians(-40),
+          heading:Cesium.Math.toRadians(305),
+          pitch:Cesium.Math.toRadians(-25),
           roll:0.0
         },
         duration:1.5,
-        easingFunction:Cesium.EasingFunction.QUADRATIC_OUT
+        easingFunction:Cesium.EasingFunction.QUADRATIC_OUT,
+        complete: function(){
+          heroAnimActive = true;
+          flyNextHeroWaypoint();
+        }
       });
     };
   }

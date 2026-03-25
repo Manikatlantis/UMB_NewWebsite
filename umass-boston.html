@@ -83,6 +83,22 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 #hero:not(.explore-mode) .hero-content{transition:opacity 0.5s 0.5s;}
 #hero:not(.explore-mode) .scroll-hint{transition:opacity 0.5s 0.8s;}
 
+/* ── SHUTTLE TRACKER ── */
+.btn-shuttle{margin-top:8px;padding:10px 28px;background:transparent;border:1px solid rgba(245,166,35,0.35);color:var(--gold);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;opacity:0;animation:fup 1s 1.5s forwards;}
+.btn-shuttle:hover{background:rgba(245,166,35,0.1);border-color:var(--gold);}
+.shuttle-hud{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:20;display:none;align-items:center;gap:8px;padding:8px 18px;background:rgba(0,16,32,0.85);border:1px solid rgba(245,166,35,0.25);border-radius:4px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gold);}
+.shuttle-hud.vis{display:flex;}
+.shuttle-hud .pulse{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:hud-pulse 1.5s ease-in-out infinite;}
+@keyframes hud-pulse{0%,100%{opacity:1;box-shadow:0 0 4px var(--gold);}50%{opacity:0.4;box-shadow:0 0 12px var(--gold);}}
+#shuttle-panel{position:absolute;bottom:24px;left:24px;z-index:20;width:260px;padding:16px;background:rgba(0,16,32,0.92);border:1px solid rgba(245,166,35,0.2);backdrop-filter:blur(10px);display:none;font-family:'Space Mono',monospace;}
+#shuttle-panel.vis{display:block;}
+#shuttle-panel .sp-name{font-family:'Unbounded',sans-serif;font-size:14px;color:var(--gold);margin-bottom:8px;}
+#shuttle-panel .sp-row{font-size:10px;letter-spacing:1px;color:rgba(238,243,248,0.6);margin-bottom:4px;}
+#shuttle-panel .sp-row span{color:var(--white);}
+#shuttle-panel .sp-follow{margin-top:10px;padding:6px 14px;background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);color:var(--gold);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
+#shuttle-panel .sp-follow:hover{background:rgba(245,166,35,0.25);}
+#shuttle-panel .sp-follow.active{background:var(--gold);color:var(--deep);}
+
 /* ── TICKER ── */
 .ticker{overflow:hidden;border-top:1px solid rgba(0,212,184,0.1);border-bottom:1px solid rgba(0,212,184,0.1);background:rgba(0,16,32,0.9);padding:14px 0;}
 .ticker-track{display:flex;gap:0;white-space:nowrap;animation:tick 28s linear infinite;}
@@ -365,9 +381,18 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-o">Apply Fall 2025</a>
     </div>
     <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()">Explore Campus 3D &rarr;</button>
+    <button class="btn-3d btn-shuttle" id="btn-shuttle" onclick="enterShuttleMode()">Live Shuttle Tracker &rarr;</button>
   </div>
   <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
   <button class="btn-exit3d" id="btn-logcam" style="left:auto;right:24px;opacity:0;pointer-events:none;" onclick="logCamera()">Log Camera</button>
+  <div class="shuttle-hud" id="shuttle-hud"><div class="pulse"></div><span id="shuttle-hud-text">Tracking shuttles...</span></div>
+  <div id="shuttle-panel">
+    <div class="sp-name" id="sp-name"></div>
+    <div class="sp-row">Speed: <span id="sp-speed"></span></div>
+    <div class="sp-row">Status: <span id="sp-status"></span></div>
+    <div class="sp-row">Route: <span id="sp-route"></span></div>
+    <button class="sp-follow" id="sp-follow" onclick="toggleFollowBus()">Follow Bus</button>
+  </div>
   <div class="scroll-hint"><span>Scroll</span><div class="scroll-bar"></div></div>
 </section>
 
@@ -1847,6 +1872,259 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var heading = Cesium.Math.toDegrees(cam.heading).toFixed(0);
       var pitch = Cesium.Math.toDegrees(cam.pitch).toFixed(0);
       console.log(`WP${_wpIndex++}: [${lng}, ${lat}, ${alt}, ${heading}, ${pitch}]`);
+    };
+
+    // ── LIVE SHUTTLE TRACKER ──────────────────────────
+    const SHUTTLE_API = 'https://umb.transloc.com/Services/JSONPRelay.svc/GetMapVehiclePoints?apiKey=8882812681&isPublicMap=true';
+    const SHUTTLE_POLL_MS = 4000;
+    // Bus icon SVG (top-down view, gold)
+    const BUS_ICON = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="24" viewBox="0 0 40 24">' +
+      '<rect x="2" y="2" width="36" height="20" rx="6" ry="6" fill="#f5a623" stroke="#000" stroke-width="1.5"/>' +
+      '<rect x="6" y="5" width="8" height="6" rx="1" fill="rgba(255,255,255,0.85)"/>' +
+      '<rect x="16" y="5" width="8" height="6" rx="1" fill="rgba(255,255,255,0.85)"/>' +
+      '<rect x="26" y="5" width="8" height="6" rx="1" fill="rgba(255,255,255,0.85)"/>' +
+      '<circle cx="10" cy="20" r="3" fill="#333"/><circle cx="30" cy="20" r="3" fill="#333"/>' +
+      '</svg>'
+    );
+
+    let shuttleMode = false;
+    let shuttlePollTimer = null;
+    let shuttleEntities = {};
+    let followingBusId = null;
+    let shuttleFailCount = 0;
+
+    async function fetchShuttles(){
+      try {
+        const resp = await fetch(SHUTTLE_API);
+        const vehicles = await resp.json();
+        shuttleFailCount = 0;
+        updateShuttleEntities(vehicles);
+      } catch(err){
+        shuttleFailCount++;
+        if(shuttleFailCount >= 3){
+          document.getElementById('shuttle-hud-text').textContent = 'Connection lost — retrying...';
+        }
+        console.warn('Shuttle fetch failed:', err);
+      }
+    }
+
+    function updateShuttleEntities(vehicles){
+      var activeIds = {};
+      var onRouteCount = 0;
+      vehicles.forEach(function(v){
+        activeIds[v.VehicleID] = true;
+        if(v.IsOnRoute) onRouteCount++;
+        var pos = Cesium.Cartesian3.fromDegrees(v.Longitude, v.Latitude, 0);
+
+        // Compute orientation quaternion from heading
+        var headingRad = Cesium.Math.toRadians(v.Heading);
+        var orientation = Cesium.Transforms.headingPitchRollQuaternion(
+          pos,
+          new Cesium.HeadingPitchRoll(headingRad, Cesium.Math.toRadians(90), 0)
+        );
+
+        if(shuttleEntities[v.VehicleID]){
+          // Update existing entity
+          var ent = shuttleEntities[v.VehicleID];
+          ent.position = pos;
+          ent.orientation = orientation;
+          ent._shuttleData = v;
+        } else {
+          // Create new entity
+          var ent = viewer.entities.add({
+            position: pos,
+            orientation: orientation,
+            model: {
+              uri: '/bus.glb',
+              scale: 0.035,
+              minimumPixelSize: 18,
+              maximumScale: 0.06,
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              silhouetteColor: Cesium.Color.fromCssColorString('#f5a623'),
+              silhouetteSize: 1.0
+            },
+            label: {
+              text: v.Name,
+              font: 'bold 11px "Space Mono", monospace',
+              fillColor: Cesium.Color.fromCssColorString('#f5a623'),
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 4,
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+              pixelOffset: new Cesium.Cartesian2(0, -20),
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              scaleByDistance: new Cesium.NearFarScalar(50, 1.2, 3000, 0.4),
+              showBackground: true,
+              backgroundColor: new Cesium.Color(0, 0.04, 0.12, 0.85),
+              backgroundPadding: new Cesium.Cartesian2(6, 4)
+            }
+          });
+          ent._shuttleBusId = v.VehicleID;
+          ent._shuttleData = v;
+          shuttleEntities[v.VehicleID] = ent;
+        }
+      });
+
+      // Remove stale entities
+      Object.keys(shuttleEntities).forEach(function(id){
+        if(!activeIds[id]){
+          viewer.entities.remove(shuttleEntities[id]);
+          delete shuttleEntities[id];
+          if(followingBusId == id) deselectShuttle();
+        }
+      });
+
+      // Update HUD
+      var hudText = document.getElementById('shuttle-hud-text');
+      if(onRouteCount === 0){
+        hudText.textContent = 'No shuttles currently active';
+      } else {
+        hudText.textContent = 'Tracking ' + onRouteCount + ' shuttle' + (onRouteCount > 1 ? 's' : '');
+      }
+
+      // Update selected panel if open
+      if(followingBusId && shuttleEntities[followingBusId]){
+        updateShuttlePanel(shuttleEntities[followingBusId]._shuttleData);
+        // Camera follow
+        var busPos = shuttleEntities[followingBusId].position.getValue(Cesium.JulianDate.now());
+        if(busPos){
+          viewer.camera.lookAt(busPos, new Cesium.HeadingPitchRange(
+            Cesium.Math.toRadians(shuttleEntities[followingBusId]._shuttleData.Heading),
+            Cesium.Math.toRadians(-30),
+            120
+          ));
+        }
+      }
+    }
+
+    function updateShuttlePanel(v){
+      document.getElementById('sp-name').textContent = 'Bus ' + v.Name;
+      var mph = (v.GroundSpeed * 0.621371).toFixed(0);
+      document.getElementById('sp-speed').textContent = mph + ' mph';
+      document.getElementById('sp-status').textContent = v.IsDelayed ? 'Delayed' : (v.GroundSpeed > 1 ? 'Moving' : 'Stopped');
+      document.getElementById('sp-route').textContent = v.IsOnRoute ? 'On Route' : 'Off Route';
+      document.getElementById('sp-follow').textContent = followingBusId == v.VehicleID ? 'Unfollow' : 'Follow Bus';
+      document.getElementById('sp-follow').className = 'sp-follow' + (followingBusId == v.VehicleID ? ' active' : '');
+    }
+
+    var _selectedShuttleId = null;
+
+    function selectShuttle(vehicleId){
+      _selectedShuttleId = vehicleId;
+      var v = shuttleEntities[vehicleId]._shuttleData;
+      updateShuttlePanel(v);
+      document.getElementById('shuttle-panel').classList.add('vis');
+    }
+
+    function deselectShuttle(){
+      _selectedShuttleId = null;
+      if(followingBusId){
+        followingBusId = null;
+        viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+      }
+      document.getElementById('shuttle-panel').classList.remove('vis');
+    }
+
+    window.toggleFollowBus = function(){
+      if(!_selectedShuttleId) return;
+      if(followingBusId == _selectedShuttleId){
+        followingBusId = null;
+        viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+        document.getElementById('sp-follow').textContent = 'Follow Bus';
+        document.getElementById('sp-follow').className = 'sp-follow';
+      } else {
+        followingBusId = _selectedShuttleId;
+        document.getElementById('sp-follow').textContent = 'Unfollow';
+        document.getElementById('sp-follow').className = 'sp-follow active';
+      }
+    };
+
+    // Click handler for shuttle entities
+    viewer.screenSpaceEventHandler.setInputAction(function(e){
+      if(!shuttleMode) return;
+      var picked = viewer.scene.pick(e.position);
+      if(Cesium.defined(picked) && picked.id && picked.id._shuttleBusId){
+        selectShuttle(picked.id._shuttleBusId);
+      } else {
+        deselectShuttle();
+      }
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+    window.enterShuttleMode = function(){
+      if(shuttleMode) return;
+      // Enter explore mode first (reuse camera controls)
+      if(!exploreMode) enter3DMode();
+      shuttleMode = true;
+      shuttleFailCount = 0;
+      // Show shuttle UI
+      document.getElementById('shuttle-hud').classList.add('vis');
+      // Start polling
+      fetchShuttles();
+      shuttlePollTimer = setInterval(fetchShuttles, SHUTTLE_POLL_MS);
+      // Fly to overview of shuttle route area
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-71.0420, 42.3150, 600),
+        orientation: {
+          heading: Cesium.Math.toRadians(320),
+          pitch: Cesium.Math.toRadians(-45),
+          roll: 0.0
+        },
+        duration: 1.5,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_OUT
+      });
+    };
+
+    window.exitShuttleMode = function(){
+      if(!shuttleMode) return;
+      shuttleMode = false;
+      followingBusId = null;
+      _selectedShuttleId = null;
+      if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
+      // Remove all shuttle entities
+      Object.keys(shuttleEntities).forEach(function(id){
+        viewer.entities.remove(shuttleEntities[id]);
+      });
+      shuttleEntities = {};
+      // Hide shuttle UI
+      document.getElementById('shuttle-hud').classList.remove('vis');
+      document.getElementById('shuttle-panel').classList.remove('vis');
+      // Unlock camera if was following
+      try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
+      // Return to cinematic
+      exit3DMode();
+    };
+
+    // Wire Escape key
+    document.addEventListener('keydown', function(e){
+      if(e.key === 'Escape' && shuttleMode){
+        if(followingBusId){
+          deselectShuttle();
+        } else {
+          exitShuttleMode();
+        }
+        e.preventDefault();
+      }
+    });
+
+    // Patch exit3DMode to also clean up shuttle mode
+    var _origExit3D = window.exit3DMode;
+    window.exit3DMode = function(){
+      if(shuttleMode) {
+        // Clean up shuttle state without calling exit3DMode again
+        shuttleMode = false;
+        followingBusId = null;
+        _selectedShuttleId = null;
+        if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
+        Object.keys(shuttleEntities).forEach(function(id){
+          viewer.entities.remove(shuttleEntities[id]);
+        });
+        shuttleEntities = {};
+        document.getElementById('shuttle-hud').classList.remove('vis');
+        document.getElementById('shuttle-panel').classList.remove('vis');
+        try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
+      }
+      _origExit3D();
     };
   }
 

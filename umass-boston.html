@@ -9,174 +9,6 @@
 <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Widgets/widgets.css">
 <script src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
 <!-- Google Maps JavaScript API — replace YOUR_GOOGLE_MAPS_API_KEY with your real key -->
-<script>
-  async function initCampusMap(){
-    if(typeof google==='undefined') return;
-    const ph=document.getElementById('map-placeholder');
-    if(ph) ph.style.display='none';
-
-    const DARK_STYLE=[
-      {elementType:'geometry',stylers:[{color:'#060e1a'}]},
-      {elementType:'labels.text.fill',stylers:[{color:'#7a9cb0'}]},
-      {elementType:'labels.text.stroke',stylers:[{color:'#020810'}]},
-      {featureType:'administrative',elementType:'geometry',stylers:[{color:'#0d2035'}]},
-      {featureType:'administrative.land_parcel',stylers:[{visibility:'off'}]},
-      {featureType:'administrative.neighborhood',stylers:[{visibility:'off'}]},
-      {featureType:'poi',elementType:'geometry',stylers:[{color:'#0a1a28'}]},
-      {featureType:'poi',elementType:'labels.text.fill',stylers:[{color:'#3a7090'}]},
-      {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#0a1e14'}]},
-      {featureType:'road',elementType:'geometry',stylers:[{color:'#0d2035'}]},
-      {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#050e1a'}]},
-      {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#4a7090'}]},
-      {featureType:'road',elementType:'labels.icon',stylers:[{visibility:'off'}]},
-      {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#0f2840'}]},
-      {featureType:'road.highway',elementType:'geometry.stroke',stylers:[{color:'#07182a'}]},
-      {featureType:'road.highway',elementType:'labels.text.fill',stylers:[{color:'#5a90b0'}]},
-      {featureType:'transit',stylers:[{visibility:'off'}]},
-      {featureType:'water',elementType:'geometry',stylers:[{color:'#020c18'}]},
-      {featureType:'water',elementType:'labels.text.fill',stylers:[{color:'#1c4a6a'}]},
-    ];
-
-    const map=new google.maps.Map(document.getElementById('campus-map'),{
-      center:{lat:42.3133,lng:-71.0390},
-      zoom:16,
-      mapTypeId:'roadmap',
-      styles:DARK_STYLE,
-      zoomControl:true,
-      mapTypeControl:true,
-      mapTypeControlOptions:{
-        mapTypeIds:['roadmap','satellite','hybrid'],
-        style:google.maps.MapTypeControlStyle.DROPDOWN_MENU
-      },
-      streetViewControl:false,
-      fullscreenControl:true,
-      gestureHandling:'cooperative',
-    });
-
-    // Accurate Columbia Point peninsula boundary
-    // Covers: all campus buildings · UMass Harborwalk · JFK Presidential Library
-    //         Harbor Point Apartments · Quinn lot · Healey Library
-    const campusBoundary=[
-      {lat:42.3178,lng:-71.0436}, // NW — Morrissey Blvd / north parking
-      {lat:42.3172,lng:-71.0406}, // Quinn Admin / north entrance
-      {lat:42.3173,lng:-71.0358}, // NE — transition to Harbor Point
-      {lat:42.3175,lng:-71.0328}, // Harbor Point Apartments north
-      {lat:42.3163,lng:-71.0305}, // Harbor Point east edge
-      {lat:42.3140,lng:-71.0298}, // East shoreline mid
-      {lat:42.3110,lng:-71.0308}, // SE shoreline
-      {lat:42.3092,lng:-71.0332}, // JFK Library south tip
-      {lat:42.3088,lng:-71.0362}, // SW of JFK Library
-      {lat:42.3098,lng:-71.0402}, // SW shore / Harborwalk
-      {lat:42.3110,lng:-71.0428}, // West shoreline
-      {lat:42.3130,lng:-71.0442}, // West mid / Clark Athletic area
-      {lat:42.3155,lng:-71.0448}, // NW shoreline
-      {lat:42.3168,lng:-71.0442}, // NW
-      {lat:42.3178,lng:-71.0436}, // close
-    ];
-    new google.maps.Polygon({
-      paths:campusBoundary,
-      strokeColor:'#00c8d4',strokeOpacity:0.65,strokeWeight:2,
-      fillColor:'#00c8d4',fillOpacity:0.06,
-      map
-    });
-
-    // ── Places API: let Google locate every building by name ──────────────
-    // Each entry has the exact query Google Maps responds to best,
-    // plus our display metadata (emoji, desc, link, color).
-    const locations=[
-      {q:'Campus Center UMass Boston',       emoji:'🏛️',color:'#cc0000',
-       desc:'The heart of student life — dining, organizations, and events.',
-       link:'https://www.umb.edu/campus-life/'},
-      {q:'Integrated Sciences Complex UMass Boston',emoji:'🔬',color:'#00c8d4',
-       desc:'State-of-the-art research labs — biology, chemistry & physics.',
-       link:'https://www.umb.edu/academics/csm/'},
-      {q:'Healey Library UMass Boston',      emoji:'📚',color:'#00c8d4',
-       desc:'Main library with 700,000+ volumes and digital resources.',
-       link:'https://www.umb.edu/library/'},
-      {q:'Quinn Administration Building UMass Boston',emoji:'🏢',color:'#cc0000',
-       desc:'Administrative offices, Registrar, Bursar, and leadership.',
-       link:'https://www.umb.edu/about/'},
-      {q:'Wheatley Hall UMass Boston',       emoji:'🎓',color:'#00c8d4',
-       desc:'College of Education, Nursing and Social Work.',
-       link:'https://www.umb.edu/academics/nursing/'},
-      {q:'McCormack Hall UMass Boston',      emoji:'📖',color:'#f5a623',
-       desc:'Graduate studies, College of Liberal Arts offices and classrooms.',
-       link:'https://www.umb.edu/academics/cla/'},
-      {q:'Clark Athletic Center UMass Boston',emoji:'🏊',color:'#cc0000',
-       desc:'Full recreation center — gym, pool, courts, fitness facilities.',
-       link:'https://www.umb.edu/athletics/'},
-      {q:'University Hall UMass Boston',     emoji:'💻',color:'#00c8d4',
-       desc:'Computer Science, Math, and Sciences classrooms and labs.',
-       link:'https://www.umb.edu/academics/cts/'},
-      {q:'Science and Technology Center UMass Boston',emoji:'🔭',color:'#f5a623',
-       desc:'Advanced research and innovation hub for STEM graduate programs.',
-       link:'https://www.umb.edu/research/'},
-      {q:'John F. Kennedy Presidential Library Boston',emoji:'🏛️',color:'#aaaaaa',
-       desc:'Iconic landmark dedicated to President John F. Kennedy.',
-       link:'https://www.jfklibrary.org'},
-      {q:'Campus Dining UMass Boston',       emoji:'🍽️',color:'#cc0000',
-       desc:'Main dining hall and campus eateries for students and staff.',
-       link:'https://www.umb.edu/campus-life/'},
-      {q:'UMass Boston Harbor Walk',         emoji:'🌊',color:'#1c6ea4',
-       desc:'Beautiful harbor views and walking paths on the campus peninsula.',
-       link:'https://www.umb.edu/about/'},
-    ];
-
-    const infoWindow=new google.maps.InfoWindow();
-
-    function makeSvgPin(color,emoji){
-      return 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="54" viewBox="0 0 44 54">
-          <path d="M22 2C12.06 2 4 10.06 4 20c0 14.25 18 32 18 32s18-17.75 18-32C40 10.06 31.94 2 22 2z"
-                fill="${color}" opacity="0.92"/>
-          <circle cx="22" cy="20" r="13" fill="rgba(0,0,0,0.40)"/>
-          <text x="22" y="26" text-anchor="middle" font-size="15">${emoji}</text>
-        </svg>`
-      );
-    }
-
-    // ── Places API (New) — searchByText ──────────────────────────────
-    for(const loc of locations){
-      try{
-        const {places}=await google.maps.places.Place.searchByText({
-          textQuery:loc.q,
-          fields:['displayName','location'],
-          locationBias:{lat:42.3133,lng:-71.0390},
-          maxResultCount:1,
-        });
-        if(!places||!places.length) continue;
-        const pos=places[0].location;
-        const placeName=places[0].displayName||loc.q;
-
-        const marker=new google.maps.Marker({
-          position:pos,map,
-          icon:{
-            url:makeSvgPin(loc.color,loc.emoji),
-            scaledSize:new google.maps.Size(44,54),
-            anchor:new google.maps.Point(22,54),
-          },
-          title:placeName,
-        });
-
-        marker.addListener('click',()=>{
-          infoWindow.setContent(
-            `<div style="font-family:'Space Mono',monospace;background:rgba(0,16,32,0.97);
-              color:#eef3f8;padding:14px 16px;min-width:200px;max-width:240px;">
-              <div style="font-family:'Unbounded',sans-serif;font-size:13px;color:#00c8d4;
-                margin-bottom:6px;">${loc.emoji} ${placeName}</div>
-              <div style="font-size:11px;color:rgba(238,243,248,0.65);line-height:1.6;
-                margin-bottom:8px;">${loc.desc}</div>
-              <a href="${loc.link}" target="_blank"
-                style="font-size:9px;letter-spacing:1px;text-transform:uppercase;
-                color:#00c8d4;text-decoration:none;">Learn more →</a>
-            </div>`);
-          infoWindow.open(map,marker);
-        });
-      }catch(e){ console.warn('Place search failed for:',loc.q,e); }
-    }
-
-  }
-</script>
 <style>
 :root{
   --navy:#001830;--deep:#000d1a;--beacon:#003865;
@@ -306,9 +138,6 @@ section{padding:110px 52px;}
 .prog-card:hover .prog-arrow{color:var(--teal);transform:translate(4px,-4px);}
 
 /* ── GOOGLE MAP ── */
-#campus{background:#020f1e;position:relative;z-index:1;}
-.map-outer{position:relative;z-index:1;margin-top:56px;border:1px solid rgba(0,200,212,0.18);overflow:hidden;box-shadow:0 0 60px rgba(28,110,164,0.08);}
-#campus-map{height:580px;width:100%;}
 /* Style Google Maps info windows to match dark theme */
 .gm-style .gm-style-iw-c{background:rgba(0,16,32,0.97)!important;border:1px solid rgba(0,200,212,0.25)!important;border-radius:0!important;padding:0!important;box-shadow:0 0 30px rgba(0,0,0,0.7)!important;}
 .gm-style .gm-style-iw-d{overflow:hidden!important;}
@@ -444,7 +273,6 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .news-grid{grid-template-columns:1fr 1fr;}
   .news-card:first-child{grid-column:1/-1;}
   .foot-grid{grid-template-columns:1fr 1fr;gap:36px;}
-  #campus-map{height:450px;}
   #game-canvas{height:400px;}
 }
 
@@ -470,8 +298,6 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .about-badge b{font-size:24px;}
   .programs-intro{flex-direction:column;align-items:flex-start;gap:16px;}
   .programs-grid{grid-template-columns:1fr;}
-  #campus-map{height:350px;}
-  .map-outer{margin-top:32px;}
   #game-canvas{height:320px;}
   .game-instructions{font-size:8px;padding:6px 14px;letter-spacing:1px;}
   .bot-msgs{height:320px;}
@@ -496,7 +322,6 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .hero-h1{letter-spacing:-1px;}
   .hero-btns{gap:8px;}
   .btn-r,.btn-o{width:100%;padding:12px 20px;}
-  #campus-map{height:280px;}
   #game-canvas{height:260px;}
   .bot-msgs{height:280px;}
   .bot-head{padding:14px 16px;}
@@ -521,7 +346,6 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <li><a href="https://www.umb.edu/admissions/" target="_blank">Admissions</a></li>
     <li><a href="https://www.umb.edu/research/" target="_blank">Research</a></li>
     <li><a href="https://www.umb.edu/campus-life/" target="_blank">Campus Life</a></li>
-    <li><a href="#campus">Map</a></li>
     <li><a href="#harbor-game-section">⚓ Play</a></li>
     <li><a href="#chatbot-section">Ask Harbor</a></li>
   </ul>
@@ -534,7 +358,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="hero-overlay"></div>
   <div class="hero-content">
     <p class="hero-kicker">Boston Harbor's Premier Public Research University</p>
-    <h1 class="hero-h1"><span class="dim">Where</span> <span class="glow">brilliance</span><br><span class="dim">meets the</span> tide</h1>
+    <h1 class="hero-h1"><span class="dim">Where</span> <span class="glow">brilliance</span><br><span class="dim">meets the</span> times</h1>
     <p class="hero-sub">UMass Boston — a Carnegie R1 research powerhouse on a 175-acre harbor peninsula, transforming 16,000 lives each year.</p>
     <div class="hero-btns">
       <a href="https://www.umb.edu/academics/" target="_blank" class="btn-r">Explore Programs</a>
@@ -632,22 +456,6 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   </div>
 </section>
 
-<!-- ─── LEAFLET MAP ─── -->
-<section id="campus">
-  <div class="sec-tag" style="justify-content:center">Interactive Campus</div>
-  <h2 class="sec-title reveal" style="text-align:center">Explore UMass Boston<br>on the <em>Harbor</em></h2>
-  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto">Click any marker to discover buildings, services, and links. Our campus sits on Columbia Point, surrounded by Boston Harbor.</p>
-  <div class="map-outer reveal">
-    <div id="campus-map">
-      <!-- Shown until Google Maps API key is added -->
-      <div id="map-placeholder" style="height:580px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#020f1e;color:rgba(238,243,248,0.4);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;text-align:center;gap:12px;">
-        <div style="font-size:32px">🗺️</div>
-        <div>INTERACTIVE CAMPUS MAP</div>
-        <div style="font-size:9px;color:rgba(238,243,248,0.25)">Add a Google Maps API key to enable the live map</div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ─── HARBOR GAME ─── -->
 <section id="harbor-game-section">
@@ -1766,10 +1574,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // Initial view: from SE harbor looking at campus
     viewer.camera.setView({
-      destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3080,70),
+      destination:Cesium.Cartesian3.fromDegrees(-71.0290,42.3080,28),
       orientation:{
         heading:Cesium.Math.toRadians(305),
-        pitch:Cesium.Math.toRadians(-12),
+        pitch:Cesium.Math.toRadians(-6),
         roll:0.0
       }
     });
@@ -1778,15 +1586,19 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     const heroWaypoints = [
       // [lng, lat, alt, heading°, pitch°, duration, easing]
       // Cinematic sweeps — long horizontal moves, gentle altitude drift
-      [-71.0315, 42.3095, 45, 320, -8,  5, 'QUADRATIC_OUT'],      // start: harbor, face campus
-      [-71.0360, 42.3120, 42, 345, -6,  8, 'QUADRATIC_IN_OUT'],   // long glide NW through campus center
-      [-71.0400, 42.3150, 40, 20,  -5,  9, 'QUADRATIC_IN_OUT'],   // sweep deep into north campus
-      [-71.0415, 42.3165, 38, 110, -4,  8, 'QUADRATIC_IN_OUT'],   // pan east across Wheatley/McCormack
-      [-71.0370, 42.3155, 35, 190, -4,  9, 'QUADRATIC_IN_OUT'],   // long southward drift through buildings
-      [-71.0335, 42.3120, 32, 230, -3,  9, 'QUADRATIC_IN_OUT'],   // continue south past ISC + Uni Hall
-      [-71.0310, 42.3095, 35, 290, -5,  8, 'QUADRATIC_IN_OUT'],   // ease toward harbor, face campus
-      [-71.0320, 42.3085, 38, 340, -6,  8, 'QUADRATIC_IN_OUT'],   // cruise along harborwalk looking in
-      [-71.0310, 42.3090, 42, 310, -7,  6, 'QUADRATIC_IN_OUT'],   // settle back to start
+      [-71.0315, 42.3095, 25, 320, -4, 5, 'QUADRATIC_OUT'],       // harbor, facing into campus
+      [-71.0345, 42.3115, 25, 5,   -3, 8, 'QUADRATIC_IN_OUT'],   // pan hard right entering campus
+      [-71.0380, 42.3135, 25, 50,  -3, 9, 'QUADRATIC_IN_OUT'],   // rotate NE through Healey/Science
+      [-71.0370, 42.3140, 25, 310, -3, 7, 'QUADRATIC_IN_OUT'],   // sudden pan left — look back at harbor
+      [-71.0390, 42.3150, 25, 80,  -2, 8, 'QUADRATIC_IN_OUT'],   // whip east toward McCormack
+      [-71.0410, 42.3145, 25, 170, -3, 9, 'QUADRATIC_IN_OUT'],   // drift east, slowly rotate to face south
+      [-71.0400, 42.3160, 25, 260, -2, 7, 'QUADRATIC_IN_OUT'],   // slide north, pan hard west — Wheatley side
+      [-71.0375, 42.3155, 25, 200, -3, 8, 'QUADRATIC_IN_OUT'],   // cut diagonally SW through campus
+      [-71.0350, 42.3135, 25, 130, -2, 9, 'QUADRATIC_IN_OUT'],   // pan SE — face ISC from west side
+      [-71.0335, 42.3125, 25, 30,  -3, 7, 'QUADRATIC_IN_OUT'],   // sharp rotate NE — look up campus
+      [-71.0325, 42.3110, 25, 280, -2, 8, 'QUADRATIC_IN_OUT'],   // drift south, face west toward Uni Hall
+      [-71.0310, 42.3100, 25, 340, -3, 8, 'QUADRATIC_IN_OUT'],   // ease to harbor, rotate to face campus
+      [-71.0310, 42.3090, 25, 310, -3, 6, 'QUADRATIC_IN_OUT'],   // settle back to start
     ];
     let heroAnimActive = true;
     let heroWpIndex = 0;
@@ -2018,7 +1830,6 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
   draw();
 })();
 
-// Google Maps is initialized via the initCampusMap() callback
 // defined in the <head> script tag.
 /* REMOVED: standalone 3D campus map
   function syncSize(){
@@ -2942,18 +2753,6 @@ async function sendMsg(){
 
 function sendQ(btn){ chatIn.value=btn.textContent; sendMsg(); }
 chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
-</script>
-<script>
-  fetch('/api/maps-key')
-    .then(r => r.json())
-    .then(({ key }) => {
-      const s = document.createElement('script');
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&loading=async&callback=initCampusMap`;
-      s.async = true;
-      s.defer = true;
-      document.head.appendChild(s);
-    })
-    .catch(() => console.warn('Campus map unavailable'));
 </script>
 </body>
 </html>

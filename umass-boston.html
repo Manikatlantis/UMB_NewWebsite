@@ -1893,6 +1893,17 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     let shuttleEntities = {};
     let followingBusId = null;
     let shuttleFailCount = 0;
+    let shuttlePrevPos = {};    // {VehicleID: {lat, lng, heading}}
+
+    // Compute bearing (degrees) between two lat/lng points
+    function computeBearing(lat1, lng1, lat2, lng2){
+      var dLng = Cesium.Math.toRadians(lng2 - lng1);
+      var la1 = Cesium.Math.toRadians(lat1);
+      var la2 = Cesium.Math.toRadians(lat2);
+      var y = Math.sin(dLng) * Math.cos(la2);
+      var x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng);
+      return (Cesium.Math.toDegrees(Math.atan2(y, x)) + 360) % 360;
+    }
 
     async function fetchShuttles(){
       try {
@@ -1915,13 +1926,49 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       vehicles.forEach(function(v){
         activeIds[v.VehicleID] = true;
         if(v.IsOnRoute) onRouteCount++;
-        var pos = Cesium.Cartesian3.fromDegrees(v.Longitude, v.Latitude, 0);
+        // Sample 3D tile height at bus + nearby offsets, take minimum (road, not rooftop)
+        var offset = 0.0002; // ~20m
+        var samples = [
+          Cesium.Cartographic.fromDegrees(v.Longitude, v.Latitude),
+          Cesium.Cartographic.fromDegrees(v.Longitude + offset, v.Latitude),
+          Cesium.Cartographic.fromDegrees(v.Longitude - offset, v.Latitude),
+          Cesium.Cartographic.fromDegrees(v.Longitude, v.Latitude + offset),
+          Cesium.Cartographic.fromDegrees(v.Longitude, v.Latitude - offset)
+        ];
+        var minHeight = Infinity;
+        for(var si = 0; si < samples.length; si++){
+          var h = viewer.scene.sampleHeight(samples[si]);
+          if(h !== undefined && h !== null && h < minHeight) minHeight = h;
+        }
+        var groundAlt = (minHeight !== Infinity) ? minHeight + 0.5 : 0;
+        var pos = Cesium.Cartesian3.fromDegrees(v.Longitude, v.Latitude, groundAlt);
 
-        // Compute orientation quaternion from heading
-        var headingRad = Cesium.Math.toRadians(v.Heading);
+        // Async height sampling — update entity position once tile height is available
+        (function(vid, lng, lat){
+          var carto = Cesium.Cartographic.fromDegrees(lng, lat);
+          viewer.scene.sampleHeightMostDetailed([carto]).then(function(results){
+            if(results && results[0] && Cesium.defined(results[0].height) && shuttleEntities[vid]){
+              shuttleEntities[vid].position = Cesium.Cartesian3.fromDegrees(lng, lat, results[0].height);
+            }
+          }).catch(function(){});
+        })(v.VehicleID, v.Longitude, v.Latitude);
+
+        // Compute heading from actual movement direction
+        var prev = shuttlePrevPos[v.VehicleID];
+        var headingDeg = v.Heading; // fallback to API heading
+        if(prev){
+          var dist = Math.abs(v.Latitude - prev.lat) + Math.abs(v.Longitude - prev.lng);
+          if(dist > 0.00005){ // bus actually moved (~5m threshold)
+            headingDeg = computeBearing(prev.lat, prev.lng, v.Latitude, v.Longitude);
+          } else {
+            headingDeg = prev.heading; // keep last known heading when stopped
+          }
+        }
+        shuttlePrevPos[v.VehicleID] = {lat: v.Latitude, lng: v.Longitude, heading: headingDeg};
+        var headingRad = Cesium.Math.toRadians(headingDeg + 90);
         var orientation = Cesium.Transforms.headingPitchRollQuaternion(
           pos,
-          new Cesium.HeadingPitchRoll(headingRad, Cesium.Math.toRadians(90), 0)
+          new Cesium.HeadingPitchRoll(headingRad, 0, 0)
         );
 
         if(shuttleEntities[v.VehicleID]){
@@ -1936,11 +1983,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             position: pos,
             orientation: orientation,
             model: {
-              uri: '/bus.glb',
-              scale: 0.035,
-              minimumPixelSize: 18,
-              maximumScale: 0.06,
-              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              uri: '/bus_1.glb',
+              scale: 1.0,
+              minimumPixelSize: 24,
+              maximumScale: 3.0,
+              heightReference: Cesium.HeightReference.NONE,
               silhouetteColor: Cesium.Color.fromCssColorString('#f5a623'),
               silhouetteSize: 1.0
             },
@@ -2086,6 +2133,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         viewer.entities.remove(shuttleEntities[id]);
       });
       shuttleEntities = {};
+      shuttlePrevPos = {};
       // Hide shuttle UI
       document.getElementById('shuttle-hud').classList.remove('vis');
       document.getElementById('shuttle-panel').classList.remove('vis');
@@ -2120,6 +2168,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           viewer.entities.remove(shuttleEntities[id]);
         });
         shuttleEntities = {};
+      shuttlePrevPos = {};
         document.getElementById('shuttle-hud').classList.remove('vis');
         document.getElementById('shuttle-panel').classList.remove('vis');
         try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}

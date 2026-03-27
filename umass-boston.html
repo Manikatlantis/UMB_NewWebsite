@@ -1590,6 +1590,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       console.warn('Google Photorealistic 3D Tiles unavailable:',err);
     }
 
+
+
     // Disable user interaction initially (passive hero background)
     const ctrl=viewer.scene.screenSpaceCameraController;
     ctrl.enableRotate=false;
@@ -1894,6 +1896,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     let followingBusId = null;
     let shuttleFailCount = 0;
     let shuttlePrevPos = {};    // {VehicleID: {lat, lng, heading}}
+    let shuttleTargets = {};    // {VehicleID: {lat, lng, alt, headingRad}}
+    let shuttleCurrent = {};    // {VehicleID: {lat, lng, alt, headingRad}}
+    let shuttleLerpRAF = null;
 
     // Compute bearing (degrees) between two lat/lng points
     function computeBearing(lat1, lng1, lat2, lng2){
@@ -1910,6 +1915,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         const resp = await fetch(SHUTTLE_API);
         const vehicles = await resp.json();
         shuttleFailCount = 0;
+        shuttleLerpTime = performance.now();
         updateShuttleEntities(vehicles);
       } catch(err){
         shuttleFailCount++;
@@ -1940,7 +1946,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           var h = viewer.scene.sampleHeight(samples[si]);
           if(h !== undefined && h !== null && h < minHeight) minHeight = h;
         }
-        var groundAlt = (minHeight !== Infinity) ? minHeight + 0.5 : 0;
+        var groundAlt = (minHeight !== Infinity) ? minHeight + 1 : 0;
         var pos = Cesium.Cartesian3.fromDegrees(v.Longitude, v.Latitude, groundAlt);
 
         // Async height sampling — update entity position once tile height is available
@@ -1965,30 +1971,36 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           }
         }
         shuttlePrevPos[v.VehicleID] = {lat: v.Latitude, lng: v.Longitude, heading: headingDeg};
-        var headingRad = Cesium.Math.toRadians(headingDeg + 90);
+        var headingRad = Cesium.Math.toRadians(headingDeg - 90);
         var orientation = Cesium.Transforms.headingPitchRollQuaternion(
           pos,
-          new Cesium.HeadingPitchRoll(headingRad, 0, 0)
+          new Cesium.HeadingPitchRoll(headingRad, Cesium.Math.toRadians(90), 0)
         );
 
+        // Snapshot current as lerp start, set new target
+        if(shuttleCurrent[v.VehicleID]){
+          shuttleLerpStart[v.VehicleID] = {lat: shuttleCurrent[v.VehicleID].lat, lng: shuttleCurrent[v.VehicleID].lng, alt: shuttleCurrent[v.VehicleID].alt, headingRad: shuttleCurrent[v.VehicleID].headingRad};
+        } else {
+          shuttleLerpStart[v.VehicleID] = {lat: v.Latitude, lng: v.Longitude, alt: groundAlt, headingRad: headingRad};
+          shuttleCurrent[v.VehicleID] = {lat: v.Latitude, lng: v.Longitude, alt: groundAlt, headingRad: headingRad};
+        }
+        shuttleTargets[v.VehicleID] = {lat: v.Latitude, lng: v.Longitude, alt: groundAlt, headingRad: headingRad};
+
         if(shuttleEntities[v.VehicleID]){
-          // Update existing entity
-          var ent = shuttleEntities[v.VehicleID];
-          ent.position = pos;
-          ent.orientation = orientation;
-          ent._shuttleData = v;
+          // Existing entity — lerp loop handles position updates
+          shuttleEntities[v.VehicleID]._shuttleData = v;
         } else {
           // Create new entity
           var ent = viewer.entities.add({
             position: pos,
             orientation: orientation,
             model: {
-              uri: '/bus_1.glb',
-              scale: 1.0,
-              minimumPixelSize: 24,
-              maximumScale: 3.0,
+              uri: '/bus_blue.glb',
+              scale: 0.035,
+              minimumPixelSize: 18,
+              maximumScale: 0.06,
               heightReference: Cesium.HeightReference.NONE,
-              silhouetteColor: Cesium.Color.fromCssColorString('#f5a623'),
+              silhouetteColor: Cesium.Color.fromCssColorString('#1c6ea4'),
               silhouetteSize: 1.0
             },
             label: {
@@ -2043,6 +2055,46 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           ));
         }
       }
+    }
+
+    // Linear interpolation loop — constant speed between poll updates
+    var shuttleLerpStart = {};  // {VehicleID: {lat, lng, alt, headingRad}}
+    var shuttleLerpTime = 0;    // timestamp when targets were last updated
+
+    function lerpAngle(a, b, t){
+      var diff = b - a;
+      while(diff > Math.PI) diff -= 2 * Math.PI;
+      while(diff < -Math.PI) diff += 2 * Math.PI;
+      return a + diff * t;
+    }
+
+    function shuttleLerpTick(){
+      if(!shuttleMode){ shuttleLerpRAF = null; return; }
+      var now = performance.now();
+      var elapsed = now - shuttleLerpTime;
+      var t = Math.min(elapsed / SHUTTLE_POLL_MS, 1.0); // 0 to 1 over poll interval
+
+      Object.keys(shuttleEntities).forEach(function(id){
+        var target = shuttleTargets[id];
+        var start = shuttleLerpStart[id];
+        if(!target || !start) return;
+        // Linear interpolation from start to target
+        var lat = start.lat + (target.lat - start.lat) * t;
+        var lng = start.lng + (target.lng - start.lng) * t;
+        var alt = start.alt + (target.alt - start.alt) * t;
+        var hr = lerpAngle(start.headingRad, target.headingRad, t);
+        // Apply to entity
+        var ent = shuttleEntities[id];
+        var pos = Cesium.Cartesian3.fromDegrees(lng, lat, alt);
+        ent.position = pos;
+        ent.orientation = Cesium.Transforms.headingPitchRollQuaternion(
+          pos,
+          new Cesium.HeadingPitchRoll(hr, Cesium.Math.toRadians(90), 0)
+        );
+        // Update current for follow cam
+        shuttleCurrent[id] = {lat: lat, lng: lng, alt: alt, headingRad: hr};
+      });
+      shuttleLerpRAF = requestAnimationFrame(shuttleLerpTick);
     }
 
     function updateShuttlePanel(v){
@@ -2109,6 +2161,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       // Start polling
       fetchShuttles();
       shuttlePollTimer = setInterval(fetchShuttles, SHUTTLE_POLL_MS);
+      // Start lerp animation loop
+      if(!shuttleLerpRAF) shuttleLerpRAF = requestAnimationFrame(shuttleLerpTick);
       // Fly to overview of shuttle route area
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(-71.0420, 42.3150, 600),
@@ -2134,6 +2188,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       });
       shuttleEntities = {};
       shuttlePrevPos = {};
+      shuttleTargets = {};
+      shuttleCurrent = {};
+      shuttleLerpStart = {};
+      if(shuttleLerpRAF){ cancelAnimationFrame(shuttleLerpRAF); shuttleLerpRAF = null; }
       // Hide shuttle UI
       document.getElementById('shuttle-hud').classList.remove('vis');
       document.getElementById('shuttle-panel').classList.remove('vis');
@@ -2169,12 +2227,18 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         });
         shuttleEntities = {};
       shuttlePrevPos = {};
+      shuttleTargets = {};
+      shuttleCurrent = {};
+      shuttleLerpStart = {};
+      if(shuttleLerpRAF){ cancelAnimationFrame(shuttleLerpRAF); shuttleLerpRAF = null; }
         document.getElementById('shuttle-hud').classList.remove('vis');
         document.getElementById('shuttle-panel').classList.remove('vis');
         try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
       }
       _origExit3D();
     };
+
+    // ── Night Mode Toggle ──
   }
 
   // Fetch the Google Maps API key (already used for 2D map) and init Cesium

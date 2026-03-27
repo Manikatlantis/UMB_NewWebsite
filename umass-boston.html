@@ -223,6 +223,9 @@ body.custom-cursor #game-canvas{cursor:none!important;}
 .bot-input input::placeholder{color:rgba(238,243,248,0.25);}
 .bot-input button{padding:17px 26px;background:var(--teal);border:none;cursor:pointer;color:var(--deep);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:background 0.2s;}
 .bot-input button:hover{background:#00f0d0;}
+.btn-tts{background:transparent;border:1px solid rgba(0,212,184,0.15);color:rgba(238,243,248,0.4);font-size:14px;padding:4px 8px;cursor:pointer;transition:all 0.2s;border-radius:3px;margin-left:auto;}
+.btn-tts:hover{border-color:var(--teal);color:var(--teal);}
+.btn-tts.active{border-color:var(--teal);color:var(--teal);background:rgba(0,212,184,0.1);}
 
 /* ── NEWS ── */
 #news{background:#020f1e;}
@@ -544,6 +547,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <div class="bot-av">⚓</div>
       <div class="bot-info"><h3>Harbor</h3><p>UMass Boston AI Guide · Powered by Claude</p></div>
       <div class="bot-status"><div class="status-dot"></div>Online</div>
+      <button class="btn-tts" id="btn-tts" onclick="toggleTTS()" title="Toggle voice narration">&#128264;</button>
     </div>
     <div class="bot-msgs" id="chat-msgs">
       <div class="msg b">
@@ -570,6 +574,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <button class="qchip" onclick="sendQ(this)">Campus housing</button>
       <button class="qchip" onclick="sendQ(this)">Graduate school</button>
       <button class="qchip" onclick="sendQ(this)">Student life & clubs</button>
+      <button class="qchip" onclick="sendQ(this)">Give me a campus tour</button>
+      <button class="qchip" onclick="sendQ(this)">Show me the science building</button>
     </div>
     <div class="bot-input">
       <input type="text" id="chat-in" placeholder="Ask me anything about UMass Boston…"/>
@@ -895,6 +901,18 @@ const CAMPUS_BUILDINGS=[
    customBuild:true, // uses special geometry below
    desc:'Iconic I.M. Pei landmark dedicated to President John F. Kennedy.',
    link:'https://www.jfklibrary.org'},
+
+  // West Residence Hall (on-campus housing)
+  {name:'West Residence Hall',x:16,z:12,lat:42.3168,lng:-71.0405,col:0xc8b8a0,texType:'stone',
+   parts:[{w:4,h:5,d:3,ox:0,oy:0,oz:0}],
+   desc:'On-campus student housing with harbor views and modern amenities.',
+   link:'https://www.umb.edu/campus-life/housing/'},
+
+  // East Residence Hall (on-campus housing)
+  {name:'East Residence Hall',x:18,z:8,lat:42.3158,lng:-71.0395,col:0xc8b8a0,texType:'stone',
+   parts:[{w:4,h:5,d:3,ox:0,oy:0,oz:0}],
+   desc:'On-campus student residence with suite-style living near the waterfront.',
+   link:'https://www.umb.edu/campus-life/housing/'},
 ];
 
 // Build JFK Library with special geometry (triangular tower, glass pavilion, cylindrical base)
@@ -1874,6 +1892,119 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var heading = Cesium.Math.toDegrees(cam.heading).toFixed(0);
       var pitch = Cesium.Math.toDegrees(cam.pitch).toFixed(0);
       console.log(`WP${_wpIndex++}: [${lng}, ${lat}, ${alt}, ${heading}, ${pitch}]`);
+    };
+
+    // ── AI DRONE TOUR — camera control for chatbot ──────
+    var _tourActive = false;
+    var _tourRAF = null;
+
+    // Hand-captured camera viewpoints per building: [lng, lat, alt, heading°, pitch°]
+    var BUILDING_CAMS = {
+      'University Hall':           [-71.0347, 42.3122, 28, 337, -19],
+      'Campus Center':             [-71.0359, 42.3120, 35, 325, -21],
+      'JFK Presidential Library':  [-71.0326, 42.3174, 46, 227, -20],
+      'Integrated Sciences Complex':[-71.0427, 42.3135, 26, 75, -12],
+      'Healey Library':            [-71.0381, 42.3138, 24, 260, -4],
+      'McCormack Hall':            [-71.0375, 42.3129, 24, 268, -8],
+      'Wheatley Hall':             [-71.0383, 42.3132, 10, 176, -10],
+      'Clark Athletic Center':     [-71.0390, 42.3166, 29, 197, -12],
+      'Quinn Administration':      [-71.0385, 42.3139, 17, 290, -7],
+      'West Garage':               [-71.0399, 42.3173, 21, 170, -13],
+      'West Residence Hall':       [-71.0399, 42.3173, 21, 170, -13],
+      'East Residence Hall':       [-71.0401, 42.3162, 50, 95, -24],
+    };
+
+    window.droneFlyTo = function(buildingName, callback){
+      // Find building by name (case-insensitive partial match)
+      var building = null;
+      var nameLower = buildingName.toLowerCase();
+      for(var i = 0; i < CAMPUS_BUILDINGS.length; i++){
+        if(CAMPUS_BUILDINGS[i].name.toLowerCase() === nameLower){
+          building = CAMPUS_BUILDINGS[i]; break;
+        }
+      }
+      if(!building){
+        for(var i = 0; i < CAMPUS_BUILDINGS.length; i++){
+          if(CAMPUS_BUILDINGS[i].name.toLowerCase().indexOf(nameLower) !== -1){
+            building = CAMPUS_BUILDINGS[i]; break;
+          }
+        }
+      }
+      if(!building){ if(callback) callback(); return; }
+
+      // Scroll page to hero
+      document.getElementById('hero').scrollIntoView({behavior:'smooth'});
+
+      // Exit shuttle mode if active
+      if(typeof shuttleMode !== 'undefined' && shuttleMode){
+        window.exitShuttleMode();
+      }
+
+      function doFly(){
+        // Use hand-captured camera angle if available, else compute one
+        var cam = BUILDING_CAMS[building.name];
+        var flyLng, flyLat, flyAlt, flyHeading, flyPitch;
+        if(cam){
+          flyLng = cam[0]; flyLat = cam[1]; flyAlt = cam[2];
+          flyHeading = cam[3]; flyPitch = cam[4];
+        } else {
+          flyLng = building.lng; flyLat = building.lat; flyAlt = 120;
+          var dLng = -71.0390 - building.lng;
+          var dLat = 42.3133 - building.lat;
+          flyHeading = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+          flyPitch = -25;
+        }
+
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(flyLng, flyLat, flyAlt),
+          orientation: {
+            heading: Cesium.Math.toRadians(flyHeading),
+            pitch: Cesium.Math.toRadians(flyPitch),
+            roll: 0.0
+          },
+          duration: 2.5,
+          easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+          complete: function(){
+            selectBuilding(building);
+            if(callback) callback();
+          }
+        });
+      }
+
+      if(!exploreMode){
+        enter3DMode();
+        setTimeout(doFly, 1800);
+      } else {
+        doFly();
+      }
+    };
+
+    window.droneTour = function(stops, onStopCallback){
+      _tourActive = true;
+      var idx = 0;
+      function nextStop(){
+        if(!_tourActive || idx >= stops.length) {
+          _tourActive = false;
+          return;
+        }
+        var name = stops[idx];
+        var stopIdx = idx;
+        idx++;
+        window.droneFlyTo(name, function(){
+          if(onStopCallback) onStopCallback(name, stopIdx);
+          // Pause at each stop for 4 seconds, then fly to next
+          if(_tourActive && idx < stops.length){
+            setTimeout(nextStop, 4000);
+          } else {
+            _tourActive = false;
+          }
+        });
+      }
+      nextStop();
+    };
+
+    window.cancelDroneTour = function(){
+      _tourActive = false;
     };
 
     // ── LIVE SHUTTLE TRACKER ──────────────────────────
@@ -3074,6 +3205,8 @@ const chatMsgs=document.getElementById('chat-msgs');
 const chatIn=document.getElementById('chat-in');
 const typingEl=document.getElementById('typing');
 const history=[];
+const chatSessionId='sess_'+Math.random().toString(36).slice(2);
+let ttsEnabled=false;
 
 function addMsg(role,html){
   const div=document.createElement('div');
@@ -3231,18 +3364,93 @@ function harborRespond(msg){
 async function sendMsg(){
   const text=chatIn.value.trim();
   if(!text)return;
+  // Cancel any active drone tour
+  if(window.cancelDroneTour) window.cancelDroneTour();
   addMsg('user',text);
   history.push({role:'user',content:text});
   chatIn.value='';
   typingEl.style.display='flex';
   chatMsgs.scrollTop=chatMsgs.scrollHeight;
-  // Simulate thinking delay (400–800ms)
-  await new Promise(r=>setTimeout(r,400+Math.random()*400));
+
+  // Try backend AI first, fall back to static KB
+  let reply = null;
+  let actions = [];
+  try {
+    const resp = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sessionId: chatSessionId, message: text, history: history.slice(-10) })
+    });
+    const data = await resp.json();
+    if(data.fallback || !data.reply){
+      // Backend returned fallback signal — use static KB
+      reply = harborRespond(text);
+    } else {
+      reply = data.reply;
+      actions = data.actions || [];
+    }
+  } catch(err){
+    // Network error — use static KB
+    reply = harborRespond(text);
+  }
+
   typingEl.style.display='none';
-  const reply=harborRespond(text);
   history.push({role:'assistant',content:reply});
   addMsg('assistant',reply);
+  if(ttsEnabled) speakNarration(reply);
+  executeActions(actions);
 }
+
+function executeActions(actions){
+  if(!actions || !actions.length) return;
+  for(var i = 0; i < actions.length; i++){
+    var action = actions[i];
+    if(action.type === 'fly_to' && window.droneFlyTo){
+      window.droneFlyTo(action.building);
+    } else if(action.type === 'campus_tour' && window.droneTour){
+      (function(stops){
+        window.droneTour(stops, function(name, idx){
+          var buildings = typeof CAMPUS_BUILDINGS !== 'undefined' ? CAMPUS_BUILDINGS : [];
+          var b = null;
+          for(var j = 0; j < buildings.length; j++){
+            if(buildings[j].name === name){ b = buildings[j]; break; }
+          }
+          if(b){
+            var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+b.desc;
+            addMsg('assistant', msg);
+            if(ttsEnabled) speakNarration('Stop '+(idx+1)+': '+b.name+'. '+b.desc);
+          }
+        });
+      })(action.stops);
+    }
+  }
+}
+
+// ── Text-to-Speech ──
+function speakNarration(html){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  // Strip HTML tags for speech
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  var text = tmp.textContent || tmp.innerText || '';
+  if(!text.trim()) return;
+  var utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.95;
+  utt.pitch = 1.0;
+  var voices = speechSynthesis.getVoices();
+  var pref = voices.find(function(v){ return v.name.indexOf('Samantha') !== -1 || v.name.indexOf('Google US English') !== -1; });
+  if(pref) utt.voice = pref;
+  speechSynthesis.speak(utt);
+}
+
+window.toggleTTS = function(){
+  ttsEnabled = !ttsEnabled;
+  var btn = document.getElementById('btn-tts');
+  btn.classList.toggle('active', ttsEnabled);
+  btn.innerHTML = ttsEnabled ? '&#128266;' : '&#128264;';
+  if(!ttsEnabled) speechSynthesis.cancel();
+};
 
 function sendQ(btn){ chatIn.value=btn.textContent; sendMsg(); }
 chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});

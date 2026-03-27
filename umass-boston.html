@@ -99,6 +99,9 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 #shuttle-panel .sp-follow:hover{background:rgba(245,166,35,0.25);}
 #shuttle-panel .sp-follow.active{background:var(--gold);color:var(--deep);}
 
+/* ── BUS LABELS (HTML overlays) ── */
+.bus-label{position:absolute;pointer-events:none;z-index:15;transform:translate(-50%,-100%);white-space:nowrap;padding:3px 8px;background:rgba(0,16,48,0.92);border:1px solid rgba(245,166,35,0.5);border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
+
 /* ── TICKER ── */
 .ticker{overflow:hidden;border-top:1px solid rgba(0,212,184,0.1);border-bottom:1px solid rgba(0,212,184,0.1);background:rgba(0,16,32,0.9);padding:14px 0;}
 .ticker-track{display:flex;gap:0;white-space:nowrap;animation:tick 28s linear infinite;}
@@ -378,7 +381,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="hero-content">
     <p class="hero-kicker">Boston Harbor's Premier Public Research University</p>
     <h1 class="hero-h1"><span class="dim">Where</span> <span class="glow">brilliance</span><br><span class="dim">meets the</span> times</h1>
-    <p class="hero-sub">UMass Boston — a Carnegie R1 research powerhouse on a 175-acre harbor peninsula, transforming 16,000 lives each year.</p>
+    <p class="hero-sub">UMass Boston — a Carnegie R1 research powerhouse on a 120-acre harbor peninsula, transforming 16,000 lives each year.</p>
     <div class="hero-btns">
       <a href="https://www.umb.edu/academics/" target="_blank" class="btn-r">Explore Programs</a>
       <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-o">Apply Fall 2025</a>
@@ -455,7 +458,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <p>Founded in 1964, UMass Boston is the only public research university in the City of Boston — an anchor institution serving the Commonwealth with world-class education and scholarship.</p>
     <ul class="about-bullets">
       <li>Carnegie R1 classification — highest doctoral research activity</li>
-      <li>Located on a 175-acre Columbia Point peninsula, surrounded by harbor</li>
+      <li>Located on a 120-acre Columbia Point peninsula, surrounded by harbor</li>
       <li>10 colleges spanning sciences, arts, business, health & policy</li>
       <li>$100M+ in annual sponsored research funding</li>
       <li>Adjacent to the JFK Presidential Library & Museum</li>
@@ -1583,9 +1586,12 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Hide bare globe — 3D tiles provide the ground. Prevents void/blue surface at low angles.
     viewer.scene.globe.show = false;
     viewer.scene.backgroundColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);
+    // Hide default Cesium sun/moon — photorealistic tiles have their own sky
+    viewer.scene.sun.show = false;
+    viewer.scene.moon.show = false;
 
     // ── Zoom ceiling: block scroll-out past max altitude ──
-    const MAX_ALT = 1200; // meters above ellipsoid
+    const MAX_ALT = 500; // meters — keeps view tight on campus
     viewer.canvas.addEventListener('wheel', e => {
       if (!exploreMode) return;
       const carto = Cesium.Cartographic.fromCartesian(viewer.camera.position);
@@ -1594,15 +1600,19 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
     }, { capture: true, passive: false });
 
-    // Load Google Photorealistic 3D Tiles — limit detail to reduce memory/network
+    // Load Google Photorealistic 3D Tiles — high quality within the 2mi radius
     try{
       const tileset=await Cesium.createGooglePhotorealistic3DTileset();
-      tileset.maximumScreenSpaceError = 24;        // default 16 — higher = less detail loaded
-      tileset.maximumMemoryUsage = 256;             // cap GPU memory (MB)
+      tileset.maximumScreenSpaceError = 5;          // high quality, reasonable load time
+      tileset.maximumMemoryUsage = 512;             // 512MB GPU cache
+      tileset.dynamicScreenSpaceError = true;       // reduce quality for distant tiles
+      tileset.dynamicScreenSpaceErrorDensity = 0.0004; // ~1mi radius of full quality
+      tileset.dynamicScreenSpaceErrorFactor = 24;   // aggressively lower quality beyond radius
+      tileset.dynamicScreenSpaceErrorHeightFalloff = 0.5;
       tileset.cullRequestsWhileMoving = true;
-      tileset.cullRequestsWhileMovingMultiplier = 120; // aggressively skip tiles while camera moves
+      tileset.cullRequestsWhileMovingMultiplier = 120;
       tileset.preloadWhenHidden = false;
-      tileset.preferLeaves = true;                  // prefer leaf tiles over intermediate
+      tileset.preferLeaves = true;
       viewer.scene.primitives.add(tileset);
     }catch(err){
       console.warn('Google Photorealistic 3D Tiles unavailable:',err);
@@ -2007,6 +2017,86 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       _tourActive = false;
     };
 
+    // ── CAMPUS ROAD POLYLINE (hand-captured waypoints) ──
+    var CAMPUS_ROAD = [
+      [-71.0349,42.3129],[-71.0349,42.3129],[-71.0350,42.3129],[-71.0351,42.3129],
+      [-71.0352,42.3129],[-71.0352,42.3129],[-71.0353,42.3129],[-71.0354,42.3129],
+      [-71.0355,42.3129],[-71.0355,42.3129],[-71.0356,42.3129],[-71.0357,42.3129],
+      [-71.0357,42.3129],[-71.0358,42.3129],[-71.0359,42.3129],[-71.0360,42.3129],
+      [-71.0361,42.3129],[-71.0361,42.3129],[-71.0362,42.3129],[-71.0363,42.3129],
+      [-71.0363,42.3128],[-71.0364,42.3128],[-71.0365,42.3128],[-71.0365,42.3127],
+      [-71.0365,42.3127],[-71.0365,42.3126],[-71.0366,42.3126],[-71.0366,42.3125],
+      [-71.0366,42.3125],[-71.0365,42.3124],[-71.0365,42.3124],[-71.0365,42.3124],
+      [-71.0365,42.3122],[-71.0365,42.3122],[-71.0365,42.3121],[-71.0364,42.3120],
+      [-71.0364,42.3119],[-71.0364,42.3118],[-71.0363,42.3117],[-71.0363,42.3117],
+      [-71.0363,42.3116],[-71.0363,42.3115],[-71.0364,42.3115],[-71.0364,42.3114],
+      [-71.0364,42.3114],[-71.0365,42.3112],[-71.0366,42.3112],[-71.0366,42.3111],
+      [-71.0367,42.3110],[-71.0368,42.3110],[-71.0369,42.3109],[-71.0369,42.3109],
+      [-71.0370,42.3109],[-71.0370,42.3109],[-71.0371,42.3108],[-71.0372,42.3108],
+      [-71.0375,42.3108],[-71.0377,42.3108],[-71.0379,42.3109],[-71.0380,42.3110],
+      [-71.0381,42.3110],[-71.0382,42.3111],[-71.0383,42.3111],[-71.0384,42.3112],
+      [-71.0385,42.3113],[-71.0386,42.3113],[-71.0386,42.3113],[-71.0387,42.3114],
+      [-71.0388,42.3114],[-71.0390,42.3115],[-71.0391,42.3116],[-71.0393,42.3117],
+      [-71.0394,42.3118],[-71.0395,42.3119],[-71.0396,42.3119],[-71.0397,42.3120],
+      [-71.0398,42.3121],[-71.0400,42.3122],[-71.0401,42.3122],[-71.0401,42.3123],
+      [-71.0403,42.3123],[-71.0404,42.3124],[-71.0405,42.3125],[-71.0406,42.3125],
+      [-71.0407,42.3126],[-71.0408,42.3126],[-71.0408,42.3127],[-71.0409,42.3127],
+      [-71.0410,42.3128],[-71.0412,42.3129],[-71.0413,42.3130],[-71.0415,42.3131],
+      [-71.0416,42.3132],[-71.0417,42.3132],[-71.0419,42.3134],[-71.0420,42.3135],
+      [-71.0421,42.3136],[-71.0422,42.3137],[-71.0422,42.3138],[-71.0422,42.3139],
+      [-71.0422,42.3139],[-71.0422,42.3140],[-71.0421,42.3141],[-71.0421,42.3142],
+      [-71.0420,42.3142],[-71.0418,42.3143],[-71.0416,42.3144],[-71.0415,42.3145],
+      [-71.0414,42.3146],[-71.0413,42.3146],[-71.0412,42.3147],[-71.0411,42.3148],
+      [-71.0410,42.3149],[-71.0409,42.3150],[-71.0409,42.3150],[-71.0408,42.3151],
+      [-71.0407,42.3152],[-71.0407,42.3152],[-71.0406,42.3153],[-71.0405,42.3154],
+      [-71.0404,42.3155],[-71.0403,42.3157],[-71.0403,42.3157],[-71.0402,42.3159],
+      [-71.0402,42.3160],[-71.0401,42.3161],[-71.0400,42.3163],[-71.0400,42.3164],
+      [-71.0399,42.3165],[-71.0398,42.3167],[-71.0398,42.3167],[-71.0398,42.3168],
+      [-71.0397,42.3169],[-71.0397,42.3169],[-71.0397,42.3169],[-71.0397,42.3170],
+      [-71.0397,42.3170],[-71.0399,42.3171],[-71.0399,42.3171],[-71.0399,42.3171],
+      [-71.0399,42.3171],[-71.0403,42.3172],[-71.0404,42.3172],[-71.0406,42.3173],
+      [-71.0412,42.3175],[-71.0414,42.3176],[-71.0417,42.3177],[-71.0419,42.3177],
+      [-71.0421,42.3178],[-71.0424,42.3179],[-71.0427,42.3180],[-71.0430,42.3181],
+      [-71.0432,42.3182],[-71.0436,42.3183],[-71.0438,42.3184],[-71.0440,42.3185],
+      [-71.0442,42.3185],[-71.0445,42.3186],[-71.0448,42.3187],[-71.0450,42.3188],
+      [-71.0452,42.3189],[-71.0455,42.3190],[-71.0457,42.3191],[-71.0459,42.3192],
+      [-71.0461,42.3192],[-71.0463,42.3193],[-71.0465,42.3194],[-71.0471,42.3196],
+      [-71.0477,42.3198],[-71.0487,42.3201],[-71.0496,42.3204],[-71.0502,42.3207],
+      [-71.0507,42.3208],[-71.0511,42.3209],[-71.0513,42.3208],[-71.0512,42.3207],
+      [-71.0512,42.3207],[-71.0511,42.3206],[-71.0510,42.3204],[-71.0510,42.3203],
+      [-71.0510,42.3202],[-71.0511,42.3202],[-71.0512,42.3201],[-71.0512,42.3201],
+      [-71.0513,42.3202],[-71.0513,42.3203],[-71.0514,42.3204],[-71.0514,42.3205],
+      [-71.0514,42.3206],[-71.0513,42.3207],[-71.0512,42.3208],[-71.0512,42.3209],
+      [-71.0511,42.3209],[-71.0509,42.3209],[-71.0508,42.3208],[-71.0507,42.3208],
+      [-71.0506,42.3207],[-71.0505,42.3207],[-71.0504,42.3207],[-71.0503,42.3206],
+      [-71.0500,42.3205],[-71.0497,42.3204],[-71.0491,42.3202],[-71.0484,42.3199],
+      [-71.0481,42.3198],[-71.0479,42.3198],[-71.0473,42.3196],[-71.0467,42.3194],
+      [-71.0464,42.3193],[-71.0459,42.3191],[-71.0457,42.3190],[-71.0455,42.3189],
+      [-71.0453,42.3189],[-71.0450,42.3188],[-71.0447,42.3187],[-71.0442,42.3185],
+      [-71.0439,42.3184],[-71.0434,42.3182],[-71.0428,42.3180],[-71.0423,42.3179],
+      [-71.0423,42.3178],[-71.0421,42.3178],[-71.0419,42.3177],[-71.0413,42.3175],
+      [-71.0409,42.3174],[-71.0406,42.3173],[-71.0403,42.3171],[-71.0401,42.3170]
+    ];
+
+    // Snap a GPS point to nearest point on the campus road polyline
+    function snapToRoad(lng, lat) {
+      var bestDist = Infinity, bestLng = lng, bestLat = lat;
+      for (var i = 0; i < CAMPUS_ROAD.length - 1; i++) {
+        var ax = CAMPUS_ROAD[i][0],   ay = CAMPUS_ROAD[i][1];
+        var bx = CAMPUS_ROAD[i+1][0], by = CAMPUS_ROAD[i+1][1];
+        var dx = bx - ax, dy = by - ay;
+        var len2 = dx * dx + dy * dy;
+        if (len2 === 0) continue;
+        var t = Math.max(0, Math.min(1, ((lng - ax) * dx + (lat - ay) * dy) / len2));
+        var px = ax + t * dx, py = ay + t * dy;
+        var d = (lng - px) * (lng - px) + (lat - py) * (lat - py);
+        if (d < bestDist) { bestDist = d; bestLng = px; bestLat = py; }
+      }
+      // Only snap if within ~50m (approx 0.0005 degrees)
+      if (bestDist < 0.0005 * 0.0005) return { lng: bestLng, lat: bestLat };
+      return { lng: lng, lat: lat }; // too far from road, keep original
+    }
+
     // ── LIVE SHUTTLE TRACKER ──────────────────────────
     const SHUTTLE_API = 'https://umb.transloc.com/Services/JSONPRelay.svc/GetMapVehiclePoints?apiKey=8882812681&isPublicMap=true';
     const SHUTTLE_POLL_MS = 4000;
@@ -2063,6 +2153,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       vehicles.forEach(function(v){
         activeIds[v.VehicleID] = true;
         if(v.IsOnRoute) onRouteCount++;
+        // Snap bus GPS to nearest campus road segment
+        var snapped = snapToRoad(v.Longitude, v.Latitude);
+        v.Longitude = snapped.lng;
+        v.Latitude  = snapped.lat;
         // Sample 3D tile height at bus + nearby offsets, take minimum (road, not rooftop)
         var offset = 0.0002; // ~20m
         var samples = [
@@ -2134,31 +2228,23 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
               silhouetteColor: Cesium.Color.fromCssColorString('#1c6ea4'),
               silhouetteSize: 1.0
             },
-            label: {
-              text: v.Name,
-              font: 'bold 11px "Space Mono", monospace',
-              fillColor: Cesium.Color.fromCssColorString('#f5a623'),
-              outlineColor: Cesium.Color.BLACK,
-              outlineWidth: 4,
-              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-              verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-              pixelOffset: new Cesium.Cartesian2(0, -20),
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-              scaleByDistance: new Cesium.NearFarScalar(50, 1.2, 3000, 0.4),
-              showBackground: true,
-              backgroundColor: new Cesium.Color(0, 0.04, 0.12, 0.85),
-              backgroundPadding: new Cesium.Cartesian2(6, 4)
-            }
           });
           ent._shuttleBusId = v.VehicleID;
           ent._shuttleData = v;
           shuttleEntities[v.VehicleID] = ent;
+          // Create HTML label overlay
+          var lbl = document.createElement('div');
+          lbl.className = 'bus-label';
+          lbl.textContent = v.Name;
+          document.getElementById('cesium-container').appendChild(lbl);
+          ent._labelEl = lbl;
         }
       });
 
       // Remove stale entities
       Object.keys(shuttleEntities).forEach(function(id){
         if(!activeIds[id]){
+          if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
           viewer.entities.remove(shuttleEntities[id]);
           delete shuttleEntities[id];
           if(followingBusId == id) deselectShuttle();
@@ -2224,6 +2310,17 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         );
         // Update current for follow cam
         shuttleCurrent[id] = {lat: lat, lng: lng, alt: alt, headingRad: hr};
+        // Position HTML label
+        if(ent._labelEl){
+          var screenPos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pos);
+          if(screenPos){
+            ent._labelEl.style.left = screenPos.x + 'px';
+            ent._labelEl.style.top = (screenPos.y - 30) + 'px';
+            ent._labelEl.style.display = 'block';
+          } else {
+            ent._labelEl.style.display = 'none';
+          }
+        }
       });
       shuttleLerpRAF = requestAnimationFrame(shuttleLerpTick);
     }
@@ -2313,8 +2410,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       followingBusId = null;
       _selectedShuttleId = null;
       if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
-      // Remove all shuttle entities
+      // Remove all shuttle entities + HTML labels
       Object.keys(shuttleEntities).forEach(function(id){
+        if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
         viewer.entities.remove(shuttleEntities[id]);
       });
       shuttleEntities = {};
@@ -2354,6 +2452,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         _selectedShuttleId = null;
         if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
         Object.keys(shuttleEntities).forEach(function(id){
+          if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
           viewer.entities.remove(shuttleEntities[id]);
         });
         shuttleEntities = {};
@@ -3285,7 +3384,7 @@ const KB=[
   },
   {
     keys:['location','campus','where','boston','commute','parking','mbta','transit','subway','red line'],
-    reply:`UMass Boston sits on a <strong>175-acre Columbia Point peninsula</strong> surrounded by Boston Harbor.<br><br>
+    reply:`UMass Boston sits on a <strong>120-acre Columbia Point peninsula</strong> surrounded by Boston Harbor.<br><br>
 <ul>
   <li>Address: <strong>100 Morrissey Blvd, Boston MA 02125</strong></li>
   <li>MBTA Red Line: <strong>JFK/UMass station</strong> — direct from Downtown Boston (~15 min)</li>

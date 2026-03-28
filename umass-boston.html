@@ -99,8 +99,24 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 #shuttle-panel .sp-follow:hover{background:rgba(245,166,35,0.25);}
 #shuttle-panel .sp-follow.active{background:var(--gold);color:var(--deep);}
 
+/* ── WEATHER HUD ── */
+.weather-hud{position:absolute;bottom:24px;right:24px;z-index:20;padding:8px 14px;display:flex;align-items:center;gap:8px;background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.25);border-radius:4px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:11px;color:var(--white);opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.weather-hud.vis{opacity:1;pointer-events:all;}
+.weather-icon{font-size:18px;}
+.weather-temp{font-weight:bold;font-size:14px;}
+.weather-cond{color:rgba(238,243,248,0.6);text-transform:capitalize;}
+.weather-live{color:#00c8d4;font-size:8px;letter-spacing:2px;animation:hud-pulse 1.5s ease-in-out infinite;}
+#weather-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;}
+
 /* ── BUS LABELS (HTML overlays) ── */
 .bus-label{position:absolute;pointer-events:none;z-index:15;transform:translate(-50%,-100%);white-space:nowrap;padding:3px 8px;background:rgba(0,16,48,0.92);border:1px solid rgba(245,166,35,0.5);border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
+
+/* ── HERO SCROLL PARALLAX ── */
+.hero-content{transition:none;}
+.hero-overlay{transition:none;}
+
+/* ── ABOUT section scale-in card ── */
+.about-canvas-wrap{transform-origin:center center;}
 
 /* ── TICKER ── */
 .ticker{overflow:hidden;border-top:1px solid rgba(0,212,184,0.1);border-bottom:1px solid rgba(0,212,184,0.1);background:rgba(0,16,32,0.9);padding:14px 0;}
@@ -116,12 +132,19 @@ section{padding:110px 52px;}
 .sec-tag::before{content:'';width:28px;height:1px;background:linear-gradient(90deg,var(--umb-blue),var(--teal));}
 .sec-title{font-family:'Unbounded',sans-serif;font-size:clamp(30px,4vw,58px);font-weight:700;line-height:1.05;letter-spacing:-2px;margin-bottom:18px;}
 .sec-title em{font-style:italic;background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'Playfair Display',serif;}
-.reveal{opacity:0;transform:translateY(36px);transition:opacity 0.75s cubic-bezier(0.22,1,0.36,1),transform 0.75s cubic-bezier(0.22,1,0.36,1);}
-.reveal.vis{opacity:1;transform:translateY(0);}
-.rev-l{opacity:0;transform:translateX(-36px);transition:opacity 0.75s cubic-bezier(0.22,1,0.36,1),transform 0.75s cubic-bezier(0.22,1,0.36,1);}
-.rev-l.vis{opacity:1;transform:translateX(0);}
-.rev-r{opacity:0;transform:translateX(36px);transition:opacity 0.75s cubic-bezier(0.22,1,0.36,1),transform 0.75s cubic-bezier(0.22,1,0.36,1);}
-.rev-r.vis{opacity:1;transform:translateX(0);}
+/* Scroll-driven elements — JS controls opacity/transform via scroll progress */
+.reveal,.rev-l,.rev-r{opacity:0;will-change:opacity,transform;}
+.reveal{transform:translateY(60px);}
+.rev-l{transform:translateX(-80px);}
+.rev-r{transform:translateX(80px);}
+
+/* Section-level parallax text */
+.sec-title{will-change:transform;}
+.sec-tag{will-change:opacity;}
+
+/* Stagger children in grids */
+.programs-grid .prog-card{will-change:opacity,transform;}
+.news-grid .news-card{will-change:opacity,transform;}
 /* Scroll-driven gradient border shimmer */
 @keyframes borderShimmer{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}
 .shimmer-border{border:1px solid transparent;background-clip:padding-box;position:relative;}
@@ -133,19 +156,19 @@ section{padding:110px 52px;}
 .about-frame{position:relative;height:540px;}
 .about-canvas-wrap{position:absolute;inset:0;border:1px solid rgba(28,110,164,0.25);overflow:hidden;box-shadow:0 0 60px rgba(28,110,164,0.06);}
 #about-canvas{width:100%;height:100%;}
-.about-badge{position:absolute;bottom:-24px;right:-24px;width:108px;height:108px;background:linear-gradient(135deg,var(--crimson),#aa0000);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 50px rgba(204,0,0,0.35);}
+.about-badge{position:absolute;bottom:-24px;right:-24px;width:108px;height:108px;background:linear-gradient(135deg,var(--crimson),#aa0000);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 50px rgba(204,0,0,0.35);opacity:0;will-change:opacity,transform;}
 .about-badge b{font-family:'Unbounded',sans-serif;font-size:32px;font-weight:700;color:#fff;}
 .about-badge span{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:1px;color:rgba(255,255,255,0.75);text-align:center;}
 .about-body p{font-size:17px;line-height:1.8;color:rgba(238,243,248,0.72);margin-bottom:28px;}
 .about-bullets{list-style:none;margin-bottom:36px;}
-.about-bullets li{font-size:14px;color:rgba(238,243,248,0.65);line-height:1.6;padding:10px 0;border-bottom:1px solid rgba(238,243,248,0.05);display:flex;gap:14px;}
+.about-bullets li{font-size:14px;color:rgba(238,243,248,0.65);line-height:1.6;padding:10px 0;border-bottom:1px solid rgba(238,243,248,0.05);display:flex;gap:14px;opacity:0;will-change:opacity,transform;}
 .about-bullets li::before{content:'⟶';background:var(--grad-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0;}
 
 /* ── PROGRAMS ── */
 #programs{background:linear-gradient(180deg,var(--deep) 0%,#010e1c 100%);}
 .programs-intro{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:56px;}
 .programs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(28,110,164,0.08);}
-.prog-card{background:var(--deep);padding:36px 24px;text-decoration:none;color:inherit;display:block;border:1px solid transparent;transition:all 0.35s;position:relative;overflow:hidden;}
+.prog-card{background:var(--deep);padding:36px 24px;text-decoration:none;color:inherit;display:block;border:1px solid transparent;transition:border-color 0.35s,background 0.35s;position:relative;overflow:hidden;opacity:0;will-change:opacity,transform;}
 .prog-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--grad-primary);transform:scaleX(0);transition:transform 0.4s cubic-bezier(0.22,1,0.36,1);transform-origin:left;}
 .prog-card:hover{border-color:rgba(28,110,164,0.2);background:#030e1c;}
 .prog-card:hover::after{transform:scaleX(1);}
@@ -233,7 +256,7 @@ body.custom-cursor #game-canvas{cursor:none!important;}
 /* ── NEWS ── */
 #news{background:#020f1e;}
 .news-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px;margin-top:56px;}
-.news-card{border:1px solid rgba(0,212,184,0.08);overflow:hidden;text-decoration:none;color:inherit;display:block;transition:border-color 0.3s,transform 0.3s;}
+.news-card{border:1px solid rgba(0,212,184,0.08);overflow:hidden;text-decoration:none;color:inherit;display:block;transition:border-color 0.3s;opacity:0;}
 .news-card:hover{border-color:rgba(0,212,184,0.25);transform:translateY(-5px);}
 .nc-img{height:200px;background:linear-gradient(135deg,#001428,#002244);display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;overflow:hidden;}
 .news-card:first-child .nc-img{height:260px;}
@@ -392,6 +415,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
   <button class="btn-exit3d" id="btn-logcam" style="left:auto;right:24px;opacity:0;pointer-events:none;" onclick="logCamera()">Log Camera</button>
   <div class="shuttle-hud" id="shuttle-hud"><div class="pulse"></div><span id="shuttle-hud-text">Tracking shuttles...</span></div>
+  <div class="weather-hud" id="weather-hud"><span class="weather-icon" id="weather-icon"></span><span class="weather-temp" id="weather-temp"></span><span class="weather-cond" id="weather-cond"></span><span class="weather-live">LIVE</span></div>
+  <canvas id="weather-canvas"></canvas>
   <div id="shuttle-panel">
     <div class="sp-name" id="sp-name"></div>
     <div class="sp-row">Speed: <span id="sp-speed"></span></div>
@@ -477,14 +502,14 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <a href="https://www.umb.edu/academics/" target="_blank" class="btn-o reveal">All Programs →</a>
   </div>
   <div class="programs-grid">
-    <a href="https://www.umb.edu/academics/csm/" target="_blank" class="prog-card reveal"><span class="prog-icon">🔬</span><div class="prog-name">Science & Mathematics</div><div class="prog-count">40+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/cla/" target="_blank" class="prog-card reveal" style="transition-delay:.07s"><span class="prog-icon">📖</span><div class="prog-name">Liberal Arts</div><div class="prog-count">30+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/bcbs/" target="_blank" class="prog-card reveal" style="transition-delay:.14s"><span class="prog-icon">📈</span><div class="prog-name">Business & Management</div><div class="prog-count">25+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/nursing/" target="_blank" class="prog-card reveal" style="transition-delay:.21s"><span class="prog-icon">🏥</span><div class="prog-name">Nursing & Health</div><div class="prog-count">15+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/cts/" target="_blank" class="prog-card reveal" style="transition-delay:.07s"><span class="prog-icon">💻</span><div class="prog-name">Computer Science</div><div class="prog-count">20+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/education/" target="_blank" class="prog-card reveal" style="transition-delay:.14s"><span class="prog-icon">🎓</span><div class="prog-name">Education</div><div class="prog-count">18+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/cpcs/" target="_blank" class="prog-card reveal" style="transition-delay:.21s"><span class="prog-icon">⚖️</span><div class="prog-name">Public Policy</div><div class="prog-count">22+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/graduate/" target="_blank" class="prog-card reveal" style="transition-delay:.28s"><span class="prog-icon">🔭</span><div class="prog-name">Graduate Research</div><div class="prog-count">80+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/csm/" target="_blank" class="prog-card"><span class="prog-icon">🔬</span><div class="prog-name">Science & Mathematics</div><div class="prog-count">40+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/cla/" target="_blank" class="prog-card"><span class="prog-icon">📖</span><div class="prog-name">Liberal Arts</div><div class="prog-count">30+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/bcbs/" target="_blank" class="prog-card"><span class="prog-icon">📈</span><div class="prog-name">Business & Management</div><div class="prog-count">25+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/nursing/" target="_blank" class="prog-card"><span class="prog-icon">🏥</span><div class="prog-name">Nursing & Health</div><div class="prog-count">15+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/cts/" target="_blank" class="prog-card"><span class="prog-icon">💻</span><div class="prog-name">Computer Science</div><div class="prog-count">20+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/education/" target="_blank" class="prog-card"><span class="prog-icon">🎓</span><div class="prog-name">Education</div><div class="prog-count">18+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/cpcs/" target="_blank" class="prog-card"><span class="prog-icon">⚖️</span><div class="prog-name">Public Policy</div><div class="prog-count">22+ Programs</div><span class="prog-arrow">↗</span></a>
+    <a href="https://www.umb.edu/academics/graduate/" target="_blank" class="prog-card"><span class="prog-icon">🔭</span><div class="prog-name">Graduate Research</div><div class="prog-count">80+ Programs</div><span class="prog-arrow">↗</span></a>
   </div>
 </section>
 
@@ -525,15 +550,15 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="sec-tag">Latest from UMB</div>
   <h2 class="sec-title reveal">News & <em>Impact</em></h2>
   <div class="news-grid">
-    <a href="https://www.umb.edu/news/" target="_blank" class="news-card reveal">
+    <a href="https://www.umb.edu/news/" target="_blank" class="news-card">
       <div class="nc-img">🌊<div class="nc-glow"></div></div>
       <div class="nc-body"><div class="nc-cat">Research</div><div class="nc-title">UMass Boston Leads Groundbreaking Climate Resilience Study for Boston Harbor</div><div class="nc-date">Feb 2025</div></div>
     </a>
-    <a href="https://www.umb.edu/news/" target="_blank" class="news-card reveal" style="transition-delay:.1s">
+    <a href="https://www.umb.edu/news/" target="_blank" class="news-card">
       <div class="nc-img" style="height:180px">🏆<div class="nc-glow"></div></div>
       <div class="nc-body"><div class="nc-cat">Recognition</div><div class="nc-title">Ranked #1 for Social Mobility in Massachusetts</div><div class="nc-date">Jan 2025</div></div>
     </a>
-    <a href="https://www.umb.edu/news/" target="_blank" class="news-card reveal" style="transition-delay:.2s">
+    <a href="https://www.umb.edu/news/" target="_blank" class="news-card">
       <div class="nc-img" style="height:180px">🧬<div class="nc-glow"></div></div>
       <div class="nc-body"><div class="nc-cat">Innovation</div><div class="nc-title">New Biomedical Research Institute Opens on Campus</div><div class="nc-date">Dec 2024</div></div>
     </a>
@@ -684,9 +709,158 @@ function drawBeacon(){
 // Nav scroll
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',scrollY>50));
 
-// Scroll reveal
-const obs=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add('vis')),{threshold:0.1});
-document.querySelectorAll('.reveal,.rev-l,.rev-r').forEach(el=>obs.observe(el));
+// ── SCROLL-DRIVEN ANIMATION ENGINE ──
+// Apple-style: elements animate continuously based on scroll position, not just trigger once.
+(function(){
+  // Utility: map a value from one range to another, clamped
+  function lerp(a, b, t){ return a + (b - a) * Math.max(0, Math.min(1, t)); }
+
+  // Easing: cubic ease-out for smoother motion
+  function easeOut(t){ var t1 = 1 - t; return 1 - t1 * t1 * t1; }
+
+  // Get element's position relative to viewport scroll
+  function getProgress(el, start, end){
+    var rect = el.getBoundingClientRect();
+    var top = rect.top + window.scrollY;
+    var wh = window.innerHeight;
+    // start: how far into viewport before anim begins (0 = just entering, 1 = at top)
+    // end: how far before fully animated
+    var s = top - wh * (1 - (start || 0));
+    var e = top - wh * (1 - (end || 0.55));
+    if (s === e) return 1;
+    var raw = (window.scrollY - s) / (e - s);
+    return Math.max(0, Math.min(1, raw));
+  }
+
+  // ── Hero parallax: content fades and drifts up as you scroll away ──
+  var heroContent = document.querySelector('.hero-content');
+  var heroOverlay = document.querySelector('.hero-overlay');
+  var scrollHint = document.querySelector('.scroll-hint');
+
+  // ── Collect animated elements ──
+  var reveals = [];
+  document.querySelectorAll('.reveal').forEach(function(el){
+    // Check for stagger delay
+    var delay = parseFloat(el.style.transitionDelay || '0');
+    reveals.push({ el: el, delay: delay, type: 'up' });
+  });
+  document.querySelectorAll('.rev-l').forEach(function(el){
+    reveals.push({ el: el, delay: 0, type: 'left' });
+  });
+  document.querySelectorAll('.rev-r').forEach(function(el){
+    reveals.push({ el: el, delay: 0, type: 'right' });
+  });
+
+  // ── Staggered grid children (programs, news) ──
+  var progCards = document.querySelectorAll('.prog-card');
+  var newsCards = document.querySelectorAll('.news-card');
+
+  // ── About section special treatment ──
+  var aboutBadge = document.querySelector('.about-badge');
+  var aboutBullets = document.querySelectorAll('.about-bullets li');
+
+  // ── Section titles: subtle parallax ──
+  var secTitles = document.querySelectorAll('.sec-title');
+  var secTags = document.querySelectorAll('.sec-tag');
+
+  var ticking = false;
+
+  function onScroll(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      ticking = false;
+      var sy = window.scrollY;
+      var wh = window.innerHeight;
+
+      // ── Hero parallax — dramatic fade + drift + scale ──
+      if (heroContent && sy < wh * 1.5) {
+        var hp = Math.min(1, sy / (wh * 0.4));
+        heroContent.style.opacity = lerp(1, 0, hp);
+        heroContent.style.transform = 'translateY(' + lerp(0, -160, hp) + 'px) scale(' + lerp(1, 0.8, hp) + ')';
+        if (scrollHint) scrollHint.style.opacity = lerp(1, 0, hp * 4);
+      }
+
+      // ── Reveal elements ──
+      // Sweet spot: starts when element is ~10% into viewport, finishes around center
+      for (var i = 0; i < reveals.length; i++) {
+        var r = reveals[i];
+        var p = getProgress(r.el, 0.05, 0.88);
+        p = Math.max(0, Math.min(1, p - r.delay * 0.5));
+        var ep = easeOut(p);
+
+        if (r.type === 'up') {
+          r.el.style.opacity = ep;
+          r.el.style.transform = 'translateY(' + lerp(120, 0, ep) + 'px) scale(' + lerp(0.85, 1, ep) + ')';
+        } else if (r.type === 'left') {
+          r.el.style.opacity = ep;
+          r.el.style.transform = 'translateX(' + lerp(-140, 0, ep) + 'px) scale(' + lerp(0.85, 1, ep) + ')';
+        } else if (r.type === 'right') {
+          r.el.style.opacity = ep;
+          r.el.style.transform = 'translateX(' + lerp(140, 0, ep) + 'px) scale(' + lerp(0.85, 1, ep) + ')';
+        }
+      }
+
+      // ── Program cards: staggered cascade — very pronounced ──
+      if (progCards.length) {
+        var gridRect = progCards[0].parentElement.getBoundingClientRect();
+        var gridTop = gridRect.top + sy;
+        var gp = (sy - (gridTop - wh * 0.95)) / (wh * 0.65);
+        for (var j = 0; j < progCards.length; j++) {
+          var cp = Math.max(0, Math.min(1, gp - j * 0.06));
+          var ce = easeOut(cp);
+          progCards[j].style.opacity = ce;
+          progCards[j].style.transform = 'translateY(' + lerp(80, 0, ce) + 'px) scale(' + lerp(0.88, 1, ce) + ')';
+        }
+      }
+
+      // ── News cards: stagger — pronounced ──
+      if (newsCards.length) {
+        var nRect = newsCards[0].parentElement.getBoundingClientRect();
+        var nTop = nRect.top + sy;
+        var np = (sy - (nTop - wh * 0.92)) / (wh * 1.0);
+        for (var k = 0; k < newsCards.length; k++) {
+          var ncp = Math.max(0, Math.min(1, np - k * 0.15));
+          var nce = easeOut(ncp);
+          newsCards[k].style.opacity = nce;
+          newsCards[k].style.transform = 'translateY(' + lerp(70, 0, nce) + 'px) scale(' + lerp(0.9, 1, nce) + ')';
+        }
+      }
+
+      if (aboutBadge) {
+        var bp = getProgress(aboutBadge, 0.05, 0.8);
+        var be = easeOut(bp);
+        aboutBadge.style.opacity = be;
+        aboutBadge.style.transform = 'scale(' + lerp(0.2, 1, be) + ') rotate(' + lerp(-45, 0, be) + 'deg)';
+      }
+
+      // ── About bullet items: stagger in — one by one, very spaced ──
+      if (aboutBullets.length) {
+        var abParent = aboutBullets[0].parentElement;
+        var abTop = abParent.getBoundingClientRect().top + sy;
+        var abp = (sy - (abTop - wh * 0.92)) / (wh * 1.0);
+        for (var m = 0; m < aboutBullets.length; m++) {
+          var abcp = Math.max(0, Math.min(1, abp - m * 0.11));
+          var abce = easeOut(abcp);
+          aboutBullets[m].style.opacity = abce;
+          aboutBullets[m].style.transform = 'translateX(' + lerp(50, 0, abce) + 'px)';
+        }
+      }
+
+      // ── Section titles: subtle parallax drift ──
+      for (var t = 0; t < secTitles.length; t++) {
+        var tp = getProgress(secTitles[t], -0.1, 0.7);
+        // Subtle upward drift as you scroll past
+        secTitles[t].style.transform = 'translateY(' + lerp(20, -10, easeOut(tp)) + 'px)';
+      }
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  // Fire once on load
+  console.log('[ScrollEngine] Initialized — tracking', reveals.length, 'reveals,', progCards.length, 'prog-cards,', newsCards.length, 'news-cards');
+  onScroll();
+})();
 
 // ────────────────────────────────────────────────
 // SHARED: Building data + procedural texture helper
@@ -1816,6 +1990,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('btn-exit3d').classList.add('vis');
       document.getElementById('btn-logcam').style.opacity='1';
       document.getElementById('btn-logcam').style.pointerEvents='all';
+      startWeather();
       // Free camera — no lookAt lock. User can pan, rotate, zoom, tilt freely.
       ctrl.enableRotate=true;
       ctrl.enableTranslate=true;
@@ -1866,6 +2041,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('btn-exit3d').classList.remove('vis');
       document.getElementById('btn-logcam').style.opacity='0';
       document.getElementById('btn-logcam').style.pointerEvents='none';
+      stopWeather();
       clearHighlight();
       closeBuildingPanel();
       ctrl.enableRotate=false;
@@ -2467,6 +2643,173 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
       _origExit3D();
     };
+
+    // ── REAL-TIME WEATHER SYSTEM ──
+    var WEATHER_KEY = 'da67c19d0576ff525a4db2a0943d1c34';
+    var WEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather?lat=42.3133&lon=-71.0390&units=imperial&appid=';
+    var currentWeather = null;
+    var weatherInterval = null;
+    var weatherCanvas = document.getElementById('weather-canvas');
+    var weatherCtx = weatherCanvas ? weatherCanvas.getContext('2d') : null;
+    var weatherAnimId = null;
+    var weatherParticles = [];
+
+    function resizeWeatherCanvas() {
+      if (!weatherCanvas) return;
+      var hero = document.getElementById('hero');
+      weatherCanvas.width = hero.offsetWidth;
+      weatherCanvas.height = hero.offsetHeight;
+    }
+    window.addEventListener('resize', resizeWeatherCanvas);
+    resizeWeatherCanvas();
+
+    var WEATHER_ICONS = {
+      'Clear': '\u2600\uFE0F', 'Clouds': '\u2601\uFE0F', 'Rain': '\uD83C\uDF27\uFE0F',
+      'Drizzle': '\uD83C\uDF27\uFE0F', 'Thunderstorm': '\u26C8\uFE0F', 'Snow': '\uD83C\uDF28\uFE0F',
+      'Mist': '\uD83C\uDF2B\uFE0F', 'Fog': '\uD83C\uDF2B\uFE0F', 'Haze': '\uD83C\uDF2B\uFE0F'
+    };
+
+    async function fetchWeather() {
+      try {
+        var resp = await fetch(WEATHER_URL + WEATHER_KEY);
+        var data = await resp.json();
+        if (!data.weather) return;
+        currentWeather = {
+          temp: Math.round(data.main.temp),
+          condition: data.weather[0].main,
+          description: data.weather[0].description,
+          windSpeed: data.wind.speed,
+          windDeg: data.wind.deg || 0,
+          visibility: data.visibility || 10000,
+          clouds: data.clouds.all
+        };
+        updateWeatherHUD();
+        applyWeatherEffects();
+        initWeatherParticles();
+      } catch(e) { console.warn('Weather fetch failed:', e); }
+    }
+
+    function updateWeatherHUD() {
+      if (!currentWeather) return;
+      var icon = WEATHER_ICONS[currentWeather.condition] || '\uD83C\uDF24\uFE0F';
+      document.getElementById('weather-icon').textContent = icon;
+      document.getElementById('weather-temp').textContent = currentWeather.temp + '\u00B0F';
+      document.getElementById('weather-cond').textContent = currentWeather.description;
+      if (exploreMode) document.getElementById('weather-hud').classList.add('vis');
+    }
+
+    function applyWeatherEffects() {
+      if (!currentWeather) return;
+      var cesiumEl = document.getElementById('cesium-container');
+      var cond = currentWeather.condition;
+      var vis = currentWeather.visibility;
+      var clouds = currentWeather.clouds;
+
+      if (cond === 'Fog' || cond === 'Mist' || cond === 'Haze' || vis < 2000) {
+        cesiumEl.style.filter = 'brightness(0.7) contrast(0.85) saturate(0.6)';
+      } else if (cond === 'Thunderstorm') {
+        cesiumEl.style.filter = 'brightness(0.6) saturate(0.5)';
+      } else if (cond === 'Rain' || cond === 'Drizzle') {
+        cesiumEl.style.filter = 'brightness(0.75) saturate(0.7)';
+      } else if (cond === 'Snow') {
+        cesiumEl.style.filter = 'brightness(0.95) saturate(0.7)';
+      } else if (clouds > 70) {
+        cesiumEl.style.filter = 'brightness(0.85) saturate(0.85)';
+      } else {
+        cesiumEl.style.filter = '';
+      }
+    }
+
+    function initWeatherParticles() {
+      if (!currentWeather || !weatherCanvas) return;
+      var cond = currentWeather.condition;
+      weatherParticles = [];
+      var w = weatherCanvas.width, h = weatherCanvas.height;
+
+      if (cond === 'Rain' || cond === 'Drizzle' || cond === 'Thunderstorm') {
+        var count = cond === 'Thunderstorm' ? 350 : (cond === 'Drizzle' ? 100 : 200);
+        for (var i = 0; i < count; i++) {
+          weatherParticles.push({
+            x: Math.random() * w * 1.5 - w * 0.25,
+            y: Math.random() * h,
+            speed: 8 + Math.random() * 8,
+            length: 12 + Math.random() * 16,
+            opacity: 0.15 + Math.random() * 0.3
+          });
+        }
+      } else if (cond === 'Snow') {
+        for (var j = 0; j < 150; j++) {
+          weatherParticles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            speed: 0.5 + Math.random() * 2,
+            radius: 1 + Math.random() * 3,
+            opacity: 0.4 + Math.random() * 0.4,
+            drift: Math.random() * Math.PI * 2
+          });
+        }
+      }
+    }
+
+    function animateWeather() {
+      weatherAnimId = requestAnimationFrame(animateWeather);
+      if (!currentWeather || !exploreMode || !weatherCtx) return;
+      var w = weatherCanvas.width, h = weatherCanvas.height;
+      if (w === 0 || h === 0) return;
+      weatherCtx.clearRect(0, 0, w, h);
+
+      var cond = currentWeather.condition;
+      var windAngle = ((currentWeather.windDeg || 0) - 90) * Math.PI / 180;
+      var windX = Math.cos(windAngle) * (currentWeather.windSpeed || 0) * 0.3;
+
+      if (cond === 'Rain' || cond === 'Drizzle' || cond === 'Thunderstorm') {
+        weatherCtx.strokeStyle = 'rgba(180,210,240,1)';
+        weatherCtx.lineWidth = 1.5;
+        for (var i = 0; i < weatherParticles.length; i++) {
+          var p = weatherParticles[i];
+          weatherCtx.globalAlpha = p.opacity;
+          weatherCtx.beginPath();
+          weatherCtx.moveTo(p.x, p.y);
+          weatherCtx.lineTo(p.x + windX * 2, p.y + p.length);
+          weatherCtx.stroke();
+          p.x += windX;
+          p.y += p.speed;
+          if (p.y > h) { p.y = -p.length; p.x = Math.random() * w * 1.5 - w * 0.25; }
+        }
+      } else if (cond === 'Snow') {
+        weatherCtx.fillStyle = 'rgba(255,255,255,1)';
+        for (var j = 0; j < weatherParticles.length; j++) {
+          var s = weatherParticles[j];
+          weatherCtx.globalAlpha = s.opacity;
+          weatherCtx.beginPath();
+          weatherCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+          weatherCtx.fill();
+          s.drift += 0.02;
+          s.x += Math.sin(s.drift) * 0.5 + windX * 0.5;
+          s.y += s.speed;
+          if (s.y > h) { s.y = -s.radius * 2; s.x = Math.random() * w; }
+          if (s.x > w) s.x = 0;
+          if (s.x < 0) s.x = w;
+        }
+      }
+      weatherCtx.globalAlpha = 1;
+    }
+
+    function startWeather() {
+      fetchWeather();
+      weatherInterval = setInterval(fetchWeather, 600000); // refresh every 10 min
+      animateWeather();
+      // HUD only shows once data arrives (updateWeatherHUD adds .vis)
+    }
+
+    function stopWeather() {
+      clearInterval(weatherInterval);
+      weatherInterval = null;
+      if (weatherAnimId) { cancelAnimationFrame(weatherAnimId); weatherAnimId = null; }
+      if (weatherCtx) weatherCtx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+      document.getElementById('cesium-container').style.filter = '';
+      document.getElementById('weather-hud').classList.remove('vis');
+    }
 
     // ── Night Mode Toggle ──
   }

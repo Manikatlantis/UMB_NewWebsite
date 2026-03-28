@@ -1779,7 +1779,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Load Google Photorealistic 3D Tiles — high quality within the 2mi radius
     try{
       const tileset=await Cesium.createGooglePhotorealistic3DTileset();
-      tileset.maximumScreenSpaceError = 5;          // high quality, reasonable load time
+      tileset.maximumScreenSpaceError = 8;          // balanced quality vs performance
       tileset.maximumMemoryUsage = 512;             // 512MB GPU cache
       tileset.dynamicScreenSpaceError = true;       // reduce quality for distant tiles
       tileset.dynamicScreenSpaceErrorDensity = 0.0004; // ~1mi radius of full quality

@@ -100,12 +100,17 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 #shuttle-panel .sp-name{font-family:'Unbounded',sans-serif;font-size:14px;color:var(--gold);margin-bottom:8px;}
 #shuttle-panel .sp-row{font-size:10px;letter-spacing:1px;color:rgba(238,243,248,0.6);margin-bottom:4px;}
 #shuttle-panel .sp-row span{color:var(--white);}
-#shuttle-panel .sp-follow{margin-top:10px;padding:6px 14px;background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);color:var(--gold);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
-#shuttle-panel .sp-follow:hover{background:rgba(245,166,35,0.25);}
-#shuttle-panel .sp-follow.active{background:var(--gold);color:var(--deep);}
-#shuttle-panel .sp-ride{margin-top:6px;padding:6px 14px;background:rgba(0,180,220,0.15);border:1px solid rgba(0,180,220,0.3);color:#00b4dc;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;width:100%;}
+#shuttle-panel .sp-ride{margin-top:10px;padding:6px 14px;background:rgba(0,180,220,0.15);border:1px solid rgba(0,180,220,0.3);color:#00b4dc;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;width:100%;}
 #shuttle-panel .sp-ride:hover{background:rgba(0,180,220,0.25);}
 #shuttle-panel .sp-ride.active{background:#00b4dc;color:var(--deep);}
+.shuttle-tip{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:25;display:none;flex-direction:column;align-items:center;gap:8px;padding:14px 24px;background:rgba(0,16,32,0.92);border:1px solid rgba(245,166,35,0.3);border-radius:6px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:11px;color:rgba(238,243,248,0.8);text-align:center;line-height:1.6;transition:opacity 0.5s;max-width:400px;}
+.shuttle-tip.vis{display:flex;}
+.shuttle-tip .tip-title{color:var(--gold);font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;}
+.shuttle-tip .tip-text{font-size:10px;color:rgba(238,243,248,0.6);}
+.shuttle-tip .tip-text span{color:var(--gold);}
+.shuttle-bus-list{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:4px;}
+.shuttle-bus-list .bus-chip{padding:5px 12px;background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);color:var(--gold);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:all 0.3s;border-radius:3px;}
+.shuttle-bus-list .bus-chip:hover{background:rgba(245,166,35,0.25);}
 .ride-hud{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:25;display:none;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,180,220,0.4);border-radius:4px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:11px;color:#fff;}
 .ride-hud.vis{display:flex;}
 .ride-hud .ride-bus-name{color:#00b4dc;font-weight:bold;}
@@ -473,13 +478,19 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <div class="sp-row">Speed: <span id="sp-speed"></span></div>
     <div class="sp-row">Status: <span id="sp-status"></span></div>
     <div class="sp-row">Route: <span id="sp-route"></span></div>
-    <button class="sp-follow" id="sp-follow" onclick="toggleFollowBus()">Follow Bus</button>
     <button class="sp-ride" id="sp-ride" onclick="toggleRideAlong()">Ride Along</button>
+    <button class="sp-ride" style="background:rgba(238,243,248,0.08);border-color:rgba(238,243,248,0.2);color:rgba(238,243,248,0.7);" onclick="backToBusList()">&larr; All Buses</button>
+  </div>
+  <div class="shuttle-tip" id="shuttle-tip">
+    <div class="tip-title">Shuttle Tracker</div>
+    <div class="tip-text">Select a bus to view it, then choose <span>Ride Along</span> to experience the route from street level</div>
+    <div class="shuttle-bus-list" id="shuttle-bus-list"></div>
   </div>
   <div class="ride-hud" id="ride-hud">
     <span class="ride-bus-name" id="ride-bus-name"></span>
     <span class="ride-speed" id="ride-speed"></span>
-    <button class="ride-exit" onclick="exitRideAlong()">Exit Ride</button>
+    <button class="ride-exit" style="background:rgba(245,166,35,0.2);border-color:rgba(245,166,35,0.4);color:var(--gold);" onclick="exitRideAlong()">Switch Bus</button>
+    <button class="ride-exit" onclick="exitShuttleMode()">Exit</button>
   </div>
   <div class="scroll-hint"><span>Scroll</span><div class="scroll-bar"></div></div>
 </section>
@@ -2570,6 +2581,24 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         hudText.textContent = 'Tracking ' + onRouteCount + ' shuttle' + (onRouteCount > 1 ? 's' : '');
       }
 
+      // Populate bus chip list in tip panel
+      var busList = document.getElementById('shuttle-bus-list');
+      if(busList){
+        busList.innerHTML = '';
+        Object.keys(shuttleEntities).forEach(function(id){
+          var v = shuttleEntities[id]._shuttleData;
+          if(!v || !v.IsOnRoute) return;
+          var chip = document.createElement('button');
+          chip.className = 'bus-chip';
+          chip.textContent = 'Bus ' + v.Name;
+          chip.onclick = function(){ selectShuttle(id); document.getElementById('shuttle-tip').classList.remove('vis'); };
+          busList.appendChild(chip);
+        });
+        if(busList.children.length === 0){
+          busList.innerHTML = '<span style="color:rgba(238,243,248,0.4);font-size:10px;">No active buses right now</span>';
+        }
+      }
+
       // Update selected panel if open (skip overhead follow if ride-along is active)
       if(followingBusId && shuttleEntities[followingBusId] && !rideAlongBusId){
         updateShuttlePanel(shuttleEntities[followingBusId]._shuttleData);
@@ -2646,8 +2675,6 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('sp-speed').textContent = mph + ' mph';
       document.getElementById('sp-status').textContent = v.IsDelayed ? 'Delayed' : (v.GroundSpeed > 1 ? 'Moving' : 'Stopped');
       document.getElementById('sp-route').textContent = v.IsOnRoute ? 'On Route' : 'Off Route';
-      document.getElementById('sp-follow').textContent = followingBusId == v.VehicleID ? 'Unfollow' : 'Follow Bus';
-      document.getElementById('sp-follow').className = 'sp-follow' + (followingBusId == v.VehicleID ? ' active' : '');
     }
 
     var _selectedShuttleId = null;
@@ -2657,7 +2684,35 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var v = shuttleEntities[vehicleId]._shuttleData;
       updateShuttlePanel(v);
       document.getElementById('shuttle-panel').classList.add('vis');
+      document.getElementById('shuttle-tip').classList.remove('vis');
+      // Fly camera to this bus from a distance
+      var cur = shuttleCurrent[vehicleId];
+      if(cur){
+        var headingDeg = Cesium.Math.toDegrees(cur.headingRad) + 90;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(cur.lng, cur.lat - 0.0006, (cur.alt || 0) + 60),
+          orientation: {
+            heading: Cesium.Math.toRadians(0),
+            pitch: Cesium.Math.toRadians(-40),
+            roll: 0
+          },
+          duration: 1.2,
+          easingFunction: Cesium.EasingFunction.QUADRATIC_OUT
+        });
+      }
     }
+
+    window.backToBusList = function(){
+      deselectShuttle();
+      document.getElementById('shuttle-tip').classList.add('vis');
+      // Fly back to overview
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-71.0420, 42.3150, 600),
+        orientation: { heading: Cesium.Math.toRadians(320), pitch: Cesium.Math.toRadians(-45), roll: 0 },
+        duration: 1.2,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_OUT
+      });
+    };
 
     function deselectShuttle(){
       _selectedShuttleId = null;
@@ -2700,9 +2755,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       rideAlongSmoothedHeading = null;
       // Also set following so panel stays updated
       followingBusId = busId;
-      // Hide shuttle panel, show ride HUD
+      // Hide shuttle panel + tip, show ride HUD
       document.getElementById('shuttle-panel').classList.remove('vis');
       document.getElementById('shuttle-hud').classList.remove('vis');
+      document.getElementById('shuttle-tip').classList.remove('vis');
       var rideHud = document.getElementById('ride-hud');
       rideHud.classList.add('vis');
       var ent = shuttleEntities[busId];
@@ -2737,9 +2793,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       followingBusId = null;
       // Unlock camera
       try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
-      // Hide ride HUD, restore shuttle HUD
+      // Hide ride HUD, restore shuttle HUD + tip
       document.getElementById('ride-hud').classList.remove('vis');
       document.getElementById('shuttle-hud').classList.add('vis');
+      document.getElementById('shuttle-tip').classList.add('vis');
       // Fly back to overview
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(-71.0420, 42.3150, 600),
@@ -2809,6 +2866,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       shuttleFailCount = 0;
       // Show shuttle UI
       document.getElementById('shuttle-hud').classList.add('vis');
+      document.getElementById('shuttle-tip').classList.add('vis');
       // Start polling
       fetchShuttles();
       shuttlePollTimer = setInterval(fetchShuttles, SHUTTLE_POLL_MS);
@@ -2850,6 +2908,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('shuttle-hud').classList.remove('vis');
       document.getElementById('shuttle-panel').classList.remove('vis');
       document.getElementById('ride-hud').classList.remove('vis');
+      document.getElementById('shuttle-tip').classList.remove('vis');
       // Unlock camera if was following
       try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
       // Return to cinematic
@@ -2894,6 +2953,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         document.getElementById('shuttle-hud').classList.remove('vis');
         document.getElementById('shuttle-panel').classList.remove('vis');
         document.getElementById('ride-hud').classList.remove('vis');
+        document.getElementById('shuttle-tip').classList.remove('vis');
         try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
       }
       _origExit3D();

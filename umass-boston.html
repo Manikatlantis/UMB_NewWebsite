@@ -103,6 +103,15 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 #shuttle-panel .sp-follow{margin-top:10px;padding:6px 14px;background:rgba(245,166,35,0.15);border:1px solid rgba(245,166,35,0.3);color:var(--gold);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
 #shuttle-panel .sp-follow:hover{background:rgba(245,166,35,0.25);}
 #shuttle-panel .sp-follow.active{background:var(--gold);color:var(--deep);}
+#shuttle-panel .sp-ride{margin-top:6px;padding:6px 14px;background:rgba(0,180,220,0.15);border:1px solid rgba(0,180,220,0.3);color:#00b4dc;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;width:100%;}
+#shuttle-panel .sp-ride:hover{background:rgba(0,180,220,0.25);}
+#shuttle-panel .sp-ride.active{background:#00b4dc;color:var(--deep);}
+.ride-hud{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:25;display:none;align-items:center;gap:12px;padding:10px 20px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,180,220,0.4);border-radius:4px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:11px;color:#fff;}
+.ride-hud.vis{display:flex;}
+.ride-hud .ride-bus-name{color:#00b4dc;font-weight:bold;}
+.ride-hud .ride-speed{color:var(--gold);}
+.ride-hud .ride-exit{padding:4px 12px;background:rgba(255,60,60,0.2);border:1px solid rgba(255,60,60,0.4);color:#ff6060;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
+.ride-hud .ride-exit:hover{background:rgba(255,60,60,0.35);}
 
 /* ── WEATHER HUD ── */
 .weather-hud{position:absolute;bottom:24px;right:24px;z-index:20;padding:8px 14px;display:flex;align-items:center;gap:8px;background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.25);border-radius:4px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:11px;color:var(--white);opacity:0;pointer-events:none;transition:opacity 0.3s;}
@@ -465,6 +474,12 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <div class="sp-row">Status: <span id="sp-status"></span></div>
     <div class="sp-row">Route: <span id="sp-route"></span></div>
     <button class="sp-follow" id="sp-follow" onclick="toggleFollowBus()">Follow Bus</button>
+    <button class="sp-ride" id="sp-ride" onclick="toggleRideAlong()">Ride Along</button>
+  </div>
+  <div class="ride-hud" id="ride-hud">
+    <span class="ride-bus-name" id="ride-bus-name"></span>
+    <span class="ride-speed" id="ride-speed"></span>
+    <button class="ride-exit" onclick="exitRideAlong()">Exit Ride</button>
   </div>
   <div class="scroll-hint"><span>Scroll</span><div class="scroll-bar"></div></div>
 </section>
@@ -2555,8 +2570,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         hudText.textContent = 'Tracking ' + onRouteCount + ' shuttle' + (onRouteCount > 1 ? 's' : '');
       }
 
-      // Update selected panel if open
-      if(followingBusId && shuttleEntities[followingBusId]){
+      // Update selected panel if open (skip overhead follow if ride-along is active)
+      if(followingBusId && shuttleEntities[followingBusId] && !rideAlongBusId){
         updateShuttlePanel(shuttleEntities[followingBusId]._shuttleData);
         // Camera follow
         var busPos = shuttleEntities[followingBusId].position.getValue(Cesium.JulianDate.now());
@@ -2618,6 +2633,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           }
         }
       });
+      // Ride-along camera update
+      if(rideAlongBusId && shuttleCurrent[rideAlongBusId]){
+        updateRideAlongCamera(rideAlongBusId);
+      }
       shuttleLerpRAF = requestAnimationFrame(shuttleLerpTick);
     }
 
@@ -2663,6 +2682,114 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
     };
 
+    // ── RIDE ALONG MODE ──────────────────────────────
+    var rideAlongBusId = null;
+    var rideAlongSmoothedHeading = null;
+
+    window.toggleRideAlong = function(){
+      if(!_selectedShuttleId) return;
+      if(rideAlongBusId === _selectedShuttleId){
+        exitRideAlong();
+      } else {
+        startRideAlong(_selectedShuttleId);
+      }
+    };
+
+    function startRideAlong(busId){
+      rideAlongBusId = busId;
+      rideAlongSmoothedHeading = null;
+      // Also set following so panel stays updated
+      followingBusId = busId;
+      // Hide shuttle panel, show ride HUD
+      document.getElementById('shuttle-panel').classList.remove('vis');
+      document.getElementById('shuttle-hud').classList.remove('vis');
+      var rideHud = document.getElementById('ride-hud');
+      rideHud.classList.add('vis');
+      var ent = shuttleEntities[busId];
+      if(ent && ent._shuttleData){
+        document.getElementById('ride-bus-name').textContent = 'Bus ' + ent._shuttleData.Name;
+      }
+      // Initial camera position — fly down to street level behind the bus
+      var cur = shuttleCurrent[busId];
+      if(cur){
+        var headingDeg = Cesium.Math.toDegrees(cur.headingRad) + 90;
+        // Position camera behind the bus
+        var behindDist = 0.00015; // ~15m behind
+        var behindLat = cur.lat - Math.cos(Cesium.Math.toRadians(headingDeg)) * behindDist;
+        var behindLng = cur.lng - Math.sin(Cesium.Math.toRadians(headingDeg)) * behindDist;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(behindLng, behindLat, (cur.alt || 0) + 5),
+          orientation: {
+            heading: Cesium.Math.toRadians(headingDeg),
+            pitch: Cesium.Math.toRadians(-8),
+            roll: 0
+          },
+          duration: 1.2,
+          easingFunction: Cesium.EasingFunction.QUADRATIC_OUT
+        });
+      }
+    }
+
+    window.exitRideAlong = function(){
+      if(!rideAlongBusId) return;
+      rideAlongBusId = null;
+      rideAlongSmoothedHeading = null;
+      followingBusId = null;
+      // Unlock camera
+      try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
+      // Hide ride HUD, restore shuttle HUD
+      document.getElementById('ride-hud').classList.remove('vis');
+      document.getElementById('shuttle-hud').classList.add('vis');
+      // Fly back to overview
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-71.0420, 42.3150, 600),
+        orientation: {
+          heading: Cesium.Math.toRadians(320),
+          pitch: Cesium.Math.toRadians(-45),
+          roll: 0
+        },
+        duration: 1.5,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_OUT
+      });
+    };
+
+    // Ride-along camera update — called each frame from shuttleLerpTick
+    function updateRideAlongCamera(busId){
+      var cur = shuttleCurrent[busId];
+      if(!cur) return;
+      var headingDeg = Cesium.Math.toDegrees(cur.headingRad) + 90;
+      // Smooth heading to avoid jerky rotation
+      if(rideAlongSmoothedHeading === null){
+        rideAlongSmoothedHeading = headingDeg;
+      } else {
+        // Lerp angle
+        var diff = headingDeg - rideAlongSmoothedHeading;
+        while(diff > 180) diff -= 360;
+        while(diff < -180) diff += 360;
+        rideAlongSmoothedHeading += diff * 0.05; // smooth factor
+      }
+      var hRad = Cesium.Math.toRadians(rideAlongSmoothedHeading);
+      // Position camera ~12m behind and ~5m above the bus
+      var behindDist = 0.00012;
+      var camLat = cur.lat - Math.cos(hRad) * behindDist;
+      var camLng = cur.lng - Math.sin(hRad) * behindDist;
+      var camAlt = (cur.alt || 0) + 5;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(camLng, camLat, camAlt),
+        orientation: {
+          heading: hRad,
+          pitch: Cesium.Math.toRadians(-8),
+          roll: 0
+        }
+      });
+      // Update ride HUD speed
+      var ent = shuttleEntities[busId];
+      if(ent && ent._shuttleData){
+        var mph = (ent._shuttleData.GroundSpeed * 0.621371).toFixed(0);
+        document.getElementById('ride-speed').textContent = mph + ' mph';
+      }
+    }
+
     // Click handler for shuttle entities
     viewer.screenSpaceEventHandler.setInputAction(function(e){
       if(!shuttleMode) return;
@@ -2703,6 +2830,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     window.exitShuttleMode = function(){
       if(!shuttleMode) return;
       shuttleMode = false;
+      rideAlongBusId = null;
+      rideAlongSmoothedHeading = null;
       followingBusId = null;
       _selectedShuttleId = null;
       if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
@@ -2720,6 +2849,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       // Hide shuttle UI
       document.getElementById('shuttle-hud').classList.remove('vis');
       document.getElementById('shuttle-panel').classList.remove('vis');
+      document.getElementById('ride-hud').classList.remove('vis');
       // Unlock camera if was following
       try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
       // Return to cinematic
@@ -2729,7 +2859,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Wire Escape key
     document.addEventListener('keydown', function(e){
       if(e.key === 'Escape' && shuttleMode){
-        if(followingBusId){
+        if(rideAlongBusId){
+          exitRideAlong();
+        } else if(followingBusId){
           deselectShuttle();
         } else {
           exitShuttleMode();
@@ -2744,6 +2876,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       if(shuttleMode) {
         // Clean up shuttle state without calling exit3DMode again
         shuttleMode = false;
+        rideAlongBusId = null;
+        rideAlongSmoothedHeading = null;
         followingBusId = null;
         _selectedShuttleId = null;
         if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
@@ -2759,6 +2893,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       if(shuttleLerpRAF){ cancelAnimationFrame(shuttleLerpRAF); shuttleLerpRAF = null; }
         document.getElementById('shuttle-hud').classList.remove('vis');
         document.getElementById('shuttle-panel').classList.remove('vis');
+        document.getElementById('ride-hud').classList.remove('vis');
         try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
       }
       _origExit3D();

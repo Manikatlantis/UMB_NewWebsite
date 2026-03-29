@@ -489,6 +489,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="ride-hud" id="ride-hud">
     <span class="ride-bus-name" id="ride-bus-name"></span>
     <span class="ride-speed" id="ride-speed"></span>
+    <span id="ride-now-playing" style="color:rgba(238,243,248,0.5);font-size:9px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <button class="ride-exit" style="background:rgba(238,243,248,0.08);border-color:rgba(238,243,248,0.2);color:rgba(238,243,248,0.7);" onclick="skipRideTrack()">Skip</button>
     <button class="ride-exit" style="background:rgba(245,166,35,0.2);border-color:rgba(245,166,35,0.4);color:var(--gold);" onclick="exitRideAlong()">Switch Bus</button>
     <button class="ride-exit" onclick="exitShuttleMode()">Exit</button>
   </div>
@@ -2750,6 +2752,86 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
     };
 
+    // ── RIDE-ALONG MUSIC PLAYER ──
+    var RIDE_PLAYLIST = [
+      { title: 'Bonjour', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_01_-_Bonjour.mp3' },
+      { title: 'Submarine Air-Force', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_05_-_Submarine_Air-Force.mp3' },
+      { title: 'Samurai Disco', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_07_-_Samurai_Disco.mp3' },
+      { title: 'Memory Box', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_10_-_Memory_Box.mp3' },
+      { title: 'Neon Noir', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_14_-_Neon_Noir.mp3' },
+      { title: 'Hanging Lanterns', artist: 'Kalaido', url: 'https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3' },
+      { title: 'Car Radio', artist: 'flovry', url: 'https://archive.org/download/kalaido-hanging-lanterns_202101/flovry%20-%20car%20radio.mp3' }
+    ];
+    var rideAudio = null;
+    var rideTrackIdx = 0;
+    var rideMusicPlaying = false;
+    var rideFadeInterval = null;
+
+    function shufflePlaylist(){
+      for(var i = RIDE_PLAYLIST.length - 1; i > 0; i--){
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = RIDE_PLAYLIST[i]; RIDE_PLAYLIST[i] = RIDE_PLAYLIST[j]; RIDE_PLAYLIST[j] = tmp;
+      }
+    }
+
+    function startRideMusic(){
+      if(rideMusicPlaying) return;
+      rideMusicPlaying = true;
+      shufflePlaylist();
+      rideTrackIdx = 0;
+      playRideTrack();
+    }
+
+    function playRideTrack(){
+      if(!rideMusicPlaying) return;
+      var track = RIDE_PLAYLIST[rideTrackIdx % RIDE_PLAYLIST.length];
+      if(rideAudio){ rideAudio.pause(); rideAudio = null; }
+      rideAudio = new Audio(track.url);
+      rideAudio.crossOrigin = 'anonymous';
+      rideAudio.volume = 0;
+      rideAudio.play().catch(function(){});
+      // Fade in over 2s
+      var fadeIn = setInterval(function(){
+        if(!rideAudio) return clearInterval(fadeIn);
+        if(rideAudio.volume < 0.45){ rideAudio.volume = Math.min(0.45, rideAudio.volume + 0.02); }
+        else clearInterval(fadeIn);
+      }, 80);
+      // Update now-playing display
+      var np = document.getElementById('ride-now-playing');
+      if(np) np.textContent = track.title + ' — ' + track.artist;
+      // When track ends, play next
+      rideAudio.onended = function(){
+        rideTrackIdx++;
+        playRideTrack();
+      };
+    }
+
+    function skipRideTrack(){
+      if(!rideMusicPlaying) return;
+      rideTrackIdx++;
+      playRideTrack();
+    }
+
+    function stopRideMusic(){
+      if(!rideMusicPlaying) return;
+      rideMusicPlaying = false;
+      if(rideAudio){
+        // Fade out over 1.5s
+        var vol = rideAudio.volume;
+        var fadeOut = setInterval(function(){
+          if(!rideAudio){ clearInterval(fadeOut); return; }
+          vol -= 0.03;
+          if(vol <= 0){
+            rideAudio.pause();
+            rideAudio = null;
+            clearInterval(fadeOut);
+          } else {
+            rideAudio.volume = vol;
+          }
+        }, 60);
+      }
+    }
+
     function startRideAlong(busId){
       rideAlongBusId = busId;
       rideAlongSmoothedHeading = null;
@@ -2761,6 +2843,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       document.getElementById('shuttle-tip').classList.remove('vis');
       var rideHud = document.getElementById('ride-hud');
       rideHud.classList.add('vis');
+      startRideMusic();
       var ent = shuttleEntities[busId];
       if(ent && ent._shuttleData){
         document.getElementById('ride-bus-name').textContent = 'Bus ' + ent._shuttleData.Name;
@@ -2791,6 +2874,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       rideAlongBusId = null;
       rideAlongSmoothedHeading = null;
       followingBusId = null;
+      stopRideMusic();
       // Unlock camera
       try { viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY); } catch(e){}
       // Hide ride HUD, restore shuttle HUD + tip
@@ -2890,6 +2974,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       shuttleMode = false;
       rideAlongBusId = null;
       rideAlongSmoothedHeading = null;
+      stopRideMusic();
       followingBusId = null;
       _selectedShuttleId = null;
       if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
@@ -2937,6 +3022,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         shuttleMode = false;
         rideAlongBusId = null;
         rideAlongSmoothedHeading = null;
+        stopRideMusic();
         followingBusId = null;
         _selectedShuttleId = null;
         if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }

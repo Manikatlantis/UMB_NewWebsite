@@ -490,7 +490,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <span class="ride-bus-name" id="ride-bus-name"></span>
     <span class="ride-speed" id="ride-speed"></span>
     <span id="ride-now-playing" style="color:rgba(238,243,248,0.5);font-size:9px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-    <button class="ride-exit" style="background:rgba(238,243,248,0.08);border-color:rgba(238,243,248,0.2);color:rgba(238,243,248,0.7);" onclick="skipRideTrack()">Skip</button>
+    <button class="ride-exit" style="background:rgba(238,243,248,0.08);border-color:rgba(238,243,248,0.2);color:rgba(238,243,248,0.7);" onclick="skipRideTrack()">Skip Song</button>
     <button class="ride-exit" style="background:rgba(245,166,35,0.2);border-color:rgba(245,166,35,0.4);color:var(--gold);" onclick="exitRideAlong()">Switch Bus</button>
     <button class="ride-exit" onclick="exitShuttleMode()">Exit</button>
   </div>
@@ -2806,11 +2806,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       };
     }
 
-    function skipRideTrack(){
+    window.skipRideTrack = function(){
       if(!rideMusicPlaying) return;
       rideTrackIdx++;
       playRideTrack();
-    }
+    };
 
     function stopRideMusic(){
       if(!rideMusicPlaying) return;

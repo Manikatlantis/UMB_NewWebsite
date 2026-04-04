@@ -2105,12 +2105,31 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       return minD < 0.002 ? best : null; // ~200m radius threshold
     }
 
+    // Hand-picked label positions [lng, lat, alt] per building
+    var BUILDING_LABEL_POS = {
+      'Campus Center':               [-71.0367, 42.3129, 5],
+      'Integrated Sciences Complex': [-71.0408, 42.3139, 8],
+      'Healey Library':              [-71.0396, 42.3136, 25],
+      'Quinn Administration':        [-71.0399, 42.3143, -1],
+      'Wheatley Hall':               [-71.0381, 42.3123, 13],
+      'McCormack Hall':              [-71.0388, 42.3129, 12],
+      'Clark Athletic Center':       [-71.0391, 42.3152, -8],
+      'University Hall':             [-71.0353, 42.3132, 2],
+      'West Garage':                 [-71.0412, 42.3152, 14],
+      'JFK Presidential Library':    [-71.0338, 42.3163, 12],
+      'West Residence Hall':         [-71.0397, 42.3164, 10],
+      'East Residence Hall':         [-71.0386, 42.3163, 3]
+    };
+
     function selectBuilding(building){
       if(highlightEntity) viewer.entities.remove(highlightEntity);
 
-      // Point marker on the building (Cesium entity — just the dot)
+      var lp = BUILDING_LABEL_POS[building.name] || [building.lng, building.lat, 20];
+      var labelLng = lp[0], labelLat = lp[1], labelAlt = lp[2];
+
+      // Point marker at the label position
       highlightEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 30),
+        position: Cesium.Cartesian3.fromDegrees(labelLng, labelLat, labelAlt),
         point:{
           pixelSize: 16,
           color: Cesium.Color.fromCssColorString('#00d4b8'),
@@ -2121,8 +2140,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         }
       });
 
-      // HTML label — tracks building position via postRender
-      _buildingLabelPos = Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 30);
+      // HTML label — tracks the hand-picked position via postRender
+      _buildingLabelPos = Cesium.Cartesian3.fromDegrees(labelLng, labelLat, labelAlt);
       _buildingLabelEl.textContent = building.name;
       _buildingLabelEl.classList.add('vis');
 

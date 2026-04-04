@@ -402,9 +402,11 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .about-badge b{font-size:24px;}
   .programs-intro{flex-direction:column;align-items:flex-start;gap:16px;}
   .programs-grid{grid-template-columns:1fr;}
-  #pretext-stage{height:400px;}
+  #pretext-stage{height:500px;}
+  #pretext-stage .pt-orb{transform:scale(0.7);}
   #pretext-stage .pt-orb .orb-label{font-size:7px;max-width:70px;}
   #pretext-stage .pt-orb .orb-icon{font-size:22px;}
+  #pretext-stage .pt-line{font-size:13px!important;}
   #game-canvas{height:320px;}
   .game-instructions{font-size:8px;padding:6px 14px;letter-spacing:1px;}
   .bot-msgs{height:320px;}
@@ -2142,11 +2144,14 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
     // ── Enter 3D explore mode ──
+    var _savedScrollY = 0;
     window.enter3DMode=function(){
       exploreMode=true;
       heroAnimActive=false; // stop cinematic loop
       viewer.camera.cancelFlight(); // cancel any in-progress flyTo
+      _savedScrollY = window.scrollY;
       document.body.style.overflow='hidden'; // lock page scroll — all gestures go to the map
+      document.body.style.position='fixed'; document.body.style.width='100%'; document.body.style.top=(-_savedScrollY)+'px'; // prevent iOS Safari scroll
       document.getElementById('hero').classList.add('explore-mode');
       // Clear inline styles and faded class so CSS explore-mode rules take over
       document.querySelector('.hero-content').classList.remove('faded');
@@ -2230,7 +2235,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Exit 3D explore mode ──
     window.exit3DMode=function(){
       exploreMode=false;
-      document.body.style.overflow=''; // restore page scroll
+      document.body.style.overflow=''; document.body.style.position=''; document.body.style.width=''; document.body.style.top=''; // restore page scroll
+      window.scrollTo(0, _savedScrollY); // restore scroll position
       document.getElementById('hero').classList.remove('explore-mode');
       document.getElementById('btn-exit3d').classList.remove('vis');
       document.getElementById('btn-logcam').style.opacity='0';

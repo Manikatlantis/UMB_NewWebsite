@@ -2094,6 +2094,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       if(highlightEntity){ viewer.entities.remove(highlightEntity); highlightEntity=null; }
       _buildingLabelPos = null;
       _buildingLabelEl.classList.remove('vis');
+      _buildingLabelEl.style.display = 'none';
     }
 
     function findNearestBuilding(lat, lng){
@@ -2419,10 +2420,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             setTimeout(nextStop, 4000);
           } else {
             _tourActive = false;
-            // Tour complete — fly back to starting overview after a pause
+            // Tour complete — fly back and resume cinematic animation
             setTimeout(function(){
               clearHighlight();
               closeBuildingPanel();
+              heroWpIndex = 0;
               viewer.camera.flyTo({
                 destination: Cesium.Cartesian3.fromDegrees(-71.0290, 42.3080, 70),
                 orientation: {
@@ -2431,7 +2433,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
                   roll: 0.0
                 },
                 duration: 2.5,
-                easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT
+                easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+                complete: function(){
+                  heroAnimActive = true;
+                  flyNextHeroWaypoint();
+                }
               });
             }, 4000);
           }

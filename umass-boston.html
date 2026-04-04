@@ -2130,12 +2130,14 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }
 
     // Track HTML building label position each frame
+    var _heroEl = document.getElementById('hero');
     viewer.scene.postRender.addEventListener(function(){
       if(!_buildingLabelPos) return;
       var scr = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, _buildingLabelPos);
       if(scr){
-        _buildingLabelEl.style.left = scr.x + 'px';
-        _buildingLabelEl.style.top = (scr.y - 14) + 'px'; // offset above dot
+        var heroRect = _heroEl.getBoundingClientRect();
+        _buildingLabelEl.style.left = (scr.x - heroRect.left) + 'px';
+        _buildingLabelEl.style.top = (scr.y - heroRect.top - 14) + 'px';
         _buildingLabelEl.style.display = 'block';
       } else {
         _buildingLabelEl.style.display = 'none';

@@ -2101,29 +2101,29 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
       // Label + large dot floating above the building
       highlightEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 100),
+        position: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 35),
         label:{
           text: building.name,
-          font: 'bold 22px sans-serif',
+          font: 'bold 16px sans-serif',
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 4,
+          outlineWidth: 3,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -22),
+          pixelOffset: new Cesium.Cartesian2(0, -16),
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
           showBackground: true,
-          backgroundColor: new Cesium.Color(0, 0.6, 0.7, 0.85),
-          backgroundPadding: new Cesium.Cartesian2(16, 10),
-          scaleByDistance: new Cesium.NearFarScalar(100, 1.2, 2000, 0.6),
+          backgroundColor: new Cesium.Color(0, 0.5, 0.55, 0.9),
+          backgroundPadding: new Cesium.Cartesian2(12, 8),
+          scaleByDistance: new Cesium.NearFarScalar(50, 1.6, 800, 0.7),
         },
         point:{
-          pixelSize: 18,
+          pixelSize: 14,
           color: Cesium.Color.fromCssColorString('#00d4b8'),
           outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 3,
+          outlineWidth: 2,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new Cesium.NearFarScalar(100, 1.4, 2000, 0.8),
+          scaleByDistance: new Cesium.NearFarScalar(50, 1.6, 800, 0.8),
         }
       });
 

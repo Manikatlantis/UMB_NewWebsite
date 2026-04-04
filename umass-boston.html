@@ -2420,26 +2420,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             setTimeout(nextStop, 4000);
           } else {
             _tourActive = false;
-            // Tour complete — fly back and resume cinematic animation
-            setTimeout(function(){
-              clearHighlight();
-              closeBuildingPanel();
-              heroWpIndex = 0;
-              viewer.camera.flyTo({
-                destination: Cesium.Cartesian3.fromDegrees(-71.0290, 42.3080, 70),
-                orientation: {
-                  heading: Cesium.Math.toRadians(305),
-                  pitch: Cesium.Math.toRadians(-25),
-                  roll: 0.0
-                },
-                duration: 2.5,
-                easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
-                complete: function(){
-                  heroAnimActive = true;
-                  flyNextHeroWaypoint();
-                }
-              });
-            }, 4000);
+            // Tour complete — exit explore mode (restores buttons, scroll, cinematic)
+            setTimeout(function(){ exit3DMode(); }, 4000);
           }
         });
       }

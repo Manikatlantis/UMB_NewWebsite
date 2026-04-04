@@ -2355,12 +2355,14 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
 
       if(!exploreMode){
-        // Scroll to hero BEFORE entering 3D mode (which locks scroll with position:fixed)
-        document.getElementById('hero').scrollIntoView({behavior:'smooth'});
+        // Scroll to top, then enter 3D mode (which locks scroll with position:fixed)
+        window.scrollTo({top:0, behavior:'smooth'});
         setTimeout(function(){
+          // Force scroll to 0 in case smooth scroll hasn't finished
+          window.scrollTo(0,0);
           enter3DMode();
           setTimeout(doFly, 800);
-        }, 600);
+        }, 800);
       } else {
         doFly();
       }

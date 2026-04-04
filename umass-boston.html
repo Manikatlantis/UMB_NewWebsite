@@ -121,6 +121,9 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 .btn-nightmode:hover{background:rgba(60,70,140,0.2);border-color:rgba(140,160,255,0.5);}
 .btn-nightmode.vis{opacity:1;pointer-events:all;}
 .btn-nightmode.active{background:rgba(30,40,100,0.5);border-color:rgba(140,160,255,0.6);color:#fff;box-shadow:0 0 15px rgba(100,120,255,0.2);}
+.building-label{position:absolute;z-index:22;pointer-events:none;display:none;transform:translate(-50%,-100%);padding:8px 16px;background:rgba(0,180,190,0.92);border-radius:6px;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,0.4);box-shadow:0 4px 20px rgba(0,0,0,0.4),0 0 12px rgba(0,200,210,0.3);letter-spacing:0.5px;}
+.building-label::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid rgba(0,180,190,0.92);}
+.building-label.vis{display:block;}
 #night-overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:18;pointer-events:none;background:linear-gradient(180deg,rgba(3,5,20,0.7) 0%,rgba(5,8,25,0.6) 40%,rgba(3,6,18,0.65) 100%);opacity:0;transition:opacity 1.5s ease;}
 #night-overlay.vis{opacity:1;}
 /* headlight canvas is styled inline via JS */
@@ -514,6 +517,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div id="night-overlay"></div>
   <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
   <button class="btn-nightmode" id="btn-nightmode" onclick="toggleNightMode()">Night Mode</button>
+  <div class="building-label" id="building-label"></div>
   <button class="btn-exit3d" id="btn-logcam" style="left:auto;right:24px;opacity:0;pointer-events:none;" onclick="logCamera()">Log Camera</button>
   <div class="shuttle-hud" id="shuttle-hud"><div class="pulse"></div><span id="shuttle-hud-text">Tracking shuttles...</span></div>
   <div class="weather-hud" id="weather-hud"><span class="weather-icon" id="weather-icon"></span><span class="weather-temp" id="weather-temp"></span><span class="weather-cond" id="weather-cond"></span><span class="weather-live">LIVE</span></div>
@@ -2083,8 +2087,13 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Building picking ──
     let highlightEntity = null;
 
+    var _buildingLabelPos = null; // Cartesian3 for tracking
+    var _buildingLabelEl = document.getElementById('building-label');
+
     function clearHighlight(){
       if(highlightEntity){ viewer.entities.remove(highlightEntity); highlightEntity=null; }
+      _buildingLabelPos = null;
+      _buildingLabelEl.classList.remove('vis');
     }
 
     function findNearestBuilding(lat, lng){
@@ -2099,37 +2108,39 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     function selectBuilding(building){
       if(highlightEntity) viewer.entities.remove(highlightEntity);
 
-      // Label + large dot floating above the building
+      // Point marker on the building (Cesium entity — just the dot)
       highlightEntity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 35),
-        label:{
-          text: building.name,
-          font: 'bold 16px sans-serif',
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 3,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -16),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          showBackground: true,
-          backgroundColor: new Cesium.Color(0, 0.5, 0.55, 0.9),
-          backgroundPadding: new Cesium.Cartesian2(12, 8),
-          scaleByDistance: new Cesium.NearFarScalar(50, 1.6, 800, 0.7),
-        },
+        position: Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 30),
         point:{
-          pixelSize: 14,
+          pixelSize: 16,
           color: Cesium.Color.fromCssColorString('#00d4b8'),
           outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
+          outlineWidth: 3,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new Cesium.NearFarScalar(50, 1.6, 800, 0.8),
+          scaleByDistance: new Cesium.NearFarScalar(50, 1.4, 800, 0.8),
         }
       });
 
-      // Camera stays exactly where it is — label appears in-place, no jump
+      // HTML label — tracks building position via postRender
+      _buildingLabelPos = Cesium.Cartesian3.fromDegrees(building.lng, building.lat, 30);
+      _buildingLabelEl.textContent = building.name;
+      _buildingLabelEl.classList.add('vis');
+
       openBuildingPanel(building);
     }
+
+    // Track HTML building label position each frame
+    viewer.scene.postRender.addEventListener(function(){
+      if(!_buildingLabelPos) return;
+      var scr = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, _buildingLabelPos);
+      if(scr){
+        _buildingLabelEl.style.left = scr.x + 'px';
+        _buildingLabelEl.style.top = (scr.y - 14) + 'px'; // offset above dot
+        _buildingLabelEl.style.display = 'block';
+      } else {
+        _buildingLabelEl.style.display = 'none';
+      }
+    });
 
     // Double-click to pick a building from the 3D tiles
     viewer.screenSpaceEventHandler.setInputAction(e=>{

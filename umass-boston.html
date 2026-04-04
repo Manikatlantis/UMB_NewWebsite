@@ -116,6 +116,14 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 .ride-hud .ride-bus-name{color:#00b4dc;font-weight:bold;}
 .ride-hud .ride-speed{color:var(--gold);}
 .ride-hud .ride-exit{padding:4px 12px;background:rgba(255,60,60,0.2);border:1px solid rgba(255,60,60,0.4);color:#ff6060;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;}
+/* ── NIGHT MODE ── */
+.btn-nightmode{position:absolute;bottom:90px;right:24px;z-index:20;padding:8px 16px;background:rgba(0,16,32,0.85);border:1px solid rgba(140,160,255,0.25);color:rgba(180,195,255,0.9);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.4s;opacity:0;pointer-events:none;backdrop-filter:blur(10px);border-radius:3px;}
+.btn-nightmode:hover{background:rgba(60,70,140,0.2);border-color:rgba(140,160,255,0.5);}
+.btn-nightmode.vis{opacity:1;pointer-events:all;}
+.btn-nightmode.active{background:rgba(30,40,100,0.5);border-color:rgba(140,160,255,0.6);color:#fff;box-shadow:0 0 15px rgba(100,120,255,0.2);}
+#night-overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:18;pointer-events:none;background:linear-gradient(180deg,rgba(3,5,20,0.7) 0%,rgba(5,8,25,0.6) 40%,rgba(3,6,18,0.65) 100%);opacity:0;transition:opacity 1.5s ease;}
+#night-overlay.vis{opacity:1;}
+/* headlight canvas is styled inline via JS */
 .ride-hud .ride-exit:hover{background:rgba(255,60,60,0.35);}
 
 /* ── WEATHER HUD ── */
@@ -210,6 +218,18 @@ section{padding:110px 52px;}
 .prog-arrow{position:absolute;top:24px;right:24px;color:rgba(238,243,248,0.2);font-size:18px;transition:all 0.3s;}
 .prog-card:hover .prog-arrow{color:var(--teal);transform:translate(4px,-4px);}
 
+/* ── PRETEXT INTERACTIVE PROGRAMS ── */
+#pretext-stage{position:relative;width:100%;height:600px;overflow:hidden;border:1px solid rgba(28,110,164,0.12);background:rgba(0,8,18,0.6);border-radius:4px;cursor:default;touch-action:none;margin-top:24px;}
+#pretext-stage .pt-line{position:absolute;white-space:pre;pointer-events:none;color:rgba(238,243,248,0.78);font-family:'Playfair Display',serif;}
+#pretext-stage .pt-orb{position:absolute;border-radius:50%;cursor:grab;transition:box-shadow 0.3s;display:flex;align-items:center;justify-content:center;flex-direction:column;user-select:none;-webkit-user-select:none;}
+#pretext-stage .pt-orb:active{cursor:grabbing;}
+#pretext-stage .pt-orb .orb-icon{font-size:28px;pointer-events:none;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));}
+#pretext-stage .pt-orb .orb-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.85);pointer-events:none;margin-top:4px;text-shadow:0 1px 6px rgba(0,0,0,0.7);text-align:center;line-height:1.2;max-width:90px;}
+.pretext-hint{text-align:center;margin-top:14px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,212,184,0.45);animation:fup 1s 0.5s forwards;opacity:0;}
+.pretext-links{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:20px;}
+.pretext-links a{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(238,243,248,0.5);text-decoration:none;padding:6px 14px;border:1px solid rgba(28,110,164,0.2);transition:all 0.3s;border-radius:2px;}
+.pretext-links a:hover{color:var(--teal);border-color:var(--teal);}
+
 /* ── GOOGLE MAP ── */
 /* Style Google Maps info windows to match dark theme */
 .gm-style .gm-style-iw-c{background:rgba(0,16,32,0.97)!important;border:1px solid rgba(0,200,212,0.25)!important;border-radius:0!important;padding:0!important;box-shadow:0 0 30px rgba(0,0,0,0.7)!important;}
@@ -280,6 +300,12 @@ body.custom-cursor #game-canvas{cursor:none!important;}
 .bot-input input::placeholder{color:rgba(238,243,248,0.25);}
 .bot-input button{padding:17px 26px;background:var(--teal);border:none;cursor:pointer;color:var(--deep);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:background 0.2s;}
 .bot-input button:hover{background:#00f0d0;}
+.btn-mic{padding:17px 18px;background:transparent;border:none;border-left:1px solid rgba(0,212,184,0.1);cursor:pointer;color:rgba(238,243,248,0.4);font-size:18px;transition:all 0.3s;position:relative;}
+.btn-mic:hover{color:var(--teal);}
+.btn-mic.listening{color:#ff4040;animation:mic-pulse 1s infinite;}
+.btn-mic.listening::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(255,64,64,0.15);animation:mic-ring 1.5s infinite;}
+@keyframes mic-pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+@keyframes mic-ring{0%{transform:translate(-50%,-50%) scale(0.8);opacity:0.6;}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0;}}
 .btn-tts{background:transparent;border:1px solid rgba(0,212,184,0.15);color:rgba(238,243,248,0.4);font-size:14px;padding:4px 8px;cursor:pointer;transition:all 0.2s;border-radius:3px;margin-left:auto;}
 .btn-tts:hover{border-color:var(--teal);color:var(--teal);}
 .btn-tts.active{border-color:var(--teal);color:var(--teal);background:rgba(0,212,184,0.1);}
@@ -346,6 +372,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   #about{grid-template-columns:1fr;gap:48px;}
   .about-frame{height:360px;}
   .programs-grid{grid-template-columns:repeat(2,1fr);}
+  #pretext-stage{height:480px;}
   .news-grid{grid-template-columns:1fr 1fr;}
   .news-card:first-child{grid-column:1/-1;}
   .foot-grid{grid-template-columns:1fr 1fr;gap:36px;}
@@ -375,6 +402,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .about-badge b{font-size:24px;}
   .programs-intro{flex-direction:column;align-items:flex-start;gap:16px;}
   .programs-grid{grid-template-columns:1fr;}
+  #pretext-stage{height:400px;}
+  #pretext-stage .pt-orb .orb-label{font-size:7px;max-width:70px;}
+  #pretext-stage .pt-orb .orb-icon{font-size:22px;}
   #game-canvas{height:320px;}
   .game-instructions{font-size:8px;padding:6px 14px;letter-spacing:1px;}
   .bot-msgs{height:320px;}
@@ -468,7 +498,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
     </div>
   </div>
+  <div id="night-overlay"></div>
   <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
+  <button class="btn-nightmode" id="btn-nightmode" onclick="toggleNightMode()">Night Mode</button>
   <button class="btn-exit3d" id="btn-logcam" style="left:auto;right:24px;opacity:0;pointer-events:none;" onclick="logCamera()">Log Camera</button>
   <div class="shuttle-hud" id="shuttle-hud"><div class="pulse"></div><span id="shuttle-hud-text">Tracking shuttles...</span></div>
   <div class="weather-hud" id="weather-hud"><span class="weather-icon" id="weather-icon"></span><span class="weather-temp" id="weather-temp"></span><span class="weather-cond" id="weather-cond"></span><span class="weather-live">LIVE</span></div>
@@ -490,6 +522,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <span class="ride-bus-name" id="ride-bus-name"></span>
     <span class="ride-speed" id="ride-speed"></span>
     <span id="ride-now-playing" style="color:rgba(238,243,248,0.5);font-size:9px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <button class="ride-exit" style="background:rgba(238,243,248,0.08);border-color:rgba(238,243,248,0.2);color:rgba(238,243,248,0.7);" onclick="togglePauseRide()" id="btn-pause-ride">Pause</button>
     <button class="ride-exit" style="background:rgba(238,243,248,0.08);border-color:rgba(238,243,248,0.2);color:rgba(238,243,248,0.7);" onclick="skipRideTrack()">Skip Song</button>
     <button class="ride-exit" style="background:rgba(245,166,35,0.2);border-color:rgba(245,166,35,0.4);color:var(--gold);" onclick="exitRideAlong()">Switch Bus</button>
     <button class="ride-exit" onclick="exitShuttleMode()">Exit</button>
@@ -571,15 +604,17 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     </div>
     <a href="https://www.umb.edu/academics/" target="_blank" class="btn-o reveal">All Programs →</a>
   </div>
-  <div class="programs-grid">
-    <a href="https://www.umb.edu/academics/csm/" target="_blank" class="prog-card"><span class="prog-icon">🔬</span><div class="prog-name">Science & Mathematics</div><div class="prog-count">40+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/cla/" target="_blank" class="prog-card"><span class="prog-icon">📖</span><div class="prog-name">Liberal Arts</div><div class="prog-count">30+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/bcbs/" target="_blank" class="prog-card"><span class="prog-icon">📈</span><div class="prog-name">Business & Management</div><div class="prog-count">25+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/nursing/" target="_blank" class="prog-card"><span class="prog-icon">🏥</span><div class="prog-name">Nursing & Health</div><div class="prog-count">15+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/cts/" target="_blank" class="prog-card"><span class="prog-icon">💻</span><div class="prog-name">Computer Science</div><div class="prog-count">20+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/education/" target="_blank" class="prog-card"><span class="prog-icon">🎓</span><div class="prog-name">Education</div><div class="prog-count">18+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/cpcs/" target="_blank" class="prog-card"><span class="prog-icon">⚖️</span><div class="prog-name">Public Policy</div><div class="prog-count">22+ Programs</div><span class="prog-arrow">↗</span></a>
-    <a href="https://www.umb.edu/academics/graduate/" target="_blank" class="prog-card"><span class="prog-icon">🔭</span><div class="prog-name">Graduate Research</div><div class="prog-count">80+ Programs</div><span class="prog-arrow">↗</span></a>
+  <div id="pretext-stage"></div>
+  <div class="pretext-hint">Drag the orbs — watch the text flow</div>
+  <div class="pretext-links">
+    <a href="https://www.umb.edu/academics/csm/" target="_blank">Science & Math</a>
+    <a href="https://www.umb.edu/academics/cla/" target="_blank">Liberal Arts</a>
+    <a href="https://www.umb.edu/academics/bcbs/" target="_blank">Business</a>
+    <a href="https://www.umb.edu/academics/nursing/" target="_blank">Nursing & Health</a>
+    <a href="https://www.umb.edu/academics/cts/" target="_blank">Computer Science</a>
+    <a href="https://www.umb.edu/academics/education/" target="_blank">Education</a>
+    <a href="https://www.umb.edu/academics/cpcs/" target="_blank">Public Policy</a>
+    <a href="https://www.umb.edu/academics/graduate/" target="_blank">Graduate Research</a>
   </div>
 </section>
 
@@ -677,6 +712,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     </div>
     <div class="bot-input">
       <input type="text" id="chat-in" placeholder="Ask me anything about UMass Boston…"/>
+      <button class="btn-mic" id="btn-mic" onclick="toggleVoiceInput()" title="Voice input">&#127908;</button>
       <button onclick="sendMsg()">Send</button>
     </div>
   </div>
@@ -2550,7 +2586,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
               maximumScale: 0.06,
               heightReference: Cesium.HeightReference.NONE,
               silhouetteColor: Cesium.Color.fromCssColorString('#1c6ea4'),
-              silhouetteSize: 1.0
+              silhouetteSize: 1.0,
+              color: Cesium.Color.WHITE,
+              colorBlendMode: Cesium.ColorBlendMode.HIGHLIGHT,
+              colorBlendAmount: 0.0
             },
           });
           ent._shuttleBusId = v.VehicleID;
@@ -2569,8 +2608,14 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       Object.keys(shuttleEntities).forEach(function(id){
         if(!activeIds[id]){
           if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
+          if(shuttleEntities[id]._glowEl) shuttleEntities[id]._glowEl.remove();
           viewer.entities.remove(shuttleEntities[id]);
           delete shuttleEntities[id];
+          // Remove headlight too
+          if(headlightEntities[id]){
+            headlightEntities[id].remove();
+            delete headlightEntities[id];
+          }
           if(followingBusId == id) deselectShuttle();
         }
       });
@@ -2619,6 +2664,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Linear interpolation loop — constant speed between poll updates
     var shuttleLerpStart = {};  // {VehicleID: {lat, lng, alt, headingRad}}
     var shuttleLerpTime = 0;    // timestamp when targets were last updated
+    var headlightEntities = {}; // {VehicleID: Cesium.Entity} — night-mode headlight cones
 
     function lerpAngle(a, b, t){
       var diff = b - a;
@@ -2628,7 +2674,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }
 
     function shuttleLerpTick(){
-      if(!shuttleMode){ shuttleLerpRAF = null; return; }
+      if(!shuttleMode && !bgShuttleMode){ shuttleLerpRAF = null; return; }
       var now = performance.now();
       var elapsed = now - shuttleLerpTime;
       var t = Math.min(elapsed / SHUTTLE_POLL_MS, 1.0); // 0 to 1 over poll interval
@@ -2652,15 +2698,357 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         );
         // Update current for follow cam
         shuttleCurrent[id] = {lat: lat, lng: lng, alt: alt, headingRad: hr};
-        // Position HTML label
-        if(ent._labelEl){
-          var screenPos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pos);
-          if(screenPos){
-            ent._labelEl.style.left = screenPos.x + 'px';
-            ent._labelEl.style.top = (screenPos.y - 30) + 'px';
-            ent._labelEl.style.display = 'block';
+
+        // Tron-style neon edge glow in night mode — canvas ABOVE the night overlay
+        if(nightMode){
+          ent.model.silhouetteColor = new Cesium.ConstantProperty(new Cesium.Color(0.0, 0.85, 1.0, 1.0));
+          ent.model.silhouetteSize = new Cesium.ConstantProperty(2.0);
+
+          if(!ent._glowEl){
+            var gCvs = document.createElement('canvas');
+            gCvs.style.cssText = 'position:absolute;pointer-events:none;z-index:19;';
+            document.getElementById('hero').appendChild(gCvs);
+            ent._glowEl = gCvs;
+          }
+
+          // Project bus-shaped wireframe corners to screen
+          var bearing = hr + Math.PI / 2;
+          var cosLatG = Math.cos(Cesium.Math.toRadians(lat));
+          var mLat = 111320, mLng = 111320 * cosLatG;
+          var fLt = Math.cos(bearing)/mLat, fLn = Math.sin(bearing)/mLng;
+          var pLt = -Math.sin(bearing)/mLat, pLn = Math.cos(bearing)/mLng;
+          // Bus dimensions
+          var bLen = 2.1, bHW = 0.85;
+          var cabinH = 2.0;    // main cabin roof (slightly taller)
+          var hoodH = 1.1;     // engine section height (lower — the L drop)
+          var hoodLen = 0.75;  // hood length from front
+          var cabinF = bLen - hoodLen; // where cabin ends
+          var archH = 0.4, archW = 0.6; // wheel arch dimensions (bigger radius)
+          var rWC = -1.1, fWC = 1.35;   // rear/front wheel center positions (front more forward)
+          // Helper: 3D point from forward offset, perpendicular offset, height
+          function bPt(fwd, perp, h){ return Cesium.Cartesian3.fromDegrees(lng+fLn*fwd+pLn*perp, lat+fLt*fwd+pLt*perp, alt+h); }
+          // Left side (-bHW): 0-13, Right side (+bHW): 14-27
+          var corners3D = [];
+          var sides = [-bHW, bHW];
+          for(var si=0;si<2;si++){
+            var p = sides[si];
+            corners3D.push(bPt(-bLen, p, 0));        // 0/14: back bottom
+            corners3D.push(bPt(-bLen, p, cabinH));    // 1/15: back top
+            corners3D.push(bPt(cabinF, p, cabinH));   // 2/16: cabin front top
+            corners3D.push(bPt(cabinF, p, hoodH));    // 3/17: hood back top (L step)
+            corners3D.push(bPt(bLen, p, hoodH));      // 4/18: front top
+            corners3D.push(bPt(bLen, p, 0));           // 5/19: front bottom
+            // Rear wheel arch
+            corners3D.push(bPt(rWC-archW/2, p, 0));   // 6/20: rear arch start
+            corners3D.push(bPt(rWC-archW/2, p, archH));// 7/21: rear arch top-left
+            corners3D.push(bPt(rWC+archW/2, p, archH));// 8/22: rear arch top-right
+            corners3D.push(bPt(rWC+archW/2, p, 0));   // 9/23: rear arch end
+            // Front wheel arch
+            corners3D.push(bPt(fWC-archW/2, p, 0));   // 10/24: front arch start
+            corners3D.push(bPt(fWC-archW/2, p, archH));// 11/25: front arch top-left
+            corners3D.push(bPt(fWC+archW/2, p, archH));// 12/26: front arch top-right
+            corners3D.push(bPt(fWC+archW/2, p, 0));   // 13/27: front arch end
+          }
+          var scr = corners3D.map(function(c){ return Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, c); });
+          var allValid = scr.every(function(s){ return !!s; });
+
+          if(allValid){
+            var xs = scr.map(function(s){return s.x;}), ys = scr.map(function(s){return s.y;});
+            var mnX = Math.min.apply(null,xs)-8, mnY = Math.min.apply(null,ys)-8;
+            var mxX = Math.max.apply(null,xs)+8, mxY = Math.max.apply(null,ys)+8;
+            var cw = mxX-mnX, ch = mxY-mnY;
+            if(cw > 4 && ch > 4 && cw < 800){
+              ent._glowEl.width = Math.round(cw);
+              ent._glowEl.height = Math.round(ch);
+              ent._glowEl.style.left = mnX+'px';
+              ent._glowEl.style.top = mnY+'px';
+              ent._glowEl.style.width = cw+'px';
+              ent._glowEl.style.height = ch+'px';
+              ent._glowEl.style.display = 'block';
+              var gx = ent._glowEl.getContext('2d');
+              gx.clearRect(0,0,cw,ch);
+              var lc = scr.map(function(s){return{x:s.x-mnX,y:s.y-mnY};});
+              // Left: 0=back-bot,1=back-top,2=cabin-top,3=hood-top(L),4=front-top,5=front-bot
+              //        6-9=rear wheel arch, 10-13=front wheel arch
+              // Right: 14-27 (same +14)
+
+              function drawSideOutline(off){
+                // Top edge: back-top → cabin-top → L-step down → hood-top → front-top
+                gx.moveTo(lc[off+1].x,lc[off+1].y);
+                gx.lineTo(lc[off+2].x,lc[off+2].y);
+                gx.lineTo(lc[off+3].x,lc[off+3].y); // L step
+                gx.lineTo(lc[off+4].x,lc[off+4].y);
+                // Front vertical down
+                gx.lineTo(lc[off+5].x,lc[off+5].y);
+                // Bottom edge with gaps at wheel positions:
+                // front-bottom → front-wheel-end (13)
+                gx.lineTo(lc[off+13].x,lc[off+13].y);
+                // gap for front wheel — move to other side
+                gx.moveTo(lc[off+10].x,lc[off+10].y);
+                // between wheels → rear-wheel-end (9)
+                gx.lineTo(lc[off+9].x,lc[off+9].y);
+                // gap for rear wheel — move to other side
+                gx.moveTo(lc[off+6].x,lc[off+6].y);
+                // rear-wheel-start → back-bottom
+                gx.lineTo(lc[off+0].x,lc[off+0].y);
+                // Back vertical up
+                gx.lineTo(lc[off+1].x,lc[off+1].y);
+              }
+
+              function drawFrame(lineW, strokeCol, shadowCol, shadowB, fillCol){
+                gx.lineWidth = lineW;
+                gx.strokeStyle = strokeCol;
+                gx.shadowColor = shadowCol;
+                gx.shadowBlur = shadowB;
+                gx.lineJoin = 'round';
+
+                // Left side outline
+                gx.beginPath(); drawSideOutline(0);
+                if(fillCol){ gx.fillStyle=fillCol; gx.fill(); }
+                gx.stroke();
+
+                // Right side outline
+                gx.beginPath(); drawSideOutline(14);
+                if(fillCol){ gx.fill(); }
+                gx.stroke();
+
+                // Cross beams connecting left to right
+                gx.beginPath();
+                // Back face edges
+                gx.moveTo(lc[0].x,lc[0].y); gx.lineTo(lc[14].x,lc[14].y);
+                gx.moveTo(lc[1].x,lc[1].y); gx.lineTo(lc[15].x,lc[15].y);
+                // Cabin roof front edge
+                gx.moveTo(lc[2].x,lc[2].y); gx.lineTo(lc[16].x,lc[16].y);
+                // L-step horizontal (hood back edge)
+                gx.moveTo(lc[3].x,lc[3].y); gx.lineTo(lc[17].x,lc[17].y);
+                // Front face edges
+                gx.moveTo(lc[4].x,lc[4].y); gx.lineTo(lc[18].x,lc[18].y);
+                gx.moveTo(lc[5].x,lc[5].y); gx.lineTo(lc[19].x,lc[19].y);
+                gx.stroke();
+
+                // Face fills
+                if(fillCol){
+                  // Back face
+                  gx.beginPath();
+                  gx.moveTo(lc[0].x,lc[0].y); gx.lineTo(lc[14].x,lc[14].y);
+                  gx.lineTo(lc[15].x,lc[15].y); gx.lineTo(lc[1].x,lc[1].y);
+                  gx.closePath(); gx.fill();
+                  // Front face (engine section)
+                  gx.beginPath();
+                  gx.moveTo(lc[5].x,lc[5].y); gx.lineTo(lc[19].x,lc[19].y);
+                  gx.lineTo(lc[18].x,lc[18].y); gx.lineTo(lc[4].x,lc[4].y);
+                  gx.closePath(); gx.fill();
+                  // Cabin roof
+                  gx.beginPath();
+                  gx.moveTo(lc[1].x,lc[1].y); gx.lineTo(lc[2].x,lc[2].y);
+                  gx.lineTo(lc[16].x,lc[16].y); gx.lineTo(lc[15].x,lc[15].y);
+                  gx.closePath(); gx.fill();
+                  // Hood roof
+                  gx.beginPath();
+                  gx.moveTo(lc[3].x,lc[3].y); gx.lineTo(lc[4].x,lc[4].y);
+                  gx.lineTo(lc[18].x,lc[18].y); gx.lineTo(lc[17].x,lc[17].y);
+                  gx.closePath(); gx.fill();
+                  // L-step face (vertical face between cabin roof and hood)
+                  gx.beginPath();
+                  gx.moveTo(lc[2].x,lc[2].y); gx.lineTo(lc[16].x,lc[16].y);
+                  gx.lineTo(lc[17].x,lc[17].y); gx.lineTo(lc[3].x,lc[3].y);
+                  gx.closePath(); gx.fill();
+                }
+              }
+              // Pass 1: soft glow fill + wide outer glow lines
+              drawFrame(3, 'rgba(0,200,230,0.6)', 'rgba(0,220,255,0.9)', 14, 'rgba(0,180,220,0.06)');
+              // Pass 2: bright core lines
+              gx.shadowBlur = 0;
+              drawFrame(1.5, 'rgba(120,250,255,0.9)', 'rgba(0,240,255,1)', 6, null);
+
+              // Draw 3D-projected wheel circles (in forward-vertical plane)
+              var wheelR = archW / 2;
+              var wheelSegs = 20;
+              function drawWheel3D(wheelFwd, perp, outerR, lineW, strokeCol, shadowCol, shadowB){
+                var pts = [];
+                for(var wi=0;wi<=wheelSegs;wi++){
+                  var a = (wi/wheelSegs)*Math.PI*2;
+                  var df = Math.cos(a)*outerR;
+                  var dh = Math.sin(a)*outerR;
+                  var pt3 = bPt(wheelFwd+df, perp, wheelR-0.05+dh);
+                  var ps = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pt3);
+                  if(!ps) return;
+                  pts.push({x:ps.x-mnX, y:ps.y-mnY});
+                }
+                gx.beginPath();
+                gx.moveTo(pts[0].x, pts[0].y);
+                for(var wi=1;wi<pts.length;wi++) gx.lineTo(pts[wi].x, pts[wi].y);
+                gx.closePath();
+                gx.lineWidth = lineW; gx.strokeStyle = strokeCol;
+                gx.shadowColor = shadowCol; gx.shadowBlur = shadowB;
+                gx.stroke(); gx.shadowBlur = 0;
+              }
+              var wheelPositions = [
+                {fwd:rWC, perp:-bHW}, {fwd:fWC, perp:-bHW},
+                {fwd:rWC, perp:bHW},  {fwd:fWC, perp:bHW}
+              ];
+              for(var wp=0;wp<wheelPositions.length;wp++){
+                var wf = wheelPositions[wp].fwd, wpr = wheelPositions[wp].perp;
+                // Outer glow
+                drawWheel3D(wf, wpr, wheelR, 3, 'rgba(0,200,230,0.6)', 'rgba(0,220,255,0.9)', 14);
+                // Inner core
+                drawWheel3D(wf, wpr, wheelR, 1.5, 'rgba(120,250,255,0.9)', 'rgba(0,240,255,1)', 6);
+                // Hub circle
+                drawWheel3D(wf, wpr, wheelR*0.65, 1.5, 'rgba(120,250,255,0.7)', 'rgba(0,240,255,1)', 4);
+              }
+            } else {
+              ent._glowEl.style.display = 'none';
+            }
           } else {
+            ent._glowEl.style.display = 'none';
+          }
+        } else {
+          ent.model.silhouetteColor = new Cesium.ConstantProperty(Cesium.Color.fromCssColorString('#1c6ea4'));
+          ent.model.silhouetteSize = new Cesium.ConstantProperty(1.0);
+          if(ent._glowEl){ ent._glowEl.remove(); ent._glowEl = null; }
+        }
+
+        // ── Headlight cone (night mode only) — project 4 world-space corners to screen ──
+        if(nightMode){
+          // hr has a -90° model offset (line 2558: headingRad = toRadians(headingDeg - 90))
+          // Actual geographic bearing (north=0 clockwise) is hr + π/2
+          var bearing = hr + Math.PI / 2;
+          var cosLat = Math.cos(Cesium.Math.toRadians(lat));
+          var mPerDegLat = 111320;
+          var mPerDegLng = 111320 * cosLat;
+          // Forward (along bearing): north component = cos(bearing), east component = sin(bearing)
+          var fwdLat  =  Math.cos(bearing) / mPerDegLat;
+          var fwdLng  =  Math.sin(bearing) / mPerDegLng;
+          // Perpendicular right: rotate forward 90° clockwise
+          var perpLat = -Math.sin(bearing) / mPerDegLat;
+          var perpLng =  Math.cos(bearing) / mPerDegLng;
+
+          // 4 corners of the headlight trapezoid (in world coords)
+          var busHalfW = 1.3; // meters — half the bus front width
+          var beamLen = 25;   // meters ahead
+          var beamHalfW = 4;  // meters — half width at beam end
+          var groundAltHL = alt + 0.4;
+          // Push beam start further ahead during ride-along so it doesn't overlap the bus from behind
+          var fwdStart = (rideAlongBusId === id) ? 8 : 3; // meters ahead of bus center
+
+          var frontL = Cesium.Cartesian3.fromDegrees(lng + fwdLng*fwdStart - perpLng*busHalfW, lat + fwdLat*fwdStart - perpLat*busHalfW, groundAltHL);
+          var frontR = Cesium.Cartesian3.fromDegrees(lng + fwdLng*fwdStart + perpLng*busHalfW, lat + fwdLat*fwdStart + perpLat*busHalfW, groundAltHL);
+          var endL   = Cesium.Cartesian3.fromDegrees(lng + fwdLng*beamLen - perpLng*beamHalfW, lat + fwdLat*beamLen - perpLat*beamHalfW, groundAltHL);
+          var endR   = Cesium.Cartesian3.fromDegrees(lng + fwdLng*beamLen + perpLng*beamHalfW, lat + fwdLat*beamLen + perpLat*beamHalfW, groundAltHL);
+
+          var sFL = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, frontL);
+          var sFR = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, frontR);
+          var sEL = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, endL);
+          var sER = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, endR);
+
+          if(!headlightEntities[id]){
+            var hlEl = document.createElement('canvas');
+            hlEl.className = 'bus-headlight-canvas';
+            hlEl.width = 400; hlEl.height = 400;
+            hlEl.style.cssText = 'position:absolute;z-index:19;pointer-events:none;mix-blend-mode:screen;';
+            document.getElementById('hero').appendChild(hlEl);
+            headlightEntities[id] = hlEl;
+          }
+
+          var cvs = headlightEntities[id];
+          if(sFL && sFR && sEL && sER){
+            // Occlusion check: is the bus behind a building?
+            var busScr = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pos);
+            var occluded = false;
+            if(busScr){
+              // Compare bus distance to camera vs depth buffer at that screen point
+              var camPos = viewer.camera.positionWC;
+              var busDist = Cesium.Cartesian3.distance(camPos, pos);
+              // Pick the depth at the bus screen location
+              var depthPick = viewer.scene.pickPosition(new Cesium.Cartesian2(busScr.x, busScr.y));
+              if(depthPick){
+                var depthDist = Cesium.Cartesian3.distance(camPos, depthPick);
+                // If something is closer than the bus at that pixel, bus is occluded
+                if(depthDist < busDist - 5) occluded = true;
+              }
+            }
+            if(occluded){
+              cvs.style.display = 'none';
+            } else {
+            // Check screen distance to determine visibility
+            var frontMidX = (sFL.x + sFR.x) / 2;
+            var frontMidY = (sFL.y + sFR.y) / 2;
+            var endMidX = (sEL.x + sER.x) / 2;
+            var endMidY = (sEL.y + sER.y) / 2;
+            var beamScreenLen = Math.sqrt((endMidX-frontMidX)*(endMidX-frontMidX) + (endMidY-frontMidY)*(endMidY-frontMidY));
+
+            if(beamScreenLen < 5){
+              cvs.style.display = 'none';
+            } else {
+              // Compute bounding box of the 4 points
+              var minX = Math.min(sFL.x, sFR.x, sEL.x, sER.x) - 10;
+              var minY = Math.min(sFL.y, sFR.y, sEL.y, sER.y) - 10;
+              var maxX = Math.max(sFL.x, sFR.x, sEL.x, sER.x) + 10;
+              var maxY = Math.max(sFL.y, sFR.y, sEL.y, sER.y) + 10;
+              var bw = maxX - minX;
+              var bh = maxY - minY;
+              // Limit canvas size for performance
+              var scale = Math.min(1, 400 / Math.max(bw, bh, 1));
+              cvs.width = Math.max(1, Math.round(bw * scale));
+              cvs.height = Math.max(1, Math.round(bh * scale));
+              cvs.style.left = minX + 'px';
+              cvs.style.top = minY + 'px';
+              cvs.style.width = bw + 'px';
+              cvs.style.height = bh + 'px';
+              cvs.style.display = 'block';
+
+              var ctx = cvs.getContext('2d');
+              ctx.clearRect(0, 0, cvs.width, cvs.height);
+              // Map screen points to canvas local coords
+              var lFL = {x: (sFL.x - minX)*scale, y: (sFL.y - minY)*scale};
+              var lFR = {x: (sFR.x - minX)*scale, y: (sFR.y - minY)*scale};
+              var lEL = {x: (sEL.x - minX)*scale, y: (sEL.y - minY)*scale};
+              var lER = {x: (sER.x - minX)*scale, y: (sER.y - minY)*scale};
+              // Draw trapezoid with gradient
+              var fMid = {x:(lFL.x+lFR.x)/2, y:(lFL.y+lFR.y)/2};
+              var eMid = {x:(lEL.x+lER.x)/2, y:(lEL.y+lER.y)/2};
+              var grad = ctx.createLinearGradient(fMid.x, fMid.y, eMid.x, eMid.y);
+              grad.addColorStop(0, 'rgba(255,250,210,0.9)');
+              grad.addColorStop(0.15, 'rgba(255,245,190,0.7)');
+              grad.addColorStop(0.5, 'rgba(255,240,170,0.25)');
+              grad.addColorStop(1, 'rgba(255,235,150,0)');
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.moveTo(lFL.x, lFL.y);
+              ctx.lineTo(lFR.x, lFR.y);
+              ctx.lineTo(lER.x, lER.y);
+              ctx.lineTo(lEL.x, lEL.y);
+              ctx.closePath();
+              ctx.fill();
+              // Soft glow layer
+              ctx.filter = 'blur(4px)';
+              ctx.globalAlpha = 0.5;
+              ctx.fill();
+              ctx.filter = 'none';
+              ctx.globalAlpha = 1.0;
+            }
+            } // end occlusion else
+          } else {
+            cvs.style.display = 'none';
+          }
+        } else if(headlightEntities[id]){
+          headlightEntities[id].remove();
+          delete headlightEntities[id];
+        }
+
+        // Position HTML label (hide in background shuttle mode)
+        if(ent._labelEl){
+          if(bgShuttleMode && !shuttleMode){
             ent._labelEl.style.display = 'none';
+          } else {
+            var screenPos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, pos);
+            if(screenPos){
+              ent._labelEl.style.left = screenPos.x + 'px';
+              ent._labelEl.style.top = (screenPos.y - 30) + 'px';
+              ent._labelEl.style.display = 'block';
+            } else {
+              ent._labelEl.style.display = 'none';
+            }
           }
         }
       });
@@ -2810,6 +3198,21 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       if(!rideMusicPlaying) return;
       rideTrackIdx++;
       playRideTrack();
+      // Reset pause button if it was paused
+      var pb = document.getElementById('btn-pause-ride');
+      if(pb) pb.textContent = 'Pause';
+    };
+
+    window.togglePauseRide = function(){
+      if(!rideAudio) return;
+      var pb = document.getElementById('btn-pause-ride');
+      if(rideAudio.paused){
+        rideAudio.play();
+        if(pb) pb.textContent = 'Pause';
+      } else {
+        rideAudio.pause();
+        if(pb) pb.textContent = 'Play';
+      }
     };
 
     function stopRideMusic(){
@@ -2910,16 +3313,16 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         rideAlongSmoothedHeading += diff * 0.05; // smooth factor
       }
       var hRad = Cesium.Math.toRadians(rideAlongSmoothedHeading);
-      // Position camera ~12m behind and ~5m above the bus
-      var behindDist = 0.00012;
+      // Position camera ~16m behind and ~12m above the bus, angled down to see road + headlights
+      var behindDist = 0.00016;
       var camLat = cur.lat - Math.cos(hRad) * behindDist;
       var camLng = cur.lng - Math.sin(hRad) * behindDist;
-      var camAlt = (cur.alt || 0) + 5;
+      var camAlt = (cur.alt || 0) + 12;
       viewer.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(camLng, camLat, camAlt),
         orientation: {
           heading: hRad,
-          pitch: Cesium.Math.toRadians(-8),
+          pitch: Cesium.Math.toRadians(-28),
           roll: 0
         }
       });
@@ -2978,11 +3381,16 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       followingBusId = null;
       _selectedShuttleId = null;
       if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
-      // Remove all shuttle entities + HTML labels
+      // Remove all shuttle entities + HTML labels + headlights + glows
       Object.keys(shuttleEntities).forEach(function(id){
         if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
+        if(shuttleEntities[id]._glowEl) shuttleEntities[id]._glowEl.remove();
         viewer.entities.remove(shuttleEntities[id]);
       });
+      Object.keys(headlightEntities).forEach(function(id){
+        headlightEntities[id].remove();
+      });
+      headlightEntities = {};
       shuttleEntities = {};
       shuttlePrevPos = {};
       shuttleTargets = {};
@@ -3028,6 +3436,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         if(shuttlePollTimer){ clearInterval(shuttlePollTimer); shuttlePollTimer = null; }
         Object.keys(shuttleEntities).forEach(function(id){
           if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
+          if(shuttleEntities[id]._glowEl) shuttleEntities[id]._glowEl.remove();
           viewer.entities.remove(shuttleEntities[id]);
         });
         shuttleEntities = {};
@@ -3101,6 +3510,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     function applyWeatherEffects() {
       if (!currentWeather) return;
+      // Don't override night mode filter
+      if (typeof nightMode !== 'undefined' && nightMode) return;
       var cesiumEl = document.getElementById('cesium-container');
       var cond = currentWeather.condition;
       var vis = currentWeather.visibility;
@@ -3326,6 +3737,74 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }
 
     // ── Night Mode Toggle ──
+    var nightMode = false;
+
+    var bgShuttleMode = false; // background shuttle tracking for night headlights
+    var bgShuttlePollTimer = null;
+
+    window.toggleNightMode = function(){
+      nightMode = !nightMode;
+      var cesiumEl = document.getElementById('cesium-container');
+      var overlay = document.getElementById('night-overlay');
+      var btn = document.getElementById('btn-nightmode');
+      if(nightMode){
+        cesiumEl.style.filter = 'saturate(0.5) hue-rotate(5deg)';
+        cesiumEl.style.transition = 'filter 1.5s ease';
+        overlay.classList.add('vis');
+        btn.classList.add('active');
+        btn.textContent = 'Day Mode';
+        // Start background shuttle tracking for headlights if not already in shuttle mode
+        if(!shuttleMode){
+          bgShuttleMode = true;
+          fetchShuttles();
+          bgShuttlePollTimer = setInterval(fetchShuttles, SHUTTLE_POLL_MS);
+          if(!shuttleLerpRAF) shuttleLerpRAF = requestAnimationFrame(shuttleLerpTick);
+        }
+      } else {
+        cesiumEl.style.filter = '';
+        cesiumEl.style.transition = 'filter 1.5s ease';
+        overlay.classList.remove('vis');
+        btn.classList.remove('active');
+        btn.textContent = 'Night Mode';
+        // Remove all headlight cones
+        Object.keys(headlightEntities).forEach(function(id){
+          headlightEntities[id].remove();
+        });
+        headlightEntities = {};
+        // Stop background shuttle tracking
+        if(bgShuttleMode){
+          bgShuttleMode = false;
+          if(bgShuttlePollTimer){ clearInterval(bgShuttlePollTimer); bgShuttlePollTimer = null; }
+          // Remove shuttle entities + labels only if not in real shuttle mode
+          if(!shuttleMode){
+            Object.keys(shuttleEntities).forEach(function(id){
+              if(shuttleEntities[id]._labelEl) shuttleEntities[id]._labelEl.remove();
+              viewer.entities.remove(shuttleEntities[id]);
+            });
+            shuttleEntities = {};
+            shuttlePrevPos = {};
+            shuttleTargets = {};
+            shuttleCurrent = {};
+            shuttleLerpStart = {};
+            if(shuttleLerpRAF){ cancelAnimationFrame(shuttleLerpRAF); shuttleLerpRAF = null; }
+          }
+        }
+      }
+    };
+
+    // Show night button when in explore mode
+    var _origEnter = window.enter3DMode;
+    window.enter3DMode = function(){
+      _origEnter();
+      document.getElementById('btn-nightmode').classList.add('vis');
+    };
+    var _origExitForNight = window.exit3DMode;
+    window.exit3DMode = function(){
+      // Reset night mode on exit
+      if(nightMode) toggleNightMode();
+      document.getElementById('btn-nightmode').classList.remove('vis');
+      _origExitForNight();
+    };
   }
 
   // Fetch the Google Maps API key (already used for 2D map) and init Cesium
@@ -4410,6 +4889,356 @@ window.toggleTTS = function(){
 
 function sendQ(btn){ chatIn.value=btn.textContent; sendMsg(); }
 chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+
+// ── VOICE INPUT (Speech-to-Text) ──
+var voiceRecognition = null;
+var voiceListening = false;
+
+function initVoiceRecognition(){
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    // Browser doesn't support speech recognition
+    document.getElementById('btn-mic').style.display = 'none';
+    return null;
+  }
+  var recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = function(){
+    voiceListening = true;
+    document.getElementById('btn-mic').classList.add('listening');
+    chatIn.placeholder = 'Listening...';
+  };
+
+  recognition.onresult = function(event){
+    var transcript = '';
+    for(var i = event.resultIndex; i < event.results.length; i++){
+      transcript += event.results[i][0].transcript;
+    }
+    chatIn.value = transcript;
+    // If final result, auto-send
+    if(event.results[event.results.length - 1].isFinal){
+      stopVoiceInput();
+      // Small delay so user can see what was transcribed
+      setTimeout(function(){ sendMsg(); }, 400);
+    }
+  };
+
+  recognition.onerror = function(event){
+    console.warn('Speech recognition error:', event.error);
+    stopVoiceInput();
+    if(event.error === 'not-allowed'){
+      chatIn.placeholder = 'Microphone access denied';
+      setTimeout(function(){ chatIn.placeholder = 'Ask me anything about UMass Boston…'; }, 3000);
+    }
+  };
+
+  recognition.onend = function(){
+    stopVoiceInput();
+  };
+
+  return recognition;
+}
+
+function stopVoiceInput(){
+  voiceListening = false;
+  var btn = document.getElementById('btn-mic');
+  btn.classList.remove('listening');
+  chatIn.placeholder = 'Ask me anything about UMass Boston…';
+}
+
+window.toggleVoiceInput = function(){
+  if(!voiceRecognition) voiceRecognition = initVoiceRecognition();
+  if(!voiceRecognition) return;
+
+  if(voiceListening){
+    voiceRecognition.stop();
+    stopVoiceInput();
+  } else {
+    // Cancel any TTS playing
+    if(ttsEnabled) speechSynthesis.cancel();
+    try {
+      voiceRecognition.start();
+    } catch(e){
+      // Already started, restart
+      voiceRecognition.stop();
+      setTimeout(function(){ voiceRecognition.start(); }, 200);
+    }
+  }
+};
+</script>
+
+<!-- ── PRETEXT: Interactive text reflow around draggable orbs ── -->
+<script type="module">
+import {
+  prepareWithSegments,
+  layoutNextLine
+} from "https://somnai-dreams.github.io/pretext-demos/pretext.js";
+
+var BODY_FONT = '17px "Playfair Display", Georgia, serif';
+var LINE_HEIGHT = 28;
+var PADDING = 32;
+var MIN_SLOT = 50;
+
+var PROGRAMS_TEXT = "UMass Boston is the only public research university in Boston, offering more than 200 academic programs across eight colleges and schools. From marine biology at the water's edge to cutting-edge computer science in University Hall, every discipline benefits from the city as a living laboratory. The College of Science and Mathematics houses 40 programs spanning biology, chemistry, physics, environmental science, and mathematics — with research labs in the state-of-the-art Integrated Sciences Complex, a LEED Gold facility opened in 2015. Students work alongside faculty on projects ranging from Boston Harbor water quality to computational genomics. The College of Liberal Arts offers more than 30 programs in humanities, social sciences, and creative writing. Students explore everything from philosophy and psychology to world languages and performing arts, with internships across Boston's cultural institutions. The College of Management provides 25 programs in business, finance, accounting, and entrepreneurship, preparing graduates for careers in Boston's thriving financial and innovation sectors. Nursing and Health Sciences trains the next generation of healthcare professionals with 15 rigorous programs, clinical partnerships at Boston Medical Center and other major hospitals, and a focus on health equity in urban communities. The College of Education and Human Development prepares educators and counselors through 18 programs designed to transform public education. Public Policy and Urban Affairs offers 22 programs examining governance, social justice, and community development — critical fields for a university rooted in the mission of access and equity. Graduate Research spans 80 programs with opportunities in marine science, gerontology, global inclusion, and more. Doctoral students publish alongside world-class faculty and present at international conferences. Whether you arrive by shuttle across Boston Harbor or walk through the campus on Columbia Point, you will find a university that blends rigorous academics with the energy, diversity, and opportunity of a great American city.";
+
+var stage = document.getElementById('pretext-stage');
+if (!stage) throw new Error('No pretext-stage');
+
+var orbDefs = [
+  { icon: '🔬', label: 'Science', color: [100, 180, 255], r: 52, fx: 0.15, fy: 0.2, vx: 18, vy: 12 },
+  { icon: '📖', label: 'Liberal Arts', color: [220, 160, 80], r: 46, fx: 0.75, fy: 0.15, vx: -14, vy: 18 },
+  { icon: '💻', label: 'Computer\nScience', color: [0, 212, 184], r: 50, fx: 0.5, fy: 0.45, vx: 16, vy: -15 },
+  { icon: '🏥', label: 'Nursing', color: [232, 100, 130], r: 44, fx: 0.82, fy: 0.55, vx: -20, vy: 10 },
+  { icon: '🎓', label: 'Education', color: [150, 120, 240], r: 42, fx: 0.25, fy: 0.7, vx: 12, vy: -18 },
+  { icon: '📈', label: 'Business', color: [245, 166, 35], r: 44, fx: 0.6, fy: 0.75, vx: -16, vy: -12 }
+];
+
+function createOrbEl(d) {
+  var el = document.createElement('div');
+  el.className = 'pt-orb';
+  el.style.background = 'radial-gradient(circle at 35% 35%, rgba('+d.color.join(',')+',0.4), rgba('+d.color.join(',')+',0.15) 55%, transparent 72%)';
+  el.style.boxShadow = '0 0 50px 12px rgba('+d.color.join(',')+',0.2), 0 0 100px 30px rgba('+d.color.join(',')+',0.08)';
+  el.innerHTML = '<span class="orb-icon">'+d.icon+'</span><span class="orb-label">'+d.label.replace('\n','<br>')+'</span>';
+  stage.appendChild(el);
+  return el;
+}
+
+var stageW = stage.clientWidth;
+var stageH = stage.clientHeight;
+var orbs = orbDefs.map(function(d) {
+  return {
+    x: d.fx * stageW, y: d.fy * stageH, r: d.r,
+    vx: d.vx, vy: d.vy, color: d.color,
+    dragging: false, dragSX: 0, dragSY: 0, dragOX: 0, dragOY: 0,
+    el: createOrbEl(d)
+  };
+});
+
+// Prepare text
+await document.fonts.ready;
+var prepared = prepareWithSegments(PROGRAMS_TEXT, BODY_FONT);
+
+// Line pool
+var linePool = [];
+function syncPool(count) {
+  while (linePool.length < count) {
+    var el = document.createElement('div');
+    el.className = 'pt-line';
+    stage.appendChild(el);
+    linePool.push(el);
+  }
+  for (var i = 0; i < linePool.length; i++) {
+    linePool[i].style.display = i < count ? '' : 'none';
+  }
+}
+
+// Slot carving
+function carveSlots(base, blocked) {
+  var slots = [base];
+  for (var bi = 0; bi < blocked.length; bi++) {
+    var iv = blocked[bi];
+    var next = [];
+    for (var si = 0; si < slots.length; si++) {
+      var s = slots[si];
+      if (iv.right <= s.left || iv.left >= s.right) { next.push(s); continue; }
+      if (iv.left > s.left) next.push({ left: s.left, right: iv.left });
+      if (iv.right < s.right) next.push({ left: iv.right, right: s.right });
+    }
+    slots = next;
+  }
+  return slots.filter(function(s) { return s.right - s.left >= MIN_SLOT; });
+}
+
+// Circle-band intersection
+function circleInterval(cx, cy, r, bandTop, bandBot, hPad, vPad) {
+  var top = bandTop - vPad, bot = bandBot + vPad;
+  if (top >= cy + r || bot <= cy - r) return null;
+  var minDy = (cy >= top && cy <= bot) ? 0 : (cy < top ? top - cy : cy - bot);
+  if (minDy >= r) return null;
+  var maxDx = Math.sqrt(r * r - minDy * minDy);
+  return { left: cx - maxDx - hPad, right: cx + maxDx + hPad };
+}
+
+// Layout engine
+function layoutText() {
+  var w = stage.clientWidth;
+  var h = stage.clientHeight;
+  var cursor = { segmentIndex: 0, graphemeIndex: 0 };
+  var lineTop = PADDING;
+  var lines = [];
+  var maxY = h - PADDING;
+  var regionLeft = PADDING;
+  var regionRight = w - PADDING;
+
+  while (lineTop + LINE_HEIGHT <= maxY) {
+    var bandTop = lineTop;
+    var bandBot = lineTop + LINE_HEIGHT;
+    var blocked = [];
+    for (var oi = 0; oi < orbs.length; oi++) {
+      var o = orbs[oi];
+      var iv = circleInterval(o.x, o.y, o.r, bandTop, bandBot, 14, 4);
+      if (iv) blocked.push(iv);
+    }
+    var slots = carveSlots({ left: regionLeft, right: regionRight }, blocked);
+    if (slots.length === 0) { lineTop += LINE_HEIGHT; continue; }
+    slots.sort(function(a, b) { return a.left - b.left; });
+    var exhausted = false;
+    for (var si = 0; si < slots.length; si++) {
+      var slot = slots[si];
+      var slotW = slot.right - slot.left;
+      var line = layoutNextLine(prepared, cursor, slotW);
+      if (!line) { exhausted = true; break; }
+      lines.push({ x: Math.round(slot.left), y: Math.round(lineTop), text: line.text, width: line.width });
+      cursor = line.end;
+    }
+    if (exhausted) break;
+    lineTop += LINE_HEIGHT;
+  }
+  return lines;
+}
+
+// Drag state
+var activeOrb = null;
+function hitTest(px, py) {
+  for (var i = orbs.length - 1; i >= 0; i--) {
+    var o = orbs[i];
+    var dx = px - o.x, dy = py - o.y;
+    if (dx * dx + dy * dy <= o.r * o.r) return o;
+  }
+  return null;
+}
+
+stage.addEventListener('pointerdown', function(e) {
+  var rect = stage.getBoundingClientRect();
+  var px = e.clientX - rect.left, py = e.clientY - rect.top;
+  var orb = hitTest(px, py);
+  if (orb) {
+    activeOrb = orb;
+    orb.dragging = true;
+    orb.dragSX = e.clientX; orb.dragSY = e.clientY;
+    orb.dragOX = orb.x; orb.dragOY = orb.y;
+    e.preventDefault();
+    stage.style.cursor = 'grabbing';
+  }
+});
+window.addEventListener('pointermove', function(e) {
+  if (activeOrb) {
+    activeOrb.x = activeOrb.dragOX + (e.clientX - activeOrb.dragSX);
+    activeOrb.y = activeOrb.dragOY + (e.clientY - activeOrb.dragSY);
+    // Clamp to stage bounds
+    var w = stage.clientWidth, h = stage.clientHeight;
+    activeOrb.x = Math.max(activeOrb.r, Math.min(w - activeOrb.r, activeOrb.x));
+    activeOrb.y = Math.max(activeOrb.r, Math.min(h - activeOrb.r, activeOrb.y));
+  }
+});
+window.addEventListener('pointerup', function() {
+  if (activeOrb) {
+    activeOrb.dragging = false;
+    activeOrb = null;
+    stage.style.cursor = '';
+  }
+});
+
+// Animation loop
+var lastTime = 0;
+var animRunning = false;
+
+function animate(now) {
+  if (!animRunning) return;
+  requestAnimationFrame(animate);
+  var dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+  var w = stage.clientWidth;
+  var h = stage.clientHeight;
+
+  // Update orb positions (auto-drift)
+  for (var i = 0; i < orbs.length; i++) {
+    var o = orbs[i];
+    if (o.dragging) continue;
+    o.x += o.vx * dt;
+    o.y += o.vy * dt;
+    // Bounce off walls
+    if (o.x - o.r < 0) { o.x = o.r; o.vx = Math.abs(o.vx); }
+    if (o.x + o.r > w) { o.x = w - o.r; o.vx = -Math.abs(o.vx); }
+    if (o.y - o.r < 0) { o.y = o.r; o.vy = Math.abs(o.vy); }
+    if (o.y + o.r > h) { o.y = h - o.r; o.vy = -Math.abs(o.vy); }
+  }
+
+  // Orb-orb collision
+  for (var i = 0; i < orbs.length; i++) {
+    var a = orbs[i];
+    for (var j = i + 1; j < orbs.length; j++) {
+      var b = orbs[j];
+      var dx = b.x - a.x, dy = b.y - a.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var minD = a.r + b.r + 16;
+      if (dist < minD && dist > 0.1) {
+        var force = (minD - dist) * 0.6;
+        var nx = dx / dist, ny = dy / dist;
+        if (!a.dragging) { a.vx -= nx * force * dt; a.vy -= ny * force * dt; }
+        if (!b.dragging) { b.vx += nx * force * dt; b.vy += ny * force * dt; }
+      }
+    }
+  }
+
+  // Layout text
+  var lines = layoutText();
+  syncPool(lines.length);
+  for (var i = 0; i < lines.length; i++) {
+    var el = linePool[i];
+    var ln = lines[i];
+    el.textContent = ln.text;
+    el.style.left = ln.x + 'px';
+    el.style.top = ln.y + 'px';
+    el.style.font = BODY_FONT;
+    el.style.lineHeight = LINE_HEIGHT + 'px';
+  }
+
+  // Position orb elements
+  for (var i = 0; i < orbs.length; i++) {
+    var o = orbs[i];
+    o.el.style.left = (o.x - o.r) + 'px';
+    o.el.style.top = (o.y - o.r) + 'px';
+    o.el.style.width = (o.r * 2) + 'px';
+    o.el.style.height = (o.r * 2) + 'px';
+  }
+}
+
+// Start when section is visible (IntersectionObserver)
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting && !animRunning) {
+      // Recalculate orb positions based on current stage size
+      stageW = stage.clientWidth;
+      stageH = stage.clientHeight;
+      for (var i = 0; i < orbs.length; i++) {
+        orbs[i].x = orbDefs[i].fx * stageW;
+        orbs[i].y = orbDefs[i].fy * stageH;
+      }
+      animRunning = true;
+      lastTime = performance.now();
+      requestAnimationFrame(animate);
+    } else if (!entry.isIntersecting && animRunning) {
+      animRunning = false;
+    }
+  });
+}, { threshold: 0.1 });
+observer.observe(stage);
+
+// Handle resize
+window.addEventListener('resize', function() {
+  if (!animRunning) return;
+  var w = stage.clientWidth, h = stage.clientHeight;
+  for (var i = 0; i < orbs.length; i++) {
+    var o = orbs[i];
+    o.x = Math.max(o.r, Math.min(w - o.r, o.x));
+    o.y = Math.max(o.r, Math.min(h - o.r, o.y));
+  }
+});
 </script>
 </body>
 </html>

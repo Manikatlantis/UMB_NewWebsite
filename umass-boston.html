@@ -2318,9 +2318,6 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
       if(!building){ if(callback) callback(); return; }
 
-      // Scroll page to hero
-      document.getElementById('hero').scrollIntoView({behavior:'smooth'});
-
       // Exit shuttle mode if active
       if(typeof shuttleMode !== 'undefined' && shuttleMode){
         window.exitShuttleMode();
@@ -2358,8 +2355,12 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
 
       if(!exploreMode){
-        enter3DMode();
-        setTimeout(doFly, 1800);
+        // Scroll to hero BEFORE entering 3D mode (which locks scroll with position:fixed)
+        document.getElementById('hero').scrollIntoView({behavior:'smooth'});
+        setTimeout(function(){
+          enter3DMode();
+          setTimeout(doFly, 800);
+        }, 600);
       } else {
         doFly();
       }

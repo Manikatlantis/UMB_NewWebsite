@@ -1225,18 +1225,18 @@ const CAMPUS_BUILDINGS=[
 
 // ── Tour narration text + pre-generated audio files (ElevenLabs) ──
 var BUILDING_NARRATION = {
-  'Campus Center': {text:'Welcome to the Campus Center, the heart of student life at UMass Boston. Built in 2004, this 331,000 square foot building houses dining halls, student organizations, event spaces, and the campus bookstore.', audio:'audio/campus-center.mp3'},
-  'Healey Library': {text:'This is the Healey Library, the tallest building on campus. This 11-story Brutalist tower was designed by Harry Weese and opened in 1974. It holds over 700,000 volumes and offers panoramic views of Boston Harbor from the upper floors.', audio:'audio/healey-library.mp3'},
-  'Integrated Sciences Complex': {text:'Here we have the Integrated Sciences Complex, or ISC. Completed in 2015 by Goody Clancy, this LEED Gold certified building features state-of-the-art research labs for biology, chemistry, and physics.', audio:'audio/integrated-sciences-complex.mp3'},
-  'McCormack Hall': {text:'This is McCormack Hall, home to graduate studies and the College of Liberal Arts. Built in 1974 as part of the original campus, this 5-story brick building is one of the classic Brutalist structures on the peninsula.', audio:'audio/mccormack-hall.mp3'},
-  'Wheatley Hall': {text:'We are now at Wheatley Hall, which houses the College of Education, the College of Nursing and Health Sciences, and the School of Social Work. This 6-story brick building has been a campus landmark since 1974.', audio:'audio/wheatley-hall.mp3'},
-  'Quinn Administration': {text:'This is the Quinn Administration Building, where you will find the Registrar, Bursar, Financial Aid, and university leadership offices. It is typically the first stop for new students handling enrollment.', audio:'audio/quinn-administration.mp3'},
-  'University Hall': {text:'Welcome to University Hall, one of the newest buildings on campus. Opened in 2016 and designed by Wilson HGA, this LEED Gold building is home to Computer Science, Math, and Sciences programs.', audio:'audio/university-hall.mp3'},
-  'Clark Athletic Center': {text:'Here is the Clark Athletic Center, the campus recreation hub. It features a full gymnasium, swimming pool, basketball and racquetball courts, a fitness center, and even an ice rink.', audio:'audio/clark-athletic-center.mp3'},
-  'West Garage': {text:'This is the West Garage, an 8-level parking structure built in 2018 by Fennick McCredie. It provides 1,400 parking spaces for commuter students and staff.', audio:'audio/west-garage.mp3'},
-  'JFK Presidential Library': {text:'And here is the iconic JFK Presidential Library and Museum, designed by the legendary architect I.M. Pei and opened in 1979. Dedicated to President John F. Kennedy, it sits right on Columbia Point overlooking Boston Harbor.', audio:'audio/jfk-presidential-library.mp3'},
-  'West Residence Hall': {text:'This is the West Residence Hall, offering on-campus student housing with stunning harbor views. Designed by Elkus Manfredi Architects, it is part of the university\'s effort to build a residential campus community.', audio:'audio/west-residence-hall.mp3'},
-  'East Residence Hall': {text:'Finally, the East Residence Hall, featuring suite-style living near the waterfront. Together with West Residence Hall, it provides a true on-campus living experience at UMass Boston.', audio:'audio/east-residence-hall.mp3'}
+  'Campus Center': {text:'Welcome to the Campus Center. Built in 2004, this is the heart of student life \u2014 home to dining, student organizations, and campus events.', audio:'audio/campus-center.mp3', bg:'audio/bg-campus-center.mp3'},
+  'Healey Library': {text:'This is the Healey Library, the tallest building on campus. Eleven stories of Brutalist architecture, housing over 700,000 volumes with panoramic harbor views from the top.', audio:'audio/healey-library.mp3', bg:'audio/bg-healey-library.mp3'},
+  'Integrated Sciences Complex': {text:'Here is the Integrated Sciences Complex. Completed in 2015, this LEED Gold building is home to cutting-edge research labs in biology, chemistry, and physics.', audio:'audio/integrated-sciences-complex.mp3', bg:'audio/bg-integrated-sciences-complex.mp3'},
+  'McCormack Hall': {text:'This is McCormack Hall, home to graduate studies and the College of Liberal Arts. One of the original 1974 Brutalist buildings on the peninsula.', audio:'audio/mccormack-hall.mp3', bg:'audio/bg-mccormack-hall.mp3'},
+  'Wheatley Hall': {text:'We\u2019re now at Wheatley Hall. This building houses the College of Education, Nursing, and Social Work \u2014 a campus landmark since 1974.', audio:'audio/wheatley-hall.mp3', bg:'audio/bg-wheatley-hall.mp3'},
+  'Quinn Administration': {text:'This is the Quinn Administration Building. You\u2019ll find the Registrar, Bursar, and Financial Aid here \u2014 the first stop for new students.', audio:'audio/quinn-administration.mp3', bg:'audio/bg-quinn-administration.mp3'},
+  'University Hall': {text:'Welcome to University Hall. Opened in 2016, this LEED Gold building is home to Computer Science, Math, and Sciences.', audio:'audio/university-hall.mp3', bg:'audio/bg-university-hall.mp3'},
+  'Clark Athletic Center': {text:'Here is the Clark Athletic Center, the campus recreation hub. Inside you\u2019ll find a gymnasium, basketball courts, a fitness center, and an ice rink.', audio:'audio/clark-athletic-center.mp3', bg:'audio/bg-clark-athletic-center.mp3'},
+  'West Garage': {text:'This is the West Garage, an eight-level parking structure with 1,400 spaces for commuter students and staff.', audio:'audio/west-garage.mp3', bg:'audio/bg-west-garage.mp3'},
+  'JFK Presidential Library': {text:'And here is the iconic JFK Presidential Library, designed by I.M. Pei and opened in 1979. A landmark on Columbia Point overlooking Boston Harbor.', audio:'audio/jfk-presidential-library.mp3', bg:'audio/bg-jfk-presidential-library.mp3'},
+  'West Residence Hall': {text:'This is the West Residence Hall \u2014 on-campus student housing with stunning harbor views, designed by Elkus Manfredi Architects.', audio:'audio/west-residence-hall.mp3', bg:'audio/bg-west-residence-hall.mp3'},
+  'East Residence Hall': {text:'And finally, the East Residence Hall. Suite-style living near the waterfront, completing the on-campus residential experience at UMass Boston.', audio:'audio/east-residence-hall.mp3', bg:'audio/bg-east-residence-hall.mp3'}
 };
 var _tourAudioEl = null; // reusable audio element for tour narration
 var _tourBgMusic = null; // background music during tour
@@ -2513,8 +2513,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         window.droneFlyTo(name, function(){
           if(onStopCallback) onStopCallback(name, stopIdx);
 
-          // Play narration audio for this stop
+          // Play per-building background music + narration audio
           var nar = (typeof BUILDING_NARRATION!=='undefined' && BUILDING_NARRATION[name]) ? BUILDING_NARRATION[name] : null;
+          if(nar && nar.bg && typeof startTourBgMusic==='function') startTourBgMusic(nar.bg);
           if(nar && nar.audio){
             if(typeof playTourAudio==='function') playTourAudio(nar.audio);
             // Wait for audio to finish, then proceed
@@ -5024,8 +5025,6 @@ function executeActions(actions){
       if(ttsBtn){ ttsBtn.classList.add('active'); ttsBtn.innerHTML = '&#128266;'; }
       // Always use the full 12-stop tour regardless of what AI returned
       var fullStops = ['Campus Center','Healey Library','Integrated Sciences Complex','McCormack Hall','Wheatley Hall','Quinn Administration','University Hall','Clark Athletic Center','West Garage','JFK Presidential Library','West Residence Hall','East Residence Hall'];
-      // Start background music
-      if(typeof startTourBgMusic==='function') startTourBgMusic();
       (function(stops){
         window.droneTour(fullStops, function(name, idx){
           var buildings = typeof CAMPUS_BUILDINGS !== 'undefined' ? CAMPUS_BUILDINGS : [];
@@ -5091,11 +5090,12 @@ function stopTourAudio(){
 function isTourAudioPlaying(){
   return _tourAudioEl && !_tourAudioEl.paused && !_tourAudioEl.ended;
 }
-function startTourBgMusic(){
-  if(_tourBgMusic){ _tourBgMusic.pause(); }
-  _tourBgMusic = new Audio('audio/tour-bg.mp3');
+function startTourBgMusic(src){
+  if(_tourBgMusic){ _tourBgMusic.pause(); _tourBgMusic.currentTime=0; }
+  if(!src) return;
+  _tourBgMusic = new Audio(src);
   _tourBgMusic.loop = true;
-  _tourBgMusic.volume = 0.18;
+  _tourBgMusic.volume = 0.15;
   _tourBgMusic.play().catch(function(e){ console.warn('BG music play failed:', e); });
 }
 function stopTourBgMusic(){

@@ -331,13 +331,15 @@ router.get('/events', async (req, res) => {
       const locMatch = description.match(/(?:Location|Where|Room|Building):\s*([^.]+)/i);
       if (locMatch) location = locMatch[1].trim();
 
-      // Match against known buildings
+      // Match against known buildings — pick the one mentioned earliest in description
       let buildingMatch = null;
-      const searchText = (title + ' ' + description + ' ' + location).toLowerCase();
+      const searchText = (description + ' ' + location).toLowerCase();
+      let earliestPos = Infinity;
       for (const b of KNOWN_BUILDINGS) {
-        if (searchText.includes(b.name.toLowerCase())) {
+        const pos = searchText.indexOf(b.name.toLowerCase());
+        if (pos !== -1 && pos < earliestPos) {
+          earliestPos = pos;
           buildingMatch = { name: b.name, lat: b.lat, lng: b.lng };
-          break;
         }
       }
 

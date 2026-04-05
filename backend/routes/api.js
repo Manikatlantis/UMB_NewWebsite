@@ -27,7 +27,7 @@ When a user asks for a "campus tour", "show me around", or "drone tour", use the
 - Quinn Administration — Administrative offices, Registrar, Bursar, leadership
 - Wheatley Hall — College of Education, Nursing and Social Work
 - McCormack Hall — Graduate studies, College of Liberal Arts
-- Clark Athletic Center — Full rec center with gym, pool, courts, ice rink
+- Clark Athletic Center — Full rec center with gym, courts, fitness center, ice rink
 - University Hall — Computer Science, Math, and Sciences classrooms and labs (2016, LEED Gold)
 - West Garage — 8-level campus parking garage, 1,400 spaces
 - JFK Presidential Library — Iconic I.M. Pei landmark dedicated to President Kennedy (1979)

@@ -1223,6 +1223,23 @@ const CAMPUS_BUILDINGS=[
    link:'https://www.umb.edu/campus-life/housing/'},
 ];
 
+// ── Tour narration text + pre-generated audio files (ElevenLabs) ──
+var BUILDING_NARRATION = {
+  'Campus Center': {text:'Welcome to the Campus Center, the heart of student life at UMass Boston. Built in 2004, this 331,000 square foot building houses dining halls, student organizations, event spaces, and the campus bookstore.', audio:'audio/campus-center.mp3'},
+  'Healey Library': {text:'This is the Healey Library, the tallest building on campus. This 11-story Brutalist tower was designed by Harry Weese and opened in 1974. It holds over 700,000 volumes and offers panoramic views of Boston Harbor from the upper floors.', audio:'audio/healey-library.mp3'},
+  'Integrated Sciences Complex': {text:'Here we have the Integrated Sciences Complex, or ISC. Completed in 2015 by Goody Clancy, this LEED Gold certified building features state-of-the-art research labs for biology, chemistry, and physics.', audio:'audio/integrated-sciences-complex.mp3'},
+  'McCormack Hall': {text:'This is McCormack Hall, home to graduate studies and the College of Liberal Arts. Built in 1974 as part of the original campus, this 5-story brick building is one of the classic Brutalist structures on the peninsula.', audio:'audio/mccormack-hall.mp3'},
+  'Wheatley Hall': {text:'We are now at Wheatley Hall, which houses the College of Education, the College of Nursing and Health Sciences, and the School of Social Work. This 6-story brick building has been a campus landmark since 1974.', audio:'audio/wheatley-hall.mp3'},
+  'Quinn Administration': {text:'This is the Quinn Administration Building, where you will find the Registrar, Bursar, Financial Aid, and university leadership offices. It is typically the first stop for new students handling enrollment.', audio:'audio/quinn-administration.mp3'},
+  'University Hall': {text:'Welcome to University Hall, one of the newest buildings on campus. Opened in 2016 and designed by Wilson HGA, this LEED Gold building is home to Computer Science, Math, and Sciences programs.', audio:'audio/university-hall.mp3'},
+  'Clark Athletic Center': {text:'Here is the Clark Athletic Center, the campus recreation hub. It features a full gymnasium, swimming pool, basketball and racquetball courts, a fitness center, and even an ice rink.', audio:'audio/clark-athletic-center.mp3'},
+  'West Garage': {text:'This is the West Garage, an 8-level parking structure built in 2018 by Fennick McCredie. It provides 1,400 parking spaces for commuter students and staff.', audio:'audio/west-garage.mp3'},
+  'JFK Presidential Library': {text:'And here is the iconic JFK Presidential Library and Museum, designed by the legendary architect I.M. Pei and opened in 1979. Dedicated to President John F. Kennedy, it sits right on Columbia Point overlooking Boston Harbor.', audio:'audio/jfk-presidential-library.mp3'},
+  'West Residence Hall': {text:'This is the West Residence Hall, offering on-campus student housing with stunning harbor views. Designed by Elkus Manfredi Architects, it is part of the university\'s effort to build a residential campus community.', audio:'audio/west-residence-hall.mp3'},
+  'East Residence Hall': {text:'Finally, the East Residence Hall, featuring suite-style living near the waterfront. Together with West Residence Hall, it provides a true on-campus living experience at UMass Boston.', audio:'audio/east-residence-hall.mp3'}
+};
+var _tourAudioEl = null; // reusable audio element for tour narration
+
 // ── Building photos (verified URLs) ──
 var BUILDING_PHOTOS = {
   'Campus Center': [
@@ -2341,6 +2358,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Exit 3D explore mode ──
     window.exit3DMode=function(){
       exploreMode=false;
+      if(typeof stopTourAudio==='function') stopTourAudio();
+      if('speechSynthesis' in window) speechSynthesis.cancel();
       document.body.style.overflow=''; document.body.style.position=''; document.body.style.width=''; document.body.style.top=''; // restore page scroll
       window.scrollTo(0, _savedScrollY); // restore scroll position
       document.getElementById('hero').classList.remove('explore-mode');
@@ -2491,13 +2510,27 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         idx++;
         window.droneFlyTo(name, function(){
           if(onStopCallback) onStopCallback(name, stopIdx);
-          // Pause at each stop for 4 seconds, then fly to next
-          if(_tourActive && idx < stops.length){
-            setTimeout(nextStop, 4000);
+          // Wait for TTS narration to finish before moving to next stop
+          function proceedAfterNarration(){
+            if(_tourActive && idx < stops.length){
+              setTimeout(nextStop, 2000); // brief pause after narration ends
+            } else {
+              _tourActive = false;
+              setTimeout(function(){ exit3DMode(); }, 2000);
+            }
+          }
+          if(typeof isTourAudioPlaying==='function' && isTourAudioPlaying()){
+            // Wait for ElevenLabs audio to finish
+            var _proceeded = false;
+            function onceProc(){ if(_proceeded) return; _proceeded=true; proceedAfterNarration(); }
+            _tourAudioEl.addEventListener('ended', onceProc, {once:true});
+            setTimeout(function(){ if(isTourAudioPlaying()) { _tourAudioEl.pause(); } onceProc(); }, 30000);
+          } else if('speechSynthesis' in window && speechSynthesis.speaking){
+            var checkSpeech = setInterval(function(){
+              if(!speechSynthesis.speaking){ clearInterval(checkSpeech); proceedAfterNarration(); }
+            }, 300);
           } else {
-            _tourActive = false;
-            // Tour complete — exit explore mode (restores buttons, scroll, cinematic)
-            setTimeout(function(){ exit3DMode(); }, 4000);
+            setTimeout(proceedAfterNarration, 6000);
           }
         });
       }
@@ -2506,6 +2539,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     window.cancelDroneTour = function(){
       _tourActive = false;
+      if(typeof stopTourAudio==='function') stopTourAudio();
     };
 
     // ── CAMPUS ROAD POLYLINE (hand-captured waypoints) ──
@@ -4974,6 +5008,10 @@ function executeActions(actions){
     if(action.type === 'fly_to' && window.droneFlyTo){
       window.droneFlyTo(action.building);
     } else if(action.type === 'campus_tour' && window.droneTour){
+      // Auto-enable narration during campus tour
+      ttsEnabled = true;
+      var ttsBtn = document.getElementById('btn-tts');
+      if(ttsBtn){ ttsBtn.classList.add('active'); ttsBtn.innerHTML = '&#128266;'; }
       (function(stops){
         window.droneTour(stops, function(name, idx){
           var buildings = typeof CAMPUS_BUILDINGS !== 'undefined' ? CAMPUS_BUILDINGS : [];
@@ -4984,9 +5022,16 @@ function executeActions(actions){
           if(b){
             var photos = (typeof BUILDING_PHOTOS!=='undefined' && BUILDING_PHOTOS[b.name]) ? BUILDING_PHOTOS[b.name] : [];
             var photoHtml = photos.length > 0 ? '<br><img src="'+photos[0]+'" alt="'+b.name+'" style="width:100%;max-width:260px;border-radius:6px;margin-top:8px;border:1px solid rgba(0,212,184,0.2);" onerror="this.style.display=\'none\'">' : '';
-            var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+b.desc+photoHtml;
+            var nar = (typeof BUILDING_NARRATION!=='undefined' && BUILDING_NARRATION[b.name]) ? BUILDING_NARRATION[b.name] : null;
+            var narText = nar ? nar.text : b.desc;
+            var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+narText+photoHtml;
             addMsg('assistant', msg);
-            if(ttsEnabled) speakNarration('Stop '+(idx+1)+': '+b.name+'. '+b.desc);
+            // Play pre-generated ElevenLabs audio, fall back to browser TTS
+            if(ttsEnabled && nar && nar.audio){
+              playTourAudio(nar.audio);
+            } else if(ttsEnabled){
+              speakNarration(narText);
+            }
           }
         });
       })(action.stops);
@@ -5019,6 +5064,20 @@ window.toggleTTS = function(){
   btn.innerHTML = ttsEnabled ? '&#128266;' : '&#128264;';
   if(!ttsEnabled) speechSynthesis.cancel();
 };
+
+// Play pre-generated ElevenLabs audio for tour narration
+function playTourAudio(src){
+  if(_tourAudioEl){ _tourAudioEl.pause(); _tourAudioEl.currentTime=0; }
+  _tourAudioEl = new Audio(src);
+  _tourAudioEl.volume = 1.0;
+  _tourAudioEl.play().catch(function(e){ console.warn('Audio play failed:', e); });
+}
+function stopTourAudio(){
+  if(_tourAudioEl){ _tourAudioEl.pause(); _tourAudioEl.currentTime=0; _tourAudioEl=null; }
+}
+function isTourAudioPlaying(){
+  return _tourAudioEl && !_tourAudioEl.paused && !_tourAudioEl.ended;
+}
 
 function sendQ(btn){ chatIn.value=btn.textContent; sendMsg(); }
 chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});

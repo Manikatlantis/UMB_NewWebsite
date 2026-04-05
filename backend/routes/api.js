@@ -1,9 +1,50 @@
 const express       = require('express');
 const router        = express.Router();
 const Anthropic     = require('@anthropic-ai/sdk');
+const multer        = require('multer');
+const path          = require('path');
+const xml2js        = require('xml2js');
 const Visit         = require('../models/Visit');
 const ChatLog       = require('../models/ChatLog');
 const BuildingPhoto = require('../models/BuildingPhoto');
+
+// ── Multer config for photo uploads ──
+const photoStorage = multer.diskStorage({
+  destination: path.join(__dirname, '..', 'uploads', 'photos'),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`);
+  }
+});
+const uploadPhoto = multer({
+  storage: photoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Only image files allowed'), false);
+  }
+}).single('photo');
+
+// ── Events feed cache ──
+const EVENTS_FEED_URL = 'https://25livepub.collegenet.com/calendars/umb-featured-events.rss';
+let eventsCache = null;
+let eventsCacheTime = 0;
+const EVENTS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+const KNOWN_BUILDINGS = [
+  { name: 'Campus Center', lat: 42.3133, lng: -71.0387 },
+  { name: 'Integrated Sciences Complex', lat: 42.3138, lng: -71.0367 },
+  { name: 'Healey Library', lat: 42.3127, lng: -71.0397 },
+  { name: 'Quinn Administration', lat: 42.3148, lng: -71.0385 },
+  { name: 'Wheatley Hall', lat: 42.3143, lng: -71.0378 },
+  { name: 'McCormack Hall', lat: 42.3130, lng: -71.0405 },
+  { name: 'Clark Athletic Center', lat: 42.3122, lng: -71.0420 },
+  { name: 'University Hall', lat: 42.3135, lng: -71.0372 },
+  { name: 'West Garage', lat: 42.3145, lng: -71.0360 },
+  { name: 'JFK Presidential Library', lat: 42.3098, lng: -71.0370 },
+  { name: 'West Residence Hall', lat: 42.3168, lng: -71.0405 },
+  { name: 'East Residence Hall', lat: 42.3158, lng: -71.0395 },
+];
 
 // ── Anthropic client (lazy-init on first chat) ──
 let anthropic = null;
@@ -204,11 +245,25 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// ── GET /api/building-photos ─────────────────────
+// Fetch all approved photos, optionally filtered by building
+router.get('/building-photos', async (req, res) => {
+  try {
+    const query = { status: 'approved' };
+    if (req.query.building) query.building = req.query.building;
+    if (req.query.season) query.season = req.query.season;
+    const photos = await BuildingPhoto.find(query).sort({ createdAt: -1 }).limit(100);
+    res.json({ photos });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── GET /api/building-photos/:building ──────────
 // Fetch photos for a specific building (optional face/floor/col query params)
 router.get('/building-photos/:building', async (req, res) => {
   try {
-    const query = { building: req.params.building };
+    const query = { building: req.params.building, status: 'approved' };
     if (req.query.face  !== undefined) query.face  = Number(req.query.face);
     if (req.query.floor !== undefined) query.floor = Number(req.query.floor);
     if (req.query.col   !== undefined) query.col   = Number(req.query.col);
@@ -220,17 +275,81 @@ router.get('/building-photos/:building', async (req, res) => {
 });
 
 // ── POST /api/building-photos ───────────────────
-// Create a photo record (admin use, for later)
-router.post('/building-photos', async (req, res) => {
-  try {
-    const { building, face, floor, col, photoUrl, caption } = req.body;
-    if (!building || face === undefined || !photoUrl) {
-      return res.status(400).json({ error: 'building, face, and photoUrl are required' });
+// Upload a photo for a building (multipart/form-data with 'photo' file field)
+router.post('/building-photos', (req, res) => {
+  uploadPhoto(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    try {
+      const { building, face, floor, col, caption, season, uploadedBy } = req.body;
+      if (!building || face === undefined) {
+        return res.status(400).json({ error: 'building and face are required' });
+      }
+      const photoUrl = req.file
+        ? `/uploads/photos/${req.file.filename}`
+        : req.body.photoUrl;
+      if (!photoUrl) {
+        return res.status(400).json({ error: 'photo file or photoUrl is required' });
+      }
+      const photo = await BuildingPhoto.create({
+        building, face: Number(face), floor: Number(floor || 0), col: Number(col || 0),
+        photoUrl, caption: caption || '', season: season || '',
+        uploadedBy: uploadedBy || 'Anonymous', status: 'approved'
+      });
+      res.status(201).json({ photo });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
-    const photo = await BuildingPhoto.create({ building, face, floor, col, photoUrl, caption });
-    res.status(201).json({ photo });
+  });
+});
+
+// ── GET /api/events ─────────────────────────────
+// Proxy + cache UMB events feed, match locations to campus buildings
+router.get('/events', async (req, res) => {
+  try {
+    const now = Date.now();
+    if (eventsCache && (now - eventsCacheTime) < EVENTS_CACHE_TTL) {
+      return res.json(eventsCache);
+    }
+
+    const feedResp = await fetch(EVENTS_FEED_URL);
+    if (!feedResp.ok) throw new Error('Feed fetch failed: ' + feedResp.status);
+    const xml = await feedResp.text();
+
+    const parsed = await xml2js.parseStringPromise(xml, { explicitArray: false });
+    const items = parsed.rss && parsed.rss.channel && parsed.rss.channel.item;
+    if (!items) return res.json({ events: [] });
+
+    const rawItems = Array.isArray(items) ? items : [items];
+    const events = rawItems.slice(0, 20).map(item => {
+      const title = item.title || '';
+      const link = item.link || '';
+      const description = (item.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      const pubDate = item.pubDate || '';
+
+      // Try to extract location from description
+      let location = '';
+      const locMatch = description.match(/(?:Location|Where|Room|Building):\s*([^.]+)/i);
+      if (locMatch) location = locMatch[1].trim();
+
+      // Match against known buildings
+      let buildingMatch = null;
+      const searchText = (title + ' ' + description + ' ' + location).toLowerCase();
+      for (const b of KNOWN_BUILDINGS) {
+        if (searchText.includes(b.name.toLowerCase())) {
+          buildingMatch = { name: b.name, lat: b.lat, lng: b.lng };
+          break;
+        }
+      }
+
+      return { title, link, description: description.slice(0, 200), pubDate, location, buildingMatch };
+    });
+
+    eventsCache = { events };
+    eventsCacheTime = now;
+    res.json({ events });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Events fetch error:', err.message);
+    res.json({ events: [], error: 'Could not load events' });
   }
 });
 

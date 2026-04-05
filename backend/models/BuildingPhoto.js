@@ -7,7 +7,9 @@ const buildingPhotoSchema = new mongoose.Schema({
   col:      { type: Number, default: 0 },
   photoUrl: { type: String, required: true },
   caption:  { type: String, default: '' },
-  uploadedBy: { type: String, default: 'admin' },
+  season:   { type: String, enum: ['spring', 'summer', 'fall', 'winter', ''], default: '' },
+  uploadedBy: { type: String, default: 'Anonymous' },
+  status:   { type: String, enum: ['approved', 'pending', 'rejected'], default: 'approved' },
 }, { timestamps: true });
 
 buildingPhotoSchema.index({ building: 1, face: 1, floor: 1, col: 1 });

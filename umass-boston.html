@@ -327,6 +327,50 @@ body.custom-cursor #game-canvas{cursor:none!important;}
 .news-card:first-child .nc-title{font-size:22px;}
 .nc-date{font-family:'Space Mono',monospace;font-size:9px;color:rgba(238,243,248,0.35);}
 
+/* ── EVENTS ── */
+.events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:40px;}
+.event-card{background:rgba(0,16,32,0.6);border:1px solid rgba(0,212,184,0.08);border-radius:6px;padding:20px;transition:border-color 0.3s,transform 0.3s;cursor:default;}
+.event-card:hover{border-color:rgba(0,212,184,0.25);transform:translateY(-3px);}
+.event-date{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);margin-bottom:8px;}
+.event-title{font-family:'Playfair Display',serif;font-size:17px;line-height:1.35;margin-bottom:8px;}
+.event-desc{font-size:13px;color:rgba(238,243,248,0.5);line-height:1.5;margin-bottom:12px;}
+.event-loc{font-family:'Space Mono',monospace;font-size:9px;color:rgba(0,212,184,0.7);display:flex;align-items:center;gap:6px;}
+.event-loc .pin{font-size:12px;}
+.event-fly{background:none;border:1px solid rgba(0,212,184,0.3);color:var(--teal);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;padding:4px 10px;cursor:pointer;border-radius:3px;margin-top:10px;transition:all 0.2s;}
+.event-fly:hover{background:rgba(0,212,184,0.1);border-color:rgba(0,212,184,0.5);}
+.events-empty{text-align:center;color:rgba(238,243,248,0.35);padding:40px;font-size:14px;}
+
+/* ── GALLERY ── */
+.gallery-controls{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap;align-items:center;}
+.gallery-controls select,.gallery-controls input{background:rgba(0,16,32,0.8);border:1px solid rgba(0,212,184,0.15);color:var(--white);font-family:'Space Mono',monospace;font-size:11px;padding:8px 12px;border-radius:4px;outline:none;}
+.gallery-controls select:focus,.gallery-controls input:focus{border-color:rgba(0,212,184,0.4);}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:24px;}
+.gallery-item{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:6px;border:1px solid rgba(0,212,184,0.08);cursor:pointer;transition:border-color 0.3s,transform 0.3s;}
+.gallery-item:hover{border-color:rgba(0,212,184,0.3);transform:translateY(-3px);}
+.gallery-item img{width:100%;height:100%;object-fit:cover;}
+.gallery-item .gi-overlay{position:absolute;bottom:0;left:0;right:0;padding:10px;background:linear-gradient(transparent,rgba(0,0,0,0.8));font-size:11px;}
+.gallery-item .gi-building{font-family:'Space Mono',monospace;font-size:8px;color:var(--teal);letter-spacing:1px;text-transform:uppercase;}
+.gallery-item .gi-caption{color:rgba(238,243,248,0.7);margin-top:3px;}
+.gallery-empty{text-align:center;color:rgba(238,243,248,0.35);padding:40px;font-size:14px;}
+.btn-upload{background:var(--teal);color:var(--deep);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;padding:10px 20px;border:none;cursor:pointer;border-radius:4px;font-weight:700;transition:opacity 0.2s;}
+.btn-upload:hover{opacity:0.85;}
+
+/* Upload modal */
+.upload-modal{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+.upload-modal.open{display:flex;}
+.upload-form{background:rgba(0,10,22,0.95);border:1px solid rgba(0,212,184,0.2);border-radius:8px;padding:32px;width:90%;max-width:420px;max-height:90vh;overflow-y:auto;}
+.upload-form h3{font-family:'Unbounded',sans-serif;font-size:18px;margin-bottom:20px;color:var(--white);}
+.upload-form label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);display:block;margin-bottom:6px;margin-top:16px;}
+.upload-form select,.upload-form input,.upload-form textarea{width:100%;background:rgba(0,16,32,0.8);border:1px solid rgba(0,212,184,0.15);color:var(--white);font-family:'Space Mono',monospace;font-size:12px;padding:10px;border-radius:4px;outline:none;box-sizing:border-box;}
+.upload-form textarea{resize:vertical;min-height:60px;}
+.upload-form .file-drop{border:2px dashed rgba(0,212,184,0.2);border-radius:6px;padding:30px;text-align:center;color:rgba(238,243,248,0.35);font-size:12px;cursor:pointer;margin-top:6px;transition:border-color 0.2s;}
+.upload-form .file-drop:hover,.upload-form .file-drop.dragover{border-color:rgba(0,212,184,0.5);color:rgba(238,243,248,0.6);}
+.upload-form .file-drop img{max-width:100%;max-height:150px;margin-top:10px;border-radius:4px;}
+.upload-actions{display:flex;gap:12px;margin-top:24px;}
+.upload-actions button{flex:1;padding:12px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;border-radius:4px;cursor:pointer;border:none;}
+.upload-actions .btn-submit{background:var(--teal);color:var(--deep);font-weight:700;}
+.upload-actions .btn-cancel{background:transparent;border:1px solid rgba(238,243,248,0.2);color:rgba(238,243,248,0.5);}
+
 /* ── FOOTER ── */
 footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:72px 52px 36px;}
 .foot-grid{display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr;gap:52px;margin-bottom:52px;}
@@ -481,6 +525,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <li><a href="https://www.umb.edu/admissions/" target="_blank">Admissions</a></li>
     <li><a href="https://www.umb.edu/research/" target="_blank">Research</a></li>
     <li><a href="https://www.umb.edu/campus-life/" target="_blank">Campus Life</a></li>
+    <li><a href="#events-section">Events</a></li>
+    <li><a href="#gallery-section">Gallery</a></li>
     <li><a href="#harbor-game-section">⚓ Play</a></li>
     <li><a href="#chatbot-section">Ask Harbor</a></li>
   </ul>
@@ -688,6 +734,100 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     </a>
   </div>
 </section>
+
+<!-- ─── CAMPUS EVENTS ─── -->
+<section id="events-section">
+  <div class="sec-tag">What's Happening</div>
+  <h2 class="sec-title reveal">Campus <em>Events</em></h2>
+  <div class="events-grid" id="events-grid">
+    <div class="events-empty">Loading events...</div>
+  </div>
+</section>
+
+<!-- ─── PHOTO GALLERY ─── -->
+<section id="gallery-section">
+  <div class="sec-tag">Campus Through Your Lens</div>
+  <h2 class="sec-title reveal">Photo <em>Gallery</em></h2>
+  <div class="gallery-controls">
+    <select id="gallery-building-filter">
+      <option value="">All Buildings</option>
+      <option>Campus Center</option>
+      <option>Integrated Sciences Complex</option>
+      <option>Healey Library</option>
+      <option>Quinn Administration</option>
+      <option>Wheatley Hall</option>
+      <option>McCormack Hall</option>
+      <option>Clark Athletic Center</option>
+      <option>University Hall</option>
+      <option>West Garage</option>
+      <option>JFK Presidential Library</option>
+      <option>West Residence Hall</option>
+      <option>East Residence Hall</option>
+    </select>
+    <select id="gallery-season-filter">
+      <option value="">All Seasons</option>
+      <option value="spring">Spring</option>
+      <option value="summer">Summer</option>
+      <option value="fall">Fall</option>
+      <option value="winter">Winter</option>
+    </select>
+    <button class="btn-upload" onclick="openUploadModal()">+ UPLOAD PHOTO</button>
+  </div>
+  <div class="gallery-grid" id="gallery-grid">
+    <div class="gallery-empty">No photos yet — be the first to share!</div>
+  </div>
+</section>
+
+<!-- ─── UPLOAD MODAL ─── -->
+<div class="upload-modal" id="upload-modal">
+  <div class="upload-form">
+    <h3>Upload a Campus Photo</h3>
+    <label>Building</label>
+    <select id="upload-building" required>
+      <option value="">Select building...</option>
+      <option>Campus Center</option>
+      <option>Integrated Sciences Complex</option>
+      <option>Healey Library</option>
+      <option>Quinn Administration</option>
+      <option>Wheatley Hall</option>
+      <option>McCormack Hall</option>
+      <option>Clark Athletic Center</option>
+      <option>University Hall</option>
+      <option>West Garage</option>
+      <option>JFK Presidential Library</option>
+      <option>West Residence Hall</option>
+      <option>East Residence Hall</option>
+    </select>
+    <label>View</label>
+    <select id="upload-face">
+      <option value="0">Front</option>
+      <option value="1">Back</option>
+      <option value="2">Left Side</option>
+      <option value="3">Right Side</option>
+    </select>
+    <label>Season</label>
+    <select id="upload-season">
+      <option value="">Not specified</option>
+      <option value="spring">Spring</option>
+      <option value="summer">Summer</option>
+      <option value="fall">Fall</option>
+      <option value="winter">Winter</option>
+    </select>
+    <label>Caption (optional)</label>
+    <textarea id="upload-caption" placeholder="Describe the photo..."></textarea>
+    <label>Your Name (optional)</label>
+    <input id="upload-name" type="text" placeholder="Anonymous">
+    <label>Photo</label>
+    <div class="file-drop" id="file-drop" onclick="document.getElementById('upload-file').click()">
+      Click or drag a photo here
+    </div>
+    <input type="file" id="upload-file" accept="image/*" style="display:none">
+    <div class="upload-actions">
+      <button class="btn-cancel" onclick="closeUploadModal()">CANCEL</button>
+      <button class="btn-submit" onclick="submitPhoto()">UPLOAD</button>
+    </div>
+  </div>
+</div>
 
 <!-- ─── CHATBOT ─── -->
 <section id="chatbot-section">
@@ -5104,6 +5244,132 @@ function stopTourBgMusic(){
 
 function sendQ(btn){ chatIn.value=btn.textContent; sendMsg(); }
 chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+
+// ── CAMPUS EVENTS ──
+(function(){
+  fetch('/api/events')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var grid = document.getElementById('events-grid');
+      if(!data.events || data.events.length === 0){
+        grid.innerHTML = '<div class="events-empty">No upcoming events right now. Check back soon!</div>';
+        return;
+      }
+      grid.innerHTML = '';
+      data.events.forEach(function(ev){
+        var card = document.createElement('div');
+        card.className = 'event-card';
+        var dateStr = '';
+        if(ev.pubDate){
+          var d = new Date(ev.pubDate);
+          dateStr = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+        }
+        var locHtml = '';
+        if(ev.buildingMatch){
+          locHtml = '<div class="event-loc"><span class="pin">📍</span> '+ev.buildingMatch.name+'</div>';
+          locHtml += '<button class="event-fly" onclick="if(window.droneFlyTo)window.droneFlyTo(\''+ev.buildingMatch.name+'\')">FLY THERE →</button>';
+        } else if(ev.location){
+          locHtml = '<div class="event-loc"><span class="pin">📍</span> '+ev.location+'</div>';
+        }
+        card.innerHTML = '<div class="event-date">'+dateStr+'</div>'
+          + '<div class="event-title">'+ev.title+'</div>'
+          + '<div class="event-desc">'+ev.description+'</div>'
+          + locHtml;
+        grid.appendChild(card);
+      });
+    })
+    .catch(function(){
+      document.getElementById('events-grid').innerHTML = '<div class="events-empty">Could not load events.</div>';
+    });
+})();
+
+// ── PHOTO GALLERY ──
+function loadGallery(){
+  var building = document.getElementById('gallery-building-filter').value;
+  var season = document.getElementById('gallery-season-filter').value;
+  var url = '/api/building-photos?';
+  if(building) url += 'building='+encodeURIComponent(building)+'&';
+  if(season) url += 'season='+encodeURIComponent(season);
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var grid = document.getElementById('gallery-grid');
+      if(!data.photos || data.photos.length === 0){
+        grid.innerHTML = '<div class="gallery-empty">No photos yet — be the first to share!</div>';
+        return;
+      }
+      grid.innerHTML = '';
+      data.photos.forEach(function(p){
+        var item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.innerHTML = '<img src="'+p.photoUrl+'" alt="'+p.building+'" loading="lazy">'
+          + '<div class="gi-overlay"><div class="gi-building">'+p.building+(p.season?' · '+p.season:'')+'</div>'
+          + (p.caption ? '<div class="gi-caption">'+p.caption+'</div>' : '')+'</div>';
+        item.addEventListener('click', function(){
+          var lb = document.getElementById('photo-lightbox');
+          document.getElementById('lb-content').innerHTML = '<img src="'+p.photoUrl+'" alt="'+p.building+'" style="max-width:100%;max-height:80vh;border-radius:6px;">'
+            + '<div style="text-align:center;margin-top:12px;font-size:13px;color:rgba(238,243,248,0.6);">'+p.building+(p.caption?' — '+p.caption:'')+'</div>';
+          lb.classList.add('open');
+        });
+        grid.appendChild(item);
+      });
+    })
+    .catch(function(){
+      document.getElementById('gallery-grid').innerHTML = '<div class="gallery-empty">Could not load photos.</div>';
+    });
+}
+document.getElementById('gallery-building-filter').addEventListener('change', loadGallery);
+document.getElementById('gallery-season-filter').addEventListener('change', loadGallery);
+loadGallery();
+
+// ── UPLOAD MODAL ──
+function openUploadModal(){ document.getElementById('upload-modal').classList.add('open'); }
+function closeUploadModal(){
+  document.getElementById('upload-modal').classList.remove('open');
+  document.getElementById('upload-file').value = '';
+  var drop = document.getElementById('file-drop');
+  drop.innerHTML = 'Click or drag a photo here';
+}
+
+// File drop preview
+(function(){
+  var drop = document.getElementById('file-drop');
+  var fileInput = document.getElementById('upload-file');
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', function(){ drop.classList.remove('dragover'); });
+  drop.addEventListener('drop', function(e){
+    e.preventDefault(); drop.classList.remove('dragover');
+    if(e.dataTransfer.files.length){ fileInput.files = e.dataTransfer.files; showPreview(fileInput.files[0]); }
+  });
+  fileInput.addEventListener('change', function(){ if(fileInput.files[0]) showPreview(fileInput.files[0]); });
+  function showPreview(file){
+    var reader = new FileReader();
+    reader.onload = function(e){ drop.innerHTML = '<img src="'+e.target.result+'">'; };
+    reader.readAsDataURL(file);
+  }
+})();
+
+function submitPhoto(){
+  var building = document.getElementById('upload-building').value;
+  var file = document.getElementById('upload-file').files[0];
+  if(!building){ alert('Please select a building.'); return; }
+  if(!file){ alert('Please select a photo.'); return; }
+  var fd = new FormData();
+  fd.append('photo', file);
+  fd.append('building', building);
+  fd.append('face', document.getElementById('upload-face').value);
+  fd.append('season', document.getElementById('upload-season').value);
+  fd.append('caption', document.getElementById('upload-caption').value);
+  fd.append('uploadedBy', document.getElementById('upload-name').value || 'Anonymous');
+  fetch('/api/building-photos', { method:'POST', body:fd })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.error){ alert('Upload failed: '+data.error); return; }
+      closeUploadModal();
+      loadGallery();
+    })
+    .catch(function(){ alert('Upload failed. Please try again.'); });
+}
 
 // ── VOICE INPUT (Speech-to-Text) ──
 var voiceRecognition = null;

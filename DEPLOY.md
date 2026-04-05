@@ -1,133 +1,334 @@
-# Deployment Guide — Vultr VPS + MongoDB Atlas + GitHub
+# Deployment Guide — UMass Boston Site
 
-This guide walks you through deploying the UMass Boston site on a Vultr VPS
-with a Node.js backend, MongoDB Atlas database, and code managed on GitHub.
+**Live:** https://umassboston.ink/
+**VPS IP:** 104.156.225.159
+**Hosting:** Vultr VPS (Ubuntu 22.04, 1 vCPU, 1 GB RAM)
+**Repo:** https://github.com/Manikatlantis/UMB_NewWebsite
 
 ---
 
-## Step 1 — GitHub Repository Setup
+## Quick Deploy (one command)
+
+From your local project root:
 
 ```bash
-# From your project root (claude_code/)
-git init
-git add .
-git commit -m "Initial commit — UMass Boston site"
-
-# Create a repo on github.com, then:
-git remote add origin https://github.com/YOUR_USERNAME/umass-boston.git
-git branch -M main
-git push -u origin main
+./deploy.sh
 ```
 
-> **Important:** `.gitignore` already excludes `backend/.env` and `node_modules/`.
-> Your API keys stay local and never touch GitHub.
+This pushes to GitHub, SSHs into the VPS, pulls the latest code, and restarts the backend.
 
 ---
 
-## Step 2 — MongoDB Atlas (Free Cloud Database)
+## Manual Deploy
 
-1. Go to [cloud.mongodb.com](https://cloud.mongodb.com) → **Create a free cluster** (M0 Sandbox)
-2. Under **Database Access** → Add a new user with a strong password
-3. Under **Network Access** → Add IP `0.0.0.0/0` (allow all — you'll tighten this later)
-4. Click **Connect** → **Connect your application** → copy the URI:
+### 1. Commit and push your changes
+
+```bash
+git add umass-boston.html
+git commit -m "Describe your change"
+git push origin main
+```
+
+### 2. SSH into the server
+
+```bash
+ssh root@104.156.225.159
+```
+
+### 3. Pull and restart
+
+```bash
+cd /var/www/umass-boston
+git pull origin main
+```
+
+If you changed backend code (`server.js`, `routes/api.js`, `models/`, etc.):
+
+```bash
+cd backend
+npm install          # only if package.json changed
+pm2 restart server
+```
+
+If you only changed `umass-boston.html` or other static files, no restart needed — Nginx serves them directly.
+
+---
+
+## SSH Access
+
+```bash
+ssh root@104.156.225.159
+```
+
+Project lives at: `/var/www/umass-boston`
+
+---
+
+## Server Management
+
+### Check if the app is running
+
+```bash
+pm2 status
+```
+
+### View live logs
+
+```bash
+pm2 logs server
+pm2 logs server --lines 100    # last 100 lines
+```
+
+### Restart the backend
+
+```bash
+pm2 restart server
+```
+
+### Stop / start the backend
+
+```bash
+pm2 stop server
+pm2 start server
+```
+
+### Check Nginx status
+
+```bash
+systemctl status nginx
+```
+
+### Restart Nginx
+
+```bash
+systemctl restart nginx
+```
+
+### View Nginx error logs
+
+```bash
+tail -50 /var/log/nginx/error.log
+tail -50 /var/log/nginx/access.log
+```
+
+---
+
+## Troubleshooting
+
+### Site not loading at all
+
+1. Check if Nginx is running:
+   ```bash
+   systemctl status nginx
    ```
-   mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/umassboston
+   If it's not running: `systemctl start nginx`
+
+2. Check if the Node app is running:
+   ```bash
+   pm2 status
    ```
-5. Paste this into `backend/.env` as `MONGO_URI`
+   If it shows "stopped" or "errored": `pm2 restart server`
+
+3. Check if port 80/443 are open:
+   ```bash
+   ufw status
+   ```
+   If not: `ufw allow 80/tcp && ufw allow 443/tcp`
+
+### Site loads but shows errors / blank page
+
+1. Check backend logs:
+   ```bash
+   pm2 logs server --lines 50
+   ```
+
+2. Check if MongoDB is reachable:
+   ```bash
+   cd /var/www/umass-boston/backend
+   node -e "require('./config/db'); setTimeout(() => process.exit(), 5000)"
+   ```
+
+3. Check the `.env` file has correct values:
+   ```bash
+   cat /var/www/umass-boston/backend/.env
+   ```
+
+### Chat / AI not working
+
+- Check if `ANTHROPIC_API_KEY` is set in `.env`
+- Check logs for "Anthropic API error": `pm2 logs server --lines 50`
+
+### Maps not loading
+
+- Check if `GOOGLE_MAPS_API_KEY` is set in `.env`
+- Verify the key isn't restricted to wrong referrers in Google Cloud Console
+
+### SSL certificate expired
+
+```bash
+certbot renew
+systemctl reload nginx
+```
+
+### Git pull fails with conflicts
+
+```bash
+cd /var/www/umass-boston
+git stash                  # stash any server-side changes
+git pull origin main
+git stash pop              # re-apply if needed
+```
+
+Or if you don't care about server-side changes:
+
+```bash
+git fetch origin main
+git reset --hard origin/main
+pm2 restart server
+```
+
+### App crashed and won't restart
+
+```bash
+pm2 delete server
+cd /var/www/umass-boston/backend
+pm2 start server.js --name server
+pm2 save
+```
+
+### Server ran out of memory
+
+```bash
+free -m                    # check memory
+pm2 restart server         # restart to clear memory
+```
+
+### Check what's using a port
+
+```bash
+lsof -i :3000             # check what's on port 3000
+lsof -i :80               # check what's on port 80
+```
 
 ---
 
-## Step 3 — Vultr VPS Setup
+## Architecture
 
-### 3.1 Create the server
-1. Log in at [vultr.com](https://www.vultr.com)
-2. **Deploy New Server** → **Cloud Compute** → **Regular Performance**
-3. Location: New York or nearest to your users
-4. OS: **Ubuntu 22.04 LTS**
-5. Plan: **$6/month** (1 vCPU, 1 GB RAM — sufficient for this project)
-6. SSH Keys: add your public key (`~/.ssh/id_rsa.pub`) for passwordless login
-7. Click **Deploy Now** — note the server IP address
-
-### 3.2 SSH into the server
-```bash
-ssh root@YOUR_SERVER_IP
+```
+Client → https://umassboston.ink
+         ↓
+      Nginx (port 80/443, SSL termination)
+         ↓
+      Node.js/Express (port 3000, PM2 managed)
+         ↓
+      MongoDB Atlas (cloud database)
 ```
 
-### 3.3 Install Node.js 20 (LTS)
-```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-node --version   # should print v20.x.x
+### Nginx config location
+
+```
+/etc/nginx/sites-available/umass-boston
+/etc/nginx/sites-enabled/umass-boston
 ```
 
-### 3.4 Install PM2 (process manager — keeps Node running after disconnect)
+### PM2 config
+
 ```bash
+pm2 save                   # save process list
+pm2 startup                # enable auto-start on boot
+```
+
+---
+
+## Project Structure
+
+```
+umass-boston/
+├── umass-boston.html           ← Single-page frontend (all HTML/CSS/JS)
+├── pretext.js                 ← Pretext library for text reflow
+├── the-editorial-engine.js    ← Editorial engine reference
+├── deploy.sh                  ← One-command deploy script
+├── Umass-Boston-Logo-01.png
+├── umass_logo_2.jpg
+├── .gitignore
+├── DEPLOY.md                  ← This guide
+├── README.md
+└── backend/
+    ├── server.js              ← Express entry point
+    ├── package.json
+    ├── .env.example           ← Template (copy to .env, never commit .env)
+    ├── config/
+    │   └── db.js              ← MongoDB connection
+    ├── models/
+    │   ├── Visit.js           ← Analytics schema
+    │   ├── ChatLog.js         ← Chat history schema
+    │   └── BuildingPhoto.js   ← Building photo schema
+    └── routes/
+        └── api.js             ← /api/track, /api/chat, /api/maps-key, /api/stats, /api/building-photos
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `PORT` | Port Node.js listens on (default 3000) |
+| `MONGO_URI` | MongoDB Atlas connection string |
+| `GOOGLE_MAPS_API_KEY` | Google Maps JavaScript API key |
+| `ANTHROPIC_API_KEY` | Anthropic API key for Harbor chatbot |
+| `ALLOWED_ORIGIN` | CORS allowed origin (`https://umassboston.ink`) |
+
+The `.env` file lives at `/var/www/umass-boston/backend/.env` on the server. Never commit it to git.
+
+---
+
+## Initial Server Setup (if starting fresh)
+
+### 1. Create Vultr VPS
+
+- Log in at [my.vultr.com](https://my.vultr.com)
+- Deploy → Cloud Compute → Ubuntu 22.04 LTS → $6/mo plan
+- Add your SSH key, deploy, note the IP
+
+### 2. Install dependencies
+
+```bash
+ssh root@YOUR_IP
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs nginx
 npm install -g pm2
 ```
 
-### 3.5 Install Nginx (reverse proxy — handles HTTPS + port 80)
-```bash
-sudo apt install -y nginx
-sudo systemctl enable nginx
-```
+### 3. Clone and configure
 
----
-
-## Step 4 — Deploy Your Code
-
-### 4.1 Clone your GitHub repo on the server
 ```bash
 cd /var/www
-git clone https://github.com/YOUR_USERNAME/umass-boston.git
+git clone https://github.com/Manikatlantis/UMB_NewWebsite.git umass-boston
 cd umass-boston/backend
-```
-
-### 4.2 Install dependencies
-```bash
 npm install
-```
-
-### 4.3 Create the `.env` file on the server
-```bash
 cp .env.example .env
-nano .env
+nano .env    # fill in real values
 ```
-Fill in your real values:
-```
-PORT=3000
-MONGO_URI=mongodb+srv://...
-GOOGLE_MAPS_API_KEY=...
-ANTHROPIC_API_KEY=...
-ALLOWED_ORIGIN=https://yourdomain.com
-```
-Save and exit (`Ctrl+O`, `Ctrl+X`).
 
-### 4.4 Start the app with PM2
+### 4. Start with PM2
+
 ```bash
-pm2 start server.js --name umass-boston
-pm2 save          # persist across reboots
-pm2 startup       # follow the printed instruction to enable autostart
+pm2 start server.js --name server
+pm2 save
+pm2 startup    # run the command it prints
 ```
 
-Check it's running:
+### 5. Configure Nginx
+
 ```bash
-pm2 status
-pm2 logs umass-boston
+nano /etc/nginx/sites-available/umass-boston
 ```
 
----
-
-## Step 5 — Nginx Reverse Proxy
-
-### 5.1 Create an Nginx config
-```bash
-sudo nano /etc/nginx/sites-available/umass-boston
-```
-Paste:
 ```nginx
 server {
     listen 80;
-    server_name YOUR_DOMAIN_OR_IP;
+    server_name umassboston.ink www.umassboston.ink;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -141,104 +342,26 @@ server {
 }
 ```
 
-### 5.2 Enable and reload
 ```bash
-sudo ln -s /etc/nginx/sites-available/umass-boston /etc/nginx/sites-enabled/
-sudo nginx -t          # test config — should say "syntax is ok"
-sudo systemctl reload nginx
+ln -sf /etc/nginx/sites-available/umass-boston /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+nginx -t
+systemctl reload nginx
 ```
 
-Now visit `http://YOUR_SERVER_IP` — your site should load!
-
----
-
-## Step 6 — HTTPS with Let's Encrypt (free SSL)
-
-> Only works if you have a domain name pointed at your server IP.
+### 6. HTTPS with Let's Encrypt
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-sudo systemctl reload nginx
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d umassboston.ink -d www.umassboston.ink
+systemctl reload nginx
 ```
 
-Certbot auto-renews every 90 days. Done — your site is now HTTPS.
-
----
-
-## Step 7 — Updating the Site (deploy new changes)
+### 7. Firewall
 
 ```bash
-# On your local machine — push changes to GitHub
-git add .
-git commit -m "Update: describe your change"
-git push
-
-# On the Vultr server — pull and restart
-ssh root@YOUR_SERVER_IP
-cd /var/www/umass-boston
-git pull
-cd backend && npm install   # only needed if package.json changed
-pm2 restart umass-boston
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
 ```
-
----
-
-## Project Structure
-
-```
-umass-boston/
-├── umass-boston.html           ← Front-end (served as static file)
-├── Umass-Boston-Logo-01.png
-├── .gitignore                  ← Excludes .env and node_modules
-├── DEPLOY.md                   ← This guide
-└── backend/
-    ├── server.js               ← Express app entry point
-    ├── package.json
-    ├── .env.example            ← Template — copy to .env, never commit .env
-    ├── config/
-    │   └── db.js               ← MongoDB connection
-    ├── models/
-    │   ├── Visit.js            ← Analytics schema
-    │   └── ChatLog.js          ← Chat history schema
-    └── routes/
-        └── api.js              ← /api/track, /api/chat, /api/stats
-```
-
----
-
-## Environment Variables Reference
-
-| Variable | Description |
-|---|---|
-| `PORT` | Port Node.js listens on (default 3000) |
-| `MONGO_URI` | MongoDB Atlas connection string |
-| `GOOGLE_MAPS_API_KEY` | Your Google Maps API key |
-| `ANTHROPIC_API_KEY` | Anthropic API key for Harbor chatbot |
-| `ALLOWED_ORIGIN` | CORS allowed origin (your domain in production) |
-
----
-
-## API Key Security — Google Cloud Console Restrictions
-
-Even though the Maps key is no longer in static HTML, you should restrict it in
-Google Cloud Console so it's useless if anyone intercepts it:
-
-1. Go to **APIs & Services → Credentials** → click your Maps API key
-2. Under **Application restrictions** → select **HTTP referrers (websites)**
-   → add your production domain: `https://yourdomain.com/*`
-3. Under **API restrictions** → select **Restrict key**
-   → enable **Maps JavaScript API** and **Places API (New)** only
-4. Click **Save**
-
-After this, the key will only work for Maps/Places requests originating from
-your domain — stolen keys cannot be used elsewhere.
-
----
-
-## Next Steps
-
-- **Restrict MongoDB Network Access** — once deployed, replace `0.0.0.0/0` with your Vultr server IP
-- **Add the Anthropic chatbot** — uncomment the API call in `backend/routes/api.js` and add `@anthropic-ai/sdk` to dependencies
-- **Restrict Google Maps key** — follow the "API Key Security" section above to add HTTP referrer restrictions in Google Cloud Console
-- **Add a domain** — buy a `.com` from Namecheap/Cloudflare, point it to your Vultr IP, then run Certbot for HTTPS

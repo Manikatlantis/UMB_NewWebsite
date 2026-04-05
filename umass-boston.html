@@ -1239,6 +1239,7 @@ var BUILDING_NARRATION = {
   'East Residence Hall': {text:'Finally, the East Residence Hall, featuring suite-style living near the waterfront. Together with West Residence Hall, it provides a true on-campus living experience at UMass Boston.', audio:'audio/east-residence-hall.mp3'}
 };
 var _tourAudioEl = null; // reusable audio element for tour narration
+var _tourBgMusic = null; // background music during tour
 
 // ── Building photos (verified URLs) ──
 var BUILDING_PHOTOS = {
@@ -2359,6 +2360,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     window.exit3DMode=function(){
       exploreMode=false;
       if(typeof stopTourAudio==='function') stopTourAudio();
+      if(typeof stopTourBgMusic==='function') stopTourBgMusic();
       if('speechSynthesis' in window) speechSynthesis.cancel();
       document.body.style.overflow=''; document.body.style.position=''; document.body.style.width=''; document.body.style.top=''; // restore page scroll
       window.scrollTo(0, _savedScrollY); // restore scroll position
@@ -2510,27 +2512,34 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         idx++;
         window.droneFlyTo(name, function(){
           if(onStopCallback) onStopCallback(name, stopIdx);
-          // Wait for TTS narration to finish before moving to next stop
-          function proceedAfterNarration(){
+
+          // Play narration audio for this stop
+          var nar = (typeof BUILDING_NARRATION!=='undefined' && BUILDING_NARRATION[name]) ? BUILDING_NARRATION[name] : null;
+          if(nar && nar.audio){
+            if(typeof playTourAudio==='function') playTourAudio(nar.audio);
+            // Wait for audio to finish, then proceed
+            var _proceeded = false;
+            function onceProc(){ if(_proceeded) return; _proceeded=true; goNext(); }
+            // Poll for audio end (more reliable than ended event across browsers)
+            var pollAudio = setInterval(function(){
+              if(!_tourAudioEl || _tourAudioEl.ended || _tourAudioEl.paused){
+                clearInterval(pollAudio);
+                onceProc();
+              }
+            }, 500);
+            // Safety timeout 35s
+            setTimeout(function(){ clearInterval(pollAudio); if(_tourAudioEl) _tourAudioEl.pause(); onceProc(); }, 35000);
+          } else {
+            setTimeout(goNext, 6000);
+          }
+
+          function goNext(){
             if(_tourActive && idx < stops.length){
-              setTimeout(nextStop, 2000); // brief pause after narration ends
+              setTimeout(nextStop, 1500);
             } else {
               _tourActive = false;
               setTimeout(function(){ exit3DMode(); }, 2000);
             }
-          }
-          if(typeof isTourAudioPlaying==='function' && isTourAudioPlaying()){
-            // Wait for ElevenLabs audio to finish
-            var _proceeded = false;
-            function onceProc(){ if(_proceeded) return; _proceeded=true; proceedAfterNarration(); }
-            _tourAudioEl.addEventListener('ended', onceProc, {once:true});
-            setTimeout(function(){ if(isTourAudioPlaying()) { _tourAudioEl.pause(); } onceProc(); }, 30000);
-          } else if('speechSynthesis' in window && speechSynthesis.speaking){
-            var checkSpeech = setInterval(function(){
-              if(!speechSynthesis.speaking){ clearInterval(checkSpeech); proceedAfterNarration(); }
-            }, 300);
-          } else {
-            setTimeout(proceedAfterNarration, 6000);
           }
         });
       }
@@ -2540,6 +2549,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     window.cancelDroneTour = function(){
       _tourActive = false;
       if(typeof stopTourAudio==='function') stopTourAudio();
+      if(typeof stopTourBgMusic==='function') stopTourBgMusic();
     };
 
     // ── CAMPUS ROAD POLYLINE (hand-captured waypoints) ──
@@ -5012,8 +5022,12 @@ function executeActions(actions){
       ttsEnabled = true;
       var ttsBtn = document.getElementById('btn-tts');
       if(ttsBtn){ ttsBtn.classList.add('active'); ttsBtn.innerHTML = '&#128266;'; }
+      // Always use the full 12-stop tour regardless of what AI returned
+      var fullStops = ['Campus Center','Healey Library','Integrated Sciences Complex','McCormack Hall','Wheatley Hall','Quinn Administration','University Hall','Clark Athletic Center','West Garage','JFK Presidential Library','West Residence Hall','East Residence Hall'];
+      // Start background music
+      if(typeof startTourBgMusic==='function') startTourBgMusic();
       (function(stops){
-        window.droneTour(stops, function(name, idx){
+        window.droneTour(fullStops, function(name, idx){
           var buildings = typeof CAMPUS_BUILDINGS !== 'undefined' ? CAMPUS_BUILDINGS : [];
           var b = null;
           for(var j = 0; j < buildings.length; j++){
@@ -5026,12 +5040,6 @@ function executeActions(actions){
             var narText = nar ? nar.text : b.desc;
             var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+narText+photoHtml;
             addMsg('assistant', msg);
-            // Play pre-generated ElevenLabs audio, fall back to browser TTS
-            if(ttsEnabled && nar && nar.audio){
-              playTourAudio(nar.audio);
-            } else if(ttsEnabled){
-              speakNarration(narText);
-            }
           }
         });
       })(action.stops);
@@ -5070,6 +5078,11 @@ function playTourAudio(src){
   if(_tourAudioEl){ _tourAudioEl.pause(); _tourAudioEl.currentTime=0; }
   _tourAudioEl = new Audio(src);
   _tourAudioEl.volume = 1.0;
+  // Duck background music while narrating
+  if(_tourBgMusic) _tourBgMusic.volume = 0.08;
+  _tourAudioEl.addEventListener('ended', function(){
+    if(_tourBgMusic && !_tourBgMusic.paused) _tourBgMusic.volume = 0.18;
+  }, {once:true});
   _tourAudioEl.play().catch(function(e){ console.warn('Audio play failed:', e); });
 }
 function stopTourAudio(){
@@ -5077,6 +5090,16 @@ function stopTourAudio(){
 }
 function isTourAudioPlaying(){
   return _tourAudioEl && !_tourAudioEl.paused && !_tourAudioEl.ended;
+}
+function startTourBgMusic(){
+  if(_tourBgMusic){ _tourBgMusic.pause(); }
+  _tourBgMusic = new Audio('audio/tour-bg.mp3');
+  _tourBgMusic.loop = true;
+  _tourBgMusic.volume = 0.18;
+  _tourBgMusic.play().catch(function(e){ console.warn('BG music play failed:', e); });
+}
+function stopTourBgMusic(){
+  if(_tourBgMusic){ _tourBgMusic.pause(); _tourBgMusic.currentTime=0; _tourBgMusic=null; }
 }
 
 function sendQ(btn){ chatIn.value=btn.textContent; sendMsg(); }

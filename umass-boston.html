@@ -351,9 +351,11 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 .bp-photos{padding:16px 20px;flex:1;}
 .bp-photos-title{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--teal);margin-bottom:14px;}
 .bp-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.bp-photo-slot{aspect-ratio:1;background:rgba(0,212,184,0.04);border:1px dashed rgba(0,212,184,0.15);display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(238,243,248,0.2);font-family:'Space Mono',monospace;cursor:pointer;transition:all 0.2s;}
+.bp-photo-grid.single-photo{grid-template-columns:1fr;}
+.bp-photo-slot{aspect-ratio:1;background:rgba(0,212,184,0.04);border:1px dashed rgba(0,212,184,0.15);display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(238,243,248,0.2);font-family:'Space Mono',monospace;cursor:pointer;transition:all 0.2s;overflow:hidden;border-radius:4px;}
 .bp-photo-slot:hover{border-color:rgba(0,212,184,0.3);background:rgba(0,212,184,0.08);}
 .bp-photo-slot img{width:100%;height:100%;object-fit:cover;}
+.bp-photo-grid.single-photo .bp-photo-slot{aspect-ratio:16/9;}
 
 /* ── PHOTO LIGHTBOX ── */
 #photo-lightbox{position:fixed;inset:0;background:rgba(0,5,12,0.95);z-index:1002;display:none;align-items:center;justify-content:center;flex-direction:column;}
@@ -1221,6 +1223,42 @@ const CAMPUS_BUILDINGS=[
    link:'https://www.umb.edu/campus-life/housing/'},
 ];
 
+// ── Building photos (verified URLs) ──
+var BUILDING_PHOTOS = {
+  'Campus Center': [
+    'https://www.umb.edu/media/umassboston/content-assets/images/centers-amp-institutes-labs-units/camus-center-KMW_UMASS_18_1800x600.jpg'
+  ],
+  'Integrated Sciences Complex': [
+    'https://www.umb.edu/media/umassboston/content-assets/images/isc_GoodyClancy_UMASS_BISC_33_university_apr15_rb_820x350.jpeg'
+  ],
+  'Healey Library': [
+    'https://openarchives.umb.edu/iiif/2/p15774coll24:416/full/730,/0/default.jpg'
+  ],
+  'Quinn Administration': [],
+  'Wheatley Hall': [
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Wheatley_Hall%2C_UMass_Boston_-_IMG_9235.JPG/800px-Wheatley_Hall%2C_UMass_Boston_-_IMG_9235.JPG'
+  ],
+  'McCormack Hall': [],
+  'Clark Athletic Center': [
+    'https://dxbhsrqyrr690.cloudfront.net/sidearm.nextgen.sites/beaconsathletics.com/images/2023/2/10/IMG_3815.JPG'
+  ],
+  'University Hall': [
+    'https://www.umb.edu/media/umassboston/content-assets/images/universityhall_campusside_university_mar16_architectscouting_820x350.jpeg'
+  ],
+  'West Garage': [
+    'https://www.fmarchitecture.com/wp-content/uploads/2017/10/UMass_Public-Safety-Garage_2-1920x1200.jpg'
+  ],
+  'JFK Presidential Library': [
+    'https://www.trolleytours.com/wp-content/uploads/2016/06/JFK_library_museum.jpg'
+  ],
+  'West Residence Hall': [
+    'https://www.elkus-manfredi.com/wp-content/uploads/2019/08/01_HERO_UMBRH_CampusPortal-Dusk_%C2%A9RobertBenson.jpg'
+  ],
+  'East Residence Hall': [
+    'https://www.elkus-manfredi.com/wp-content/uploads/2019/08/02a_UMBRH_%C2%A9RobertBenson.jpg'
+  ]
+};
+
 // Build JFK Library with special geometry (triangular tower, glass pavilion, cylindrical base)
 function buildJFK(b,idx,group,meshList,scale){
   scale=scale||1;
@@ -1839,11 +1877,41 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     link.href=data.link||'#';
     const grid=document.getElementById('bp-photo-grid');
     grid.innerHTML='';
-    for(let i=0;i<6;i++){
-      const slot=document.createElement('div');
-      slot.className='bp-photo-slot';
-      slot.textContent='📷';
-      grid.appendChild(slot);
+    const msgEl=document.getElementById('bp-photo-msg');
+    const titleEl=grid.parentElement.querySelector('.bp-photos-title');
+    // Show real photos if available
+    var photos = (typeof BUILDING_PHOTOS!=='undefined' && BUILDING_PHOTOS[data.name]) ? BUILDING_PHOTOS[data.name] : [];
+    grid.classList.toggle('single-photo', photos.length === 1);
+    if(photos.length > 0){
+      if(titleEl) titleEl.textContent='Building Photos';
+      if(msgEl) msgEl.style.display='none';
+      photos.forEach(function(url){
+        var slot=document.createElement('div');
+        slot.className='bp-photo-slot';
+        var img=document.createElement('img');
+        img.src=url;
+        img.alt=data.name;
+        img.loading='lazy';
+        img.onerror=function(){ slot.textContent='📷'; img.remove(); };
+        slot.appendChild(img);
+        slot.style.cursor='pointer';
+        slot.addEventListener('click',function(){
+          var lb=document.getElementById('photo-lightbox');
+          var lbContent=document.getElementById('lb-content');
+          lbContent.innerHTML='<img src="'+url+'" alt="'+data.name+'" style="max-width:100%;max-height:80vh;border-radius:6px;">';
+          lb.classList.add('open');
+        });
+        grid.appendChild(slot);
+      });
+    } else {
+      if(titleEl) titleEl.textContent='Window Photos';
+      if(msgEl) msgEl.style.display='';
+      for(let i=0;i<6;i++){
+        const slot=document.createElement('div');
+        slot.className='bp-photo-slot';
+        slot.textContent='📷';
+        grid.appendChild(slot);
+      }
     }
     document.getElementById('building-panel').classList.add('open');
   };
@@ -2389,14 +2457,18 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
 
       if(!exploreMode){
-        // Scroll to top, then enter 3D mode (which locks scroll with position:fixed)
-        window.scrollTo({top:0, behavior:'smooth'});
+        // Scroll hero into view, then enter 3D mode
+        var heroEl = document.getElementById('hero');
+        var heroTop = heroEl.offsetTop;
+        window.scrollTo(0, heroTop);
         setTimeout(function(){
-          // Force scroll to 0 in case smooth scroll hasn't finished
-          window.scrollTo(0,0);
+          window.scrollTo(0, heroTop);
           enter3DMode();
+          // Override saved scroll so exiting returns to hero (map) section, not chatbot
+          _savedScrollY = 0;
+          document.body.style.top = '0px';
           setTimeout(doFly, 800);
-        }, 800);
+        }, 300);
       } else {
         doFly();
       }
@@ -4906,7 +4978,9 @@ function executeActions(actions){
             if(buildings[j].name === name){ b = buildings[j]; break; }
           }
           if(b){
-            var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+b.desc;
+            var photos = (typeof BUILDING_PHOTOS!=='undefined' && BUILDING_PHOTOS[b.name]) ? BUILDING_PHOTOS[b.name] : [];
+            var photoHtml = photos.length > 0 ? '<br><img src="'+photos[0]+'" alt="'+b.name+'" style="width:100%;max-width:260px;border-radius:6px;margin-top:8px;border:1px solid rgba(0,212,184,0.2);" onerror="this.style.display=\'none\'">' : '';
+            var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+b.desc+photoHtml;
             addMsg('assistant', msg);
             if(ttsEnabled) speakNarration('Stop '+(idx+1)+': '+b.name+'. '+b.desc);
           }

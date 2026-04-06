@@ -44,6 +44,22 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 .nav-links a:hover::after{transform:scaleX(1);}
 .nav-apply{padding:9px 22px;background:var(--crimson);color:#fff;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:all 0.3s;border:1px solid var(--crimson);}
 .nav-apply:hover{background:transparent;color:var(--crimson);}
+/* ── LANGUAGE SELECTOR ── */
+.lang-wrap{position:relative;}
+.lang-btn{background:none;border:1px solid rgba(238,243,248,0.15);color:rgba(238,243,248,0.7);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;padding:7px 14px;cursor:pointer;transition:all 0.3s;border-radius:3px;display:flex;align-items:center;gap:6px;}
+.lang-btn:hover{border-color:var(--teal);color:var(--teal);}
+.lang-btn .lang-flag{font-size:14px;line-height:1;}
+.lang-btn .lang-arrow{font-size:8px;transition:transform 0.2s;}
+.lang-wrap.open .lang-arrow{transform:rotate(180deg);}
+.lang-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:180px;background:rgba(0,16,32,0.95);border:1px solid rgba(0,212,184,0.2);border-radius:6px;backdrop-filter:blur(16px);padding:6px 0;opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity 0.25s,transform 0.25s;z-index:1001;list-style:none;}
+.lang-wrap.open .lang-menu{opacity:1;pointer-events:all;transform:translateY(0);}
+.lang-menu li{padding:8px 16px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.5px;color:rgba(238,243,248,0.7);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background 0.15s,color 0.15s;}
+.lang-menu li:hover{background:rgba(0,212,184,0.08);color:var(--teal);}
+.lang-menu li.active{color:var(--teal);}
+.lang-menu li .lm-flag{font-size:16px;}
+.lang-menu li .lm-name{flex:1;}
+.lang-menu li .lm-check{font-size:10px;opacity:0;}
+.lang-menu li.active .lm-check{opacity:1;}
 
 /* ── HERO ── */
 #hero{position:relative;z-index:2;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -479,6 +495,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .umb-logo-img{height:44px;}
   .nav-links{display:none;}
   .nav-apply{padding:7px 16px;font-size:9px;}
+  .lang-btn{padding:5px 10px;font-size:9px;}
+  .lang-btn .lang-code{display:none;}
+  .lang-menu{right:-10px;min-width:160px;}
   .hero-h1{letter-spacing:-1.5px;}
   .hero-sub{font-size:15px;margin-bottom:32px;}
   .hero-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;bottom:100px;padding:0 20px;}
@@ -567,16 +586,33 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <img src="Umass-Boston-Logo-01.png" alt="UMass Boston" class="umb-logo-img">
   </a>
   <ul class="nav-links">
-    <li><a href="https://www.umb.edu/academics/" target="_blank">Academics</a></li>
-    <li><a href="https://www.umb.edu/admissions/" target="_blank">Admissions</a></li>
-    <li><a href="https://www.umb.edu/research/" target="_blank">Research</a></li>
-    <li><a href="https://www.umb.edu/campus-life/" target="_blank">Campus Life</a></li>
-    <li><a href="#events-section">Events</a></li>
-    <li><a href="#gallery-section">Gallery</a></li>
-    <li><a href="#harbor-game-section">⚓ Play</a></li>
-    <li><a href="#chatbot-section">Ask Harbor</a></li>
+    <li><a href="https://www.umb.edu/academics/" target="_blank" data-i18n="nav_academics">Academics</a></li>
+    <li><a href="https://www.umb.edu/admissions/" target="_blank" data-i18n="nav_admissions">Admissions</a></li>
+    <li><a href="https://www.umb.edu/research/" target="_blank" data-i18n="nav_research">Research</a></li>
+    <li><a href="https://www.umb.edu/campus-life/" target="_blank" data-i18n="nav_campus_life">Campus Life</a></li>
+    <li><a href="#events-section" data-i18n="nav_events">Events</a></li>
+    <li><a href="#gallery-section" data-i18n="nav_gallery">Gallery</a></li>
+    <li><a href="#harbor-game-section">⚓ <span data-i18n="nav_play">Play</span></a></li>
+    <li><a href="#chatbot-section" data-i18n="nav_ask_harbor">Ask Harbor</a></li>
   </ul>
-  <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="nav-apply">Apply Now</a>
+  <div class="lang-wrap" id="lang-wrap">
+    <button class="lang-btn" id="lang-btn" onclick="toggleLangMenu()">
+      <span class="lang-flag">🌐</span>
+      <span class="lang-code">EN</span>
+      <span class="lang-arrow">▾</span>
+    </button>
+    <ul class="lang-menu" id="lang-menu">
+      <li class="active" onclick="setLanguage('en')"><span class="lm-flag">🇺🇸</span><span class="lm-name">English</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('es')"><span class="lm-flag">🇪🇸</span><span class="lm-name">Español</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('zh')"><span class="lm-flag">🇨🇳</span><span class="lm-name">中文</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('vi')"><span class="lm-flag">🇻🇳</span><span class="lm-name">Tiếng Việt</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('ht')"><span class="lm-flag">🇭🇹</span><span class="lm-name">Kreyòl Ayisyen</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('pt')"><span class="lm-flag">🇧🇷</span><span class="lm-name">Português</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('ar')"><span class="lm-flag">🇸🇦</span><span class="lm-name">العربية</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('fr')"><span class="lm-flag">🇫🇷</span><span class="lm-name">Français</span><span class="lm-check">✓</span></li>
+    </ul>
+  </div>
+  <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="nav-apply" data-i18n="apply_now">Apply Now</a>
 </nav>
 
 <!-- ─── HERO ─── -->
@@ -584,16 +620,16 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div id="cesium-container"></div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <p class="hero-kicker">Boston Harbor's Premier Public Research University</p>
-    <h1 class="hero-h1"><span class="dim">Where</span> <span class="glow">brilliance</span><br><span class="dim">meets the</span> times</h1>
-    <p class="hero-sub">UMass Boston — a Carnegie R1 research powerhouse on a 120-acre harbor peninsula, transforming 16,000 lives each year.</p>
+    <p class="hero-kicker" data-i18n="hero_kicker">Boston Harbor's Premier Public Research University</p>
+    <h1 class="hero-h1" data-i18n-html="hero_h1"><span class="dim">Where</span> <span class="glow">brilliance</span><br><span class="dim">meets the</span> times</h1>
+    <p class="hero-sub" data-i18n="hero_sub">UMass Boston — a Carnegie R1 research powerhouse on a 120-acre harbor peninsula, transforming 16,000 lives each year.</p>
   </div>
   <div class="hero-btns" id="hero-btns">
-    <a href="https://www.umb.edu/academics/" target="_blank" class="btn-r">Explore Programs</a>
-    <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-o">Apply Fall 2026/Spring 2027</a>
-    <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()">Explore Campus 3D &rarr;</button>
-    <button class="btn-3d btn-shuttle" id="btn-shuttle" onclick="enterShuttleMode()">Live Shuttle Tracker &rarr;</button>
-    <button class="btn-3d btn-tour" id="btn-tour" onclick="startCampusTour()">Campus Tour &rarr;</button>
+    <a href="https://www.umb.edu/academics/" target="_blank" class="btn-r" data-i18n="explore_programs">Explore Programs</a>
+    <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-o" data-i18n="apply_semester">Apply Fall 2026/Spring 2027</a>
+    <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()" data-i18n="explore_3d">Explore Campus 3D &rarr;</button>
+    <button class="btn-3d btn-shuttle" id="btn-shuttle" onclick="enterShuttleMode()" data-i18n="shuttle_tracker">Live Shuttle Tracker &rarr;</button>
+    <button class="btn-3d btn-tour" id="btn-tour" onclick="startCampusTour()" data-i18n="campus_tour">Campus Tour &rarr;</button>
   </div>
   <!-- Mobile gesture hint -->
   <div id="touch-hint" style="display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:25;padding:12px 24px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,212,184,0.3);border-radius:8px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:rgba(238,243,248,0.8);text-align:center;line-height:1.8;white-space:nowrap;transition:opacity 0.5s;">
@@ -746,20 +782,20 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 <section id="about">
   <div class="about-frame rev-l">
     <div class="about-canvas-wrap"><canvas id="about-canvas"></canvas></div>
-    <div class="about-badge"><b>#1</b><span>Most Diverse in New England</span></div>
+    <div class="about-badge"><b>#1</b><span data-i18n="most_diverse">Most Diverse in New England</span></div>
   </div>
   <div class="about-body rev-r">
-    <div class="sec-tag">Our Story</div>
-    <h2 class="sec-title">A beacon on <em>Boston Harbor</em></h2>
-    <p>Founded in 1964, UMass Boston is the only public research university in the City of Boston — an anchor institution serving the Commonwealth with world-class education and scholarship.</p>
+    <div class="sec-tag" data-i18n="our_story">Our Story</div>
+    <h2 class="sec-title" data-i18n-html="about_title">A beacon on <em>Boston Harbor</em></h2>
+    <p data-i18n="about_desc">Founded in 1964, UMass Boston is the only public research university in the City of Boston — an anchor institution serving the Commonwealth with world-class education and scholarship.</p>
     <ul class="about-bullets">
-      <li>Carnegie R1 classification — highest doctoral research activity</li>
-      <li>Located on a 120-acre Columbia Point peninsula, surrounded by harbor</li>
-      <li>10 colleges spanning sciences, arts, business, health & policy</li>
-      <li>$100M+ in annual sponsored research funding</li>
-      <li>Adjacent to the JFK Presidential Library & Museum</li>
+      <li data-i18n="about_b1">Carnegie R1 classification — highest doctoral research activity</li>
+      <li data-i18n="about_b2">Located on a 120-acre Columbia Point peninsula, surrounded by harbor</li>
+      <li data-i18n="about_b3">10 colleges spanning sciences, arts, business, health & policy</li>
+      <li data-i18n="about_b4">$100M+ in annual sponsored research funding</li>
+      <li data-i18n="about_b5">Adjacent to the JFK Presidential Library & Museum</li>
     </ul>
-    <a href="https://www.umb.edu/about/" target="_blank" class="btn-r" style="display:inline-block">Discover Our Mission</a>
+    <a href="https://www.umb.edu/about/" target="_blank" class="btn-r" style="display:inline-block" data-i18n="discover_mission">Discover Our Mission</a>
   </div>
 </section>
 
@@ -767,8 +803,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 <section id="programs">
   <div class="programs-intro">
     <div>
-      <div class="sec-tag">Academic Excellence</div>
-      <h2 class="sec-title reveal">200+ Pathways <em>Forward</em></h2>
+      <div class="sec-tag" data-i18n="academic_excellence">Academic Excellence</div>
+      <h2 class="sec-title reveal" data-i18n-html="pathways_title">200+ Pathways <em>Forward</em></h2>
     </div>
     <a href="https://www.umb.edu/academics/" target="_blank" class="btn-o reveal">All Programs →</a>
   </div>
@@ -820,8 +856,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ─── NEWS ─── -->
 <section id="news">
-  <div class="sec-tag">Latest from UMB</div>
-  <h2 class="sec-title reveal">News & <em>Impact</em></h2>
+  <div class="sec-tag" data-i18n="latest_umb">Latest from UMB</div>
+  <h2 class="sec-title reveal" data-i18n-html="news_title">News & <em>Impact</em></h2>
   <div class="news-grid">
     <a href="https://www.umb.edu/news/" target="_blank" class="news-card">
       <div class="nc-img">🌊<div class="nc-glow"></div></div>
@@ -840,8 +876,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ─── CAMPUS EVENTS ─── -->
 <section id="events-section">
-  <div class="sec-tag">What's Happening</div>
-  <h2 class="sec-title reveal">Campus <em>Events</em></h2>
+  <div class="sec-tag" data-i18n="whats_happening">What's Happening</div>
+  <h2 class="sec-title reveal" data-i18n-html="events_title">Campus <em>Events</em></h2>
   <div class="events-grid" id="events-grid">
     <div class="events-empty">Loading events...</div>
   </div>
@@ -849,8 +885,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ─── PHOTO GALLERY ─── -->
 <section id="gallery-section">
-  <div class="sec-tag">Campus Through Your Lens</div>
-  <h2 class="sec-title reveal">Photo <em>Gallery</em></h2>
+  <div class="sec-tag" data-i18n="campus_lens">Campus Through Your Lens</div>
+  <h2 class="sec-title reveal" data-i18n-html="gallery_title">Photo <em>Gallery</em></h2>
   <div class="gallery-controls">
     <select id="gallery-building-filter">
       <option value="">All Buildings</option>
@@ -935,9 +971,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ─── CHATBOT ─── -->
 <section id="chatbot-section">
-  <div class="sec-tag" style="justify-content:center">AI Assistant</div>
-  <h2 class="sec-title reveal" style="text-align:center">Ask <em>Harbor</em></h2>
-  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:480px;margin:0 auto">Your intelligent guide to everything UMass Boston — admissions, programs, research, campus life, and more.</p>
+  <div class="sec-tag" style="justify-content:center" data-i18n="ai_assistant">AI Assistant</div>
+  <h2 class="sec-title reveal" style="text-align:center" data-i18n-html="ask_harbor">Ask <em>Harbor</em></h2>
+  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:480px;margin:0 auto" data-i18n="harbor_desc">Your intelligent guide to everything UMass Boston — admissions, programs, research, campus life, and more.</p>
   <div class="bot-wrap reveal">
     <div class="bot-head">
       <div class="bot-av">⚓</div>
@@ -6165,6 +6201,370 @@ window.addEventListener('resize', function() {
     o.y = Math.max(o.r, Math.min(h - o.r, o.y));
   }
 });
+</script>
+
+<!-- ── LANGUAGE SWITCHER ── -->
+<script>
+(function(){
+  var currentLang = 'en';
+
+  var T = {
+    es: {
+      hero_kicker: 'La Principal Universidad Pública de Investigación del Puerto de Boston',
+      hero_h1: '<span class="dim">Donde</span> <span class="glow">la brillantez</span><br><span class="dim">se encuentra con</span> los tiempos',
+      hero_sub: 'UMass Boston — una potencia de investigación Carnegie R1 en una península de 120 acres frente al puerto, transformando 16,000 vidas cada año.',
+      explore_programs: 'Explorar Programas',
+      apply_semester: 'Aplicar Otoño 2026/Primavera 2027',
+      explore_3d: 'Explorar Campus 3D →',
+      shuttle_tracker: 'Rastreador de Autobús →',
+      campus_tour: 'Tour del Campus →',
+      apply_now: 'Aplicar Ahora',
+      most_diverse: 'Más Diversa de Nueva Inglaterra',
+      our_story: 'Nuestra Historia',
+      about_title: 'Un faro en el <em>Puerto de Boston</em>',
+      about_desc: 'Fundada en 1964, UMass Boston es la única universidad pública de investigación en la Ciudad de Boston — una institución ancla que sirve a la Commonwealth con educación e investigación de clase mundial.',
+      about_b1: 'Clasificación Carnegie R1 — la más alta actividad de investigación doctoral',
+      about_b2: 'Ubicada en una península de 120 acres en Columbia Point, rodeada de puerto',
+      about_b3: '10 facultades que abarcan ciencias, artes, negocios, salud y políticas',
+      about_b4: 'Más de $100M en financiamiento anual de investigación patrocinada',
+      about_b5: 'Adyacente a la Biblioteca y Museo Presidencial JFK',
+      discover_mission: 'Descubre Nuestra Misión',
+      academic_excellence: 'Excelencia Académica',
+      pathways_title: '200+ Caminos <em>Adelante</em>',
+      latest_umb: 'Lo Último de UMB',
+      news_title: 'Noticias e <em>Impacto</em>',
+      whats_happening: 'Qué Está Pasando',
+      events_title: 'Eventos del <em>Campus</em>',
+      campus_lens: 'El Campus a Través de Tu Lente',
+      gallery_title: 'Galería de <em>Fotos</em>',
+      ai_assistant: 'Asistente IA',
+      ask_harbor: 'Pregunta a <em>Harbor</em>',
+      harbor_desc: 'Tu guía inteligente para todo sobre UMass Boston — admisiones, programas, investigación, vida en el campus y más.',
+      nav_academics: 'Académicos',
+      nav_admissions: 'Admisiones',
+      nav_research: 'Investigación',
+      nav_campus_life: 'Vida Universitaria',
+      nav_events: 'Eventos',
+      nav_gallery: 'Galería',
+      nav_play: 'Jugar',
+      nav_ask_harbor: 'Pregunta a Harbor'
+    },
+    zh: {
+      hero_kicker: '波士顿港首屈一指的公立研究型大学',
+      hero_h1: '<span class="dim">在这里</span> <span class="glow">才华</span><br><span class="dim">与时代</span> 交汇',
+      hero_sub: '麻省大学波士顿分校 — 坐落于120英亩海港半岛的卡内基R1研究型大学，每年改变16,000人的生活。',
+      explore_programs: '探索专业',
+      apply_semester: '申请2026秋季/2027春季',
+      explore_3d: '3D校园探索 →',
+      shuttle_tracker: '实时班车追踪 →',
+      campus_tour: '校园导览 →',
+      apply_now: '立即申请',
+      most_diverse: '新英格兰最多元化',
+      our_story: '我们的故事',
+      about_title: '<em>波士顿港</em>上的灯塔',
+      about_desc: '麻省大学波士顿分校成立于1964年，是波士顿市唯一的公立研究型大学——一所服务联邦的世界级教育和学术研究机构。',
+      about_b1: '卡内基R1分类 — 最高博士研究活动等级',
+      about_b2: '坐落于120英亩的哥伦比亚角半岛，环抱海港',
+      about_b3: '10个学院涵盖科学、人文、商业、健康与政策',
+      about_b4: '每年超过1亿美元的科研资助',
+      about_b5: '毗邻肯尼迪总统图书馆与博物馆',
+      discover_mission: '了解我们的使命',
+      academic_excellence: '学术卓越',
+      pathways_title: '200+ 条通往<em>未来</em>的道路',
+      latest_umb: 'UMB最新动态',
+      news_title: '新闻与<em>影响</em>',
+      whats_happening: '校园动态',
+      events_title: '校园<em>活动</em>',
+      campus_lens: '透过你的镜头看校园',
+      gallery_title: '照片<em>画廊</em>',
+      ai_assistant: 'AI助手',
+      ask_harbor: '问问<em>Harbor</em>',
+      harbor_desc: '您的智能向导——了解麻省大学波士顿分校的招生、专业、研究、校园生活等一切信息。',
+      nav_academics: '学术',
+      nav_admissions: '招生',
+      nav_research: '研究',
+      nav_campus_life: '校园生活',
+      nav_events: '活动',
+      nav_gallery: '画廊',
+      nav_play: '游戏',
+      nav_ask_harbor: '问Harbor'
+    },
+    vi: {
+      hero_kicker: 'Đại Học Nghiên Cứu Công Lập Hàng Đầu Tại Cảng Boston',
+      hero_h1: '<span class="dim">Nơi</span> <span class="glow">tài năng</span><br><span class="dim">gặp gỡ</span> thời đại',
+      hero_sub: 'UMass Boston — đại học nghiên cứu Carnegie R1 trên bán đảo 120 mẫu Anh ven cảng, thay đổi 16.000 cuộc đời mỗi năm.',
+      explore_programs: 'Khám Phá Chương Trình',
+      apply_semester: 'Nộp Đơn Thu 2026/Xuân 2027',
+      explore_3d: 'Khám Phá Khuôn Viên 3D →',
+      shuttle_tracker: 'Theo Dõi Xe Buýt →',
+      campus_tour: 'Tham Quan Khuôn Viên →',
+      apply_now: 'Nộp Đơn Ngay',
+      most_diverse: 'Đa Dạng Nhất New England',
+      our_story: 'Câu Chuyện Của Chúng Tôi',
+      about_title: 'Ngọn hải đăng trên <em>Cảng Boston</em>',
+      about_desc: 'Được thành lập năm 1964, UMass Boston là đại học nghiên cứu công lập duy nhất tại Thành phố Boston — một tổ chức giáo dục và học thuật đẳng cấp thế giới.',
+      about_b1: 'Phân loại Carnegie R1 — hoạt động nghiên cứu tiến sĩ cao nhất',
+      about_b2: 'Tọa lạc trên bán đảo Columbia Point 120 mẫu Anh, bao quanh bởi cảng',
+      about_b3: '10 trường bao gồm khoa học, nghệ thuật, kinh doanh, y tế và chính sách',
+      about_b4: 'Hơn 100 triệu USD tài trợ nghiên cứu hàng năm',
+      about_b5: 'Liền kề Thư Viện và Bảo Tàng Tổng Thống JFK',
+      discover_mission: 'Khám Phá Sứ Mệnh',
+      academic_excellence: 'Xuất Sắc Học Thuật',
+      pathways_title: '200+ Con Đường <em>Phía Trước</em>',
+      latest_umb: 'Tin Mới Từ UMB',
+      news_title: 'Tin Tức & <em>Tác Động</em>',
+      whats_happening: 'Đang Diễn Ra',
+      events_title: 'Sự Kiện <em>Khuôn Viên</em>',
+      campus_lens: 'Khuôn Viên Qua Ống Kính Của Bạn',
+      gallery_title: 'Thư Viện <em>Ảnh</em>',
+      ai_assistant: 'Trợ Lý AI',
+      ask_harbor: 'Hỏi <em>Harbor</em>',
+      harbor_desc: 'Hướng dẫn thông minh cho mọi thứ về UMass Boston — tuyển sinh, chương trình, nghiên cứu, đời sống khuôn viên và hơn thế.',
+      nav_academics: 'Học Thuật',
+      nav_admissions: 'Tuyển Sinh',
+      nav_research: 'Nghiên Cứu',
+      nav_campus_life: 'Đời Sống SV',
+      nav_events: 'Sự Kiện',
+      nav_gallery: 'Thư Viện Ảnh',
+      nav_play: 'Chơi',
+      nav_ask_harbor: 'Hỏi Harbor'
+    },
+    ht: {
+      hero_kicker: 'Inivèsite Rechèch Piblik Premye nan Pò Boston',
+      hero_h1: '<span class="dim">Kote</span> <span class="glow">briyans</span><br><span class="dim">rankontre</span> tan an',
+      hero_sub: 'UMass Boston — yon gwo inivèsite rechèch Carnegie R1 sou yon penensil 120 kawo tè bò pò a, ki transfòme 16,000 lavi chak ane.',
+      explore_programs: 'Eksplore Pwogram',
+      apply_semester: 'Aplike Otòn 2026/Prentan 2027',
+      explore_3d: 'Eksplore Kanpis 3D →',
+      shuttle_tracker: 'Siveyans Otobis →',
+      campus_tour: 'Vizit Kanpis →',
+      apply_now: 'Aplike Kounye A',
+      most_diverse: 'Pi Divès nan New England',
+      our_story: 'Istwa Nou',
+      about_title: 'Yon limyè sou <em>Pò Boston</em>',
+      about_desc: 'Fondé an 1964, UMass Boston se sèl inivèsite rechèch piblik nan Vil Boston — yon enstitisyon ki bay edikasyon ak rechèch ki nan nivo mondyal.',
+      about_b1: 'Klasifikasyon Carnegie R1 — pi wo nivo aktivite rechèch doktora',
+      about_b2: 'Sou yon penensil 120 kawo tè nan Columbia Point, antoure ak pò',
+      about_b3: '10 kolèj ki kouvri syans, atizay, biznis, sante ak politik',
+      about_b4: 'Plis pase $100M nan finansman rechèch chak ane',
+      about_b5: 'Akote Bibliyotèk ak Mize Prezidansyèl JFK',
+      discover_mission: 'Dekouvri Misyon Nou',
+      academic_excellence: 'Ekselans Akademik',
+      pathways_title: '200+ Chemen <em>Devan</em>',
+      latest_umb: 'Dènye Nouvèl UMB',
+      news_title: 'Nouvèl & <em>Enpak</em>',
+      whats_happening: 'Kisa K Ap Pase',
+      events_title: 'Evènman <em>Kanpis</em>',
+      campus_lens: 'Kanpis Atravè Lanti Ou',
+      gallery_title: 'Galri <em>Foto</em>',
+      ai_assistant: 'Asistan IA',
+      ask_harbor: 'Mande <em>Harbor</em>',
+      harbor_desc: 'Gid entèlijan ou pou tout bagay sou UMass Boston — admisyon, pwogram, rechèch, lavi sou kanpis, ak plis ankò.',
+      nav_academics: 'Akademik',
+      nav_admissions: 'Admisyon',
+      nav_research: 'Rechèch',
+      nav_campus_life: 'Lavi Kanpis',
+      nav_events: 'Evènman',
+      nav_gallery: 'Galri',
+      nav_play: 'Jwe',
+      nav_ask_harbor: 'Mande Harbor'
+    },
+    pt: {
+      hero_kicker: 'A Principal Universidade Pública de Pesquisa do Porto de Boston',
+      hero_h1: '<span class="dim">Onde</span> <span class="glow">o brilhantismo</span><br><span class="dim">encontra</span> os tempos',
+      hero_sub: 'UMass Boston — uma potência de pesquisa Carnegie R1 em uma península de 120 acres no porto, transformando 16.000 vidas a cada ano.',
+      explore_programs: 'Explorar Programas',
+      apply_semester: 'Candidatar Outono 2026/Primavera 2027',
+      explore_3d: 'Explorar Campus 3D →',
+      shuttle_tracker: 'Rastreador de Ônibus →',
+      campus_tour: 'Tour pelo Campus →',
+      apply_now: 'Candidatar-se',
+      most_diverse: 'Mais Diversa da Nova Inglaterra',
+      our_story: 'Nossa História',
+      about_title: 'Um farol no <em>Porto de Boston</em>',
+      about_desc: 'Fundada em 1964, a UMass Boston é a única universidade pública de pesquisa na Cidade de Boston — uma instituição âncora servindo a Commonwealth com educação e pesquisa de classe mundial.',
+      about_b1: 'Classificação Carnegie R1 — mais alta atividade de pesquisa doutoral',
+      about_b2: 'Localizada em uma península de 120 acres em Columbia Point, cercada pelo porto',
+      about_b3: '10 faculdades abrangendo ciências, artes, negócios, saúde e políticas',
+      about_b4: 'Mais de $100M em financiamento anual de pesquisa',
+      about_b5: 'Adjacente à Biblioteca e Museu Presidencial JFK',
+      discover_mission: 'Descubra Nossa Missão',
+      academic_excellence: 'Excelência Acadêmica',
+      pathways_title: '200+ Caminhos para o <em>Futuro</em>',
+      latest_umb: 'Últimas da UMB',
+      news_title: 'Notícias & <em>Impacto</em>',
+      whats_happening: 'O Que Está Acontecendo',
+      events_title: 'Eventos do <em>Campus</em>',
+      campus_lens: 'O Campus Pelas Suas Lentes',
+      gallery_title: 'Galeria de <em>Fotos</em>',
+      ai_assistant: 'Assistente IA',
+      ask_harbor: 'Pergunte ao <em>Harbor</em>',
+      harbor_desc: 'Seu guia inteligente para tudo sobre a UMass Boston — admissões, programas, pesquisa, vida no campus e muito mais.',
+      nav_academics: 'Acadêmico',
+      nav_admissions: 'Admissões',
+      nav_research: 'Pesquisa',
+      nav_campus_life: 'Vida no Campus',
+      nav_events: 'Eventos',
+      nav_gallery: 'Galeria',
+      nav_play: 'Jogar',
+      nav_ask_harbor: 'Pergunte ao Harbor'
+    },
+    ar: {
+      hero_kicker: 'الجامعة البحثية العامة الرائدة في ميناء بوسطن',
+      hero_h1: '<span class="dim">حيث</span> <span class="glow">التألق</span><br><span class="dim">يلتقي</span> بالعصر',
+      hero_sub: 'جامعة ماساتشوستس بوسطن — قوة بحثية من تصنيف كارنيجي R1 على شبه جزيرة بمساحة 120 فدانًا على الميناء، تُغيّر 16,000 حياة كل عام.',
+      explore_programs: 'استكشف البرامج',
+      apply_semester: 'قدّم لخريف 2026/ربيع 2027',
+      explore_3d: 'استكشف الحرم ثلاثي الأبعاد ←',
+      shuttle_tracker: 'تتبع الحافلات ←',
+      campus_tour: 'جولة في الحرم ←',
+      apply_now: 'قدّم الآن',
+      most_diverse: 'الأكثر تنوعًا في نيو إنغلاند',
+      our_story: 'قصتنا',
+      about_title: 'منارة على <em>ميناء بوسطن</em>',
+      about_desc: 'تأسست عام 1964، وهي الجامعة البحثية العامة الوحيدة في مدينة بوسطن — مؤسسة رائدة تخدم الكومنولث بتعليم وبحث عالمي المستوى.',
+      about_b1: 'تصنيف كارنيجي R1 — أعلى نشاط بحثي للدكتوراه',
+      about_b2: 'تقع على شبه جزيرة كولومبيا بوينت بمساحة 120 فدانًا محاطة بالميناء',
+      about_b3: '10 كليات تشمل العلوم والفنون والأعمال والصحة والسياسات',
+      about_b4: 'أكثر من 100 مليون دولار في تمويل الأبحاث السنوي',
+      about_b5: 'مجاورة لمكتبة ومتحف كينيدي الرئاسي',
+      discover_mission: 'اكتشف رسالتنا',
+      academic_excellence: 'التميّز الأكاديمي',
+      pathways_title: '+200 مسار نحو <em>المستقبل</em>',
+      latest_umb: 'آخر أخبار UMB',
+      news_title: 'أخبار و<em>تأثير</em>',
+      whats_happening: 'ماذا يحدث',
+      events_title: 'فعاليات <em>الحرم</em>',
+      campus_lens: 'الحرم من خلال عدستك',
+      gallery_title: 'معرض <em>الصور</em>',
+      ai_assistant: 'مساعد ذكاء اصطناعي',
+      ask_harbor: 'اسأل <em>Harbor</em>',
+      harbor_desc: 'دليلك الذكي لكل ما يتعلق بجامعة ماساتشوستس بوسطن — القبول والبرامج والبحث والحياة الجامعية والمزيد.',
+      nav_academics: 'الأكاديمي',
+      nav_admissions: 'القبول',
+      nav_research: 'البحث',
+      nav_campus_life: 'الحياة الجامعية',
+      nav_events: 'الفعاليات',
+      nav_gallery: 'المعرض',
+      nav_play: 'العب',
+      nav_ask_harbor: 'اسأل Harbor'
+    },
+    fr: {
+      hero_kicker: 'La Première Université Publique de Recherche du Port de Boston',
+      hero_h1: '<span class="dim">Là où</span> <span class="glow">le génie</span><br><span class="dim">rencontre</span> son époque',
+      hero_sub: 'UMass Boston — une puissance de recherche Carnegie R1 sur une péninsule de 120 acres face au port, transformant 16 000 vies chaque année.',
+      explore_programs: 'Explorer les Programmes',
+      apply_semester: 'Postuler Automne 2026/Printemps 2027',
+      explore_3d: 'Explorer le Campus 3D →',
+      shuttle_tracker: 'Suivi de Navette →',
+      campus_tour: 'Visite du Campus →',
+      apply_now: 'Postuler',
+      most_diverse: 'La Plus Diverse de Nouvelle-Angleterre',
+      our_story: 'Notre Histoire',
+      about_title: 'Un phare sur le <em>Port de Boston</em>',
+      about_desc: 'Fondée en 1964, UMass Boston est la seule université publique de recherche de la ville de Boston — une institution de référence offrant une éducation et une recherche de classe mondiale.',
+      about_b1: 'Classification Carnegie R1 — plus haute activité de recherche doctorale',
+      about_b2: 'Située sur une péninsule de 120 acres à Columbia Point, entourée par le port',
+      about_b3: '10 facultés couvrant sciences, arts, commerce, santé et politiques',
+      about_b4: 'Plus de 100M$ en financement annuel de recherche',
+      about_b5: 'Adjacente à la Bibliothèque et Musée Présidentiel JFK',
+      discover_mission: 'Découvrir Notre Mission',
+      academic_excellence: 'Excellence Académique',
+      pathways_title: '200+ Chemins vers l\'<em>Avenir</em>',
+      latest_umb: 'Dernières Nouvelles UMB',
+      news_title: 'Actualités & <em>Impact</em>',
+      whats_happening: 'Quoi de Neuf',
+      events_title: 'Événements du <em>Campus</em>',
+      campus_lens: 'Le Campus à Travers Votre Objectif',
+      gallery_title: 'Galerie <em>Photo</em>',
+      ai_assistant: 'Assistant IA',
+      ask_harbor: 'Demandez à <em>Harbor</em>',
+      harbor_desc: 'Votre guide intelligent pour tout sur UMass Boston — admissions, programmes, recherche, vie sur le campus et plus encore.',
+      nav_academics: 'Académique',
+      nav_admissions: 'Admissions',
+      nav_research: 'Recherche',
+      nav_campus_life: 'Vie Étudiante',
+      nav_events: 'Événements',
+      nav_gallery: 'Galerie',
+      nav_play: 'Jouer',
+      nav_ask_harbor: 'Demandez à Harbor'
+    }
+  };
+
+  // Store original English text
+  var originals = {};
+
+  function storeOriginals(){
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      originals[el.getAttribute('data-i18n')] = el.textContent;
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(function(el){
+      originals[el.getAttribute('data-i18n-html')] = el.innerHTML;
+    });
+  }
+  storeOriginals();
+
+  window.setLanguage = function(lang){
+    currentLang = lang;
+    var wrap = document.getElementById('lang-wrap');
+    wrap.classList.remove('open');
+
+    // Update button label
+    var codeEl = document.querySelector('.lang-code');
+    codeEl.textContent = lang.toUpperCase();
+
+    // Update active state in menu
+    document.querySelectorAll('#lang-menu li').forEach(function(li){
+      li.classList.remove('active');
+    });
+    var items = document.querySelectorAll('#lang-menu li');
+    var langOrder = ['en','es','zh','vi','ht','pt','ar','fr'];
+    var idx = langOrder.indexOf(lang);
+    if(idx >= 0 && items[idx]) items[idx].classList.add('active');
+
+    // Apply translations or restore originals
+    if(lang === 'en'){
+      document.querySelectorAll('[data-i18n]').forEach(function(el){
+        var key = el.getAttribute('data-i18n');
+        if(originals[key]) el.textContent = originals[key];
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(function(el){
+        var key = el.getAttribute('data-i18n-html');
+        if(originals[key]) el.innerHTML = originals[key];
+      });
+      document.documentElement.dir = 'ltr';
+      return;
+    }
+
+    var dict = T[lang];
+    if(!dict) return;
+
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      var key = el.getAttribute('data-i18n');
+      if(dict[key]) el.textContent = dict[key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(function(el){
+      var key = el.getAttribute('data-i18n-html');
+      if(dict[key]) el.innerHTML = dict[key];
+    });
+
+    // RTL support for Arabic
+    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+  };
+
+  window.toggleLangMenu = function(){
+    var wrap = document.getElementById('lang-wrap');
+    wrap.classList.toggle('open');
+  };
+
+  // Close menu when clicking outside
+  document.addEventListener('click', function(e){
+    var wrap = document.getElementById('lang-wrap');
+    if(wrap && !wrap.contains(e.target)){
+      wrap.classList.remove('open');
+    }
+  });
+})();
 </script>
 </body>
 </html>

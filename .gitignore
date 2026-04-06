@@ -2,6 +2,7 @@
 backend/.env
 .env
 *.env
+backend/.admin-secrets.json
 
 # ─── Node.js ─────────────────────────────────────
 node_modules/

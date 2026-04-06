@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — UMass Boston</title>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0a0e1a;color:#eef3f8;font-family:'Space Mono',monospace;min-height:100vh;}
+.container{max-width:1000px;margin:0 auto;padding:24px;}
+h1{font-size:18px;letter-spacing:3px;text-transform:uppercase;color:#00b4dc;margin-bottom:24px;}
+h2{font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#f5a623;margin-bottom:16px;}
+
+/* Login / Setup */
+.auth-box{max-width:420px;margin:80px auto;padding:32px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,180,220,0.3);border-radius:6px;}
+.auth-box h2{text-align:center;margin-bottom:20px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(238,243,248,0.5);margin-bottom:6px;}
+.field input{width:100%;padding:10px 14px;background:rgba(238,243,248,0.05);border:1px solid rgba(238,243,248,0.15);color:#eef3f8;font-family:'Space Mono',monospace;font-size:13px;border-radius:4px;outline:none;transition:border-color 0.3s;}
+.field input:focus{border-color:rgba(0,180,220,0.5);}
+.btn{display:inline-block;padding:10px 24px;background:rgba(0,180,220,0.15);border:1px solid rgba(0,180,220,0.4);color:#00b4dc;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.3s;width:100%;text-align:center;}
+.btn:hover{background:rgba(0,180,220,0.3);border-color:rgba(0,180,220,0.7);}
+.btn-danger{background:rgba(255,60,60,0.15);border-color:rgba(255,60,60,0.4);color:#ff6060;}
+.btn-danger:hover{background:rgba(255,60,60,0.3);border-color:rgba(255,60,60,0.7);}
+.btn-approve{background:rgba(0,200,100,0.15);border-color:rgba(0,200,100,0.4);color:#00c864;}
+.btn-approve:hover{background:rgba(0,200,100,0.3);}
+.btn-sm{padding:6px 12px;font-size:8px;width:auto;}
+.error{color:#ff6060;font-size:11px;margin-top:8px;min-height:16px;}
+.success{color:#00c864;font-size:11px;margin-top:8px;}
+.qr-wrap{text-align:center;margin:16px 0;}
+.qr-wrap img{max-width:200px;border-radius:8px;border:2px solid rgba(0,180,220,0.3);}
+.qr-wrap .secret-key{font-size:10px;color:rgba(238,243,248,0.4);margin-top:8px;word-break:break-all;}
+
+/* Dashboard */
+.dashboard{display:none;}
+.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.stats{display:flex;gap:16px;flex-wrap:wrap;}
+.stat{padding:8px 16px;background:rgba(0,180,220,0.08);border:1px solid rgba(0,180,220,0.2);border-radius:4px;}
+.stat .num{font-size:20px;font-weight:bold;color:#00b4dc;}
+.stat .label{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:rgba(238,243,248,0.4);}
+.filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.filters select{padding:6px 12px;background:rgba(238,243,248,0.05);border:1px solid rgba(238,243,248,0.15);color:#eef3f8;font-family:'Space Mono',monospace;font-size:10px;border-radius:4px;outline:none;}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.photo-card{background:rgba(0,16,32,0.7);border:1px solid rgba(238,243,248,0.1);border-radius:6px;overflow:hidden;transition:border-color 0.3s;}
+.photo-card:hover{border-color:rgba(0,180,220,0.3);}
+.photo-card img{width:100%;height:180px;object-fit:cover;display:block;}
+.photo-card .info{padding:12px;}
+.photo-card .building-name{font-size:11px;font-weight:bold;color:#f5a623;margin-bottom:4px;}
+.photo-card .meta{font-size:9px;color:rgba(238,243,248,0.4);margin-bottom:8px;}
+.photo-card .meta span{margin-right:10px;}
+.photo-card .caption{font-size:10px;color:rgba(238,243,248,0.6);margin-bottom:10px;max-height:40px;overflow:hidden;}
+.photo-card .actions{display:flex;gap:6px;flex-wrap:wrap;}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;}
+.status-approved{background:rgba(0,200,100,0.15);color:#00c864;border:1px solid rgba(0,200,100,0.3);}
+.status-pending{background:rgba(245,166,35,0.15);color:#f5a623;border:1px solid rgba(245,166,35,0.3);}
+.status-rejected{background:rgba(255,60,60,0.15);color:#ff6060;border:1px solid rgba(255,60,60,0.3);}
+.empty{text-align:center;padding:60px 20px;color:rgba(238,243,248,0.3);font-size:12px;}
+.loading{text-align:center;padding:40px;color:rgba(0,180,220,0.5);font-size:11px;}
+
+@media(max-width:600px){
+  .container{padding:12px;}
+  .photo-grid{grid-template-columns:1fr;}
+  .auth-box{margin:40px 16px;padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" style="display:none;">
+  <div class="auth-box">
+    <h2>Admin Setup</h2>
+    <div id="setup-step1">
+      <p style="font-size:11px;color:rgba(238,243,248,0.5);margin-bottom:16px;">Create your admin passphrase. This is a one-time setup.</p>
+      <div class="field">
+        <label>Passphrase (min 12 characters)</label>
+        <input type="password" id="setup-pass" placeholder="Enter a strong passphrase" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Confirm Passphrase</label>
+        <input type="password" id="setup-pass2" placeholder="Confirm passphrase" autocomplete="new-password">
+      </div>
+      <button class="btn" onclick="doSetup()">Generate 2FA</button>
+      <div class="error" id="setup-err"></div>
+    </div>
+    <div id="setup-step2" style="display:none;">
+      <p style="font-size:11px;color:rgba(238,243,248,0.5);margin-bottom:12px;">Scan this QR code with <strong style="color:#fff;">Google Authenticator</strong> or any TOTP app:</p>
+      <div class="qr-wrap">
+        <img id="setup-qr" src="" alt="QR Code">
+        <div class="secret-key">Manual key: <span id="setup-secret"></span></div>
+      </div>
+      <div class="field" style="margin-top:16px;">
+        <label>Enter 6-digit code from app</label>
+        <input type="text" id="setup-code" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+      </div>
+      <button class="btn" onclick="verifySetup()">Verify &amp; Complete Setup</button>
+      <div class="error" id="setup-err2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:none;">
+  <div class="auth-box">
+    <h2>Admin Login</h2>
+    <div class="field">
+      <label>Passphrase</label>
+      <input type="password" id="login-pass" placeholder="Enter passphrase" autocomplete="current-password">
+    </div>
+    <div class="field">
+      <label>Authenticator Code</label>
+      <input type="text" id="login-code" placeholder="6-digit code" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+    </div>
+    <button class="btn" onclick="doLogin()">Login</button>
+    <div class="error" id="login-err"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="dashboard">
+  <div class="container">
+    <div class="top-bar">
+      <h1>Photo Admin</h1>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="stats">
+          <div class="stat"><div class="num" id="stat-total">0</div><div class="label">Total</div></div>
+          <div class="stat"><div class="num" id="stat-approved">0</div><div class="label">Approved</div></div>
+          <div class="stat"><div class="num" id="stat-rejected">0</div><div class="label">Rejected</div></div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+    <div class="filters">
+      <select id="filter-status" onchange="loadPhotos()">
+        <option value="">All Status</option>
+        <option value="approved">Approved</option>
+        <option value="pending">Pending</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <select id="filter-building" onchange="loadPhotos()">
+        <option value="">All Buildings</option>
+      </select>
+      <button class="btn btn-sm" onclick="loadPhotos()">Refresh</button>
+    </div>
+    <div id="photo-list" class="photo-grid"></div>
+  </div>
+</div>
+
+<script>
+var token = localStorage.getItem('admin_token');
+var buildings = ['Campus Center','Healey Library','Integrated Sciences Complex','McCormack Hall',
+  'Wheatley Hall','Quinn Administration','University Hall','Clark Athletic Center',
+  'West Garage','JFK Presidential Library','West Residence Hall','East Residence Hall'];
+
+// Populate building filter
+(function(){
+  var sel = document.getElementById('filter-building');
+  buildings.forEach(function(b){
+    var o = document.createElement('option');
+    o.value = b; o.textContent = b;
+    sel.appendChild(o);
+  });
+})();
+
+function headers(){ return { 'Content-Type':'application/json', 'Authorization': 'Bearer '+(token||'') }; }
+
+// Check auth state on load
+fetch('/admin/api/check', { headers: headers() })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(!d.setupComplete){
+      document.getElementById('setup-screen').style.display = 'block';
+    } else if(!d.authenticated){
+      document.getElementById('login-screen').style.display = 'block';
+    } else {
+      showDashboard();
+    }
+  });
+
+function doSetup(){
+  var p1 = document.getElementById('setup-pass').value;
+  var p2 = document.getElementById('setup-pass2').value;
+  var err = document.getElementById('setup-err');
+  if(p1.length < 12){ err.textContent = 'Passphrase must be at least 12 characters.'; return; }
+  if(p1 !== p2){ err.textContent = 'Passphrases do not match.'; return; }
+  err.textContent = '';
+  fetch('/admin/api/setup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({passphrase:p1}) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.error){ err.textContent = d.error; return; }
+      document.getElementById('setup-qr').src = d.qrDataUrl;
+      document.getElementById('setup-secret').textContent = d.totpSecret;
+      document.getElementById('setup-step1').style.display = 'none';
+      document.getElementById('setup-step2').style.display = 'block';
+    });
+}
+
+function verifySetup(){
+  var code = document.getElementById('setup-code').value.trim();
+  var err = document.getElementById('setup-err2');
+  if(code.length !== 6){ err.textContent = 'Enter a 6-digit code.'; return; }
+  fetch('/admin/api/verify-setup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code:code}) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.error){ err.textContent = d.error; return; }
+      token = d.token;
+      localStorage.setItem('admin_token', token);
+      document.getElementById('setup-screen').style.display = 'none';
+      showDashboard();
+    });
+}
+
+function doLogin(){
+  var pass = document.getElementById('login-pass').value;
+  var code = document.getElementById('login-code').value.trim();
+  var err = document.getElementById('login-err');
+  if(!pass || !code){ err.textContent = 'Both fields are required.'; return; }
+  err.textContent = '';
+  fetch('/admin/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({passphrase:pass, totpCode:code}) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.error){ err.textContent = d.error; return; }
+      if(d.needsSetup){
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('setup-screen').style.display = 'block';
+        return;
+      }
+      token = d.token;
+      localStorage.setItem('admin_token', token);
+      document.getElementById('login-screen').style.display = 'none';
+      showDashboard();
+    });
+}
+
+// Enter key support
+document.getElementById('login-code').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+document.getElementById('setup-code').addEventListener('keydown', function(e){ if(e.key==='Enter') verifySetup(); });
+document.getElementById('login-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('login-code').focus(); });
+
+function doLogout(){
+  token = null;
+  localStorage.removeItem('admin_token');
+  location.reload();
+}
+
+function showDashboard(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadPhotos();
+}
+
+function loadPhotos(){
+  var status = document.getElementById('filter-status').value;
+  var building = document.getElementById('filter-building').value;
+  var qs = '?';
+  if(status) qs += 'status='+encodeURIComponent(status)+'&';
+  if(building) qs += 'building='+encodeURIComponent(building)+'&';
+
+  var list = document.getElementById('photo-list');
+  list.innerHTML = '<div class="loading">Loading photos...</div>';
+
+  fetch('/admin/api/photos'+qs, { headers: headers() })
+    .then(function(r){
+      if(r.status === 401){ doLogout(); throw new Error('Session expired'); }
+      return r.json();
+    })
+    .then(function(d){
+      document.getElementById('stat-total').textContent = d.total;
+      // Count by status
+      var approved = 0, rejected = 0;
+      d.photos.forEach(function(p){ if(p.status==='approved') approved++; if(p.status==='rejected') rejected++; });
+      document.getElementById('stat-approved').textContent = approved;
+      document.getElementById('stat-rejected').textContent = rejected;
+
+      if(d.photos.length === 0){
+        list.innerHTML = '<div class="empty">No photos found.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      d.photos.forEach(function(p){
+        var card = document.createElement('div');
+        card.className = 'photo-card';
+        var date = new Date(p.createdAt).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        var statusClass = 'status-'+p.status;
+        card.innerHTML =
+          '<img src="'+p.photoUrl+'" alt="'+p.building+'" loading="lazy" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 180%22><rect fill=%22%23111%22 width=%22300%22 height=%22180%22/><text x=%22150%22 y=%2295%22 fill=%22%23444%22 text-anchor=%22middle%22 font-size=%2214%22>Image not found</text></svg>\'">' +
+          '<div class="info">' +
+            '<div class="building-name">'+p.building+' <span class="status-badge '+statusClass+'">'+p.status+'</span></div>' +
+            '<div class="meta"><span>By: '+p.uploadedBy+'</span><span>'+date+'</span>'+(p.season ? '<span>'+p.season+'</span>' : '')+'</div>' +
+            (p.caption ? '<div class="caption">'+p.caption+'</div>' : '') +
+            '<div class="actions">' +
+              (p.status !== 'approved' ? '<button class="btn btn-sm btn-approve" onclick="setStatus(\''+p._id+'\',\'approved\')">Approve</button>' : '') +
+              (p.status !== 'rejected' ? '<button class="btn btn-sm btn-danger" onclick="setStatus(\''+p._id+'\',\'rejected\')">Reject</button>' : '') +
+              '<button class="btn btn-sm btn-danger" onclick="deletePhoto(\''+p._id+'\')">Delete</button>' +
+            '</div>' +
+          '</div>';
+        list.appendChild(card);
+      });
+    })
+    .catch(function(e){ if(e.message !== 'Session expired') list.innerHTML = '<div class="error">Failed to load photos.</div>'; });
+}
+
+function setStatus(id, status){
+  fetch('/admin/api/photos/'+id, { method:'PATCH', headers: headers(), body: JSON.stringify({status:status}) })
+    .then(function(r){
+      if(r.status === 401){ doLogout(); return; }
+      return r.json();
+    })
+    .then(function(){ loadPhotos(); });
+}
+
+function deletePhoto(id){
+  if(!confirm('Permanently delete this photo? This cannot be undone.')) return;
+  fetch('/admin/api/photos/'+id, { method:'DELETE', headers: headers() })
+    .then(function(r){
+      if(r.status === 401){ doLogout(); return; }
+      return r.json();
+    })
+    .then(function(){ loadPhotos(); });
+}
+</script>
+</body>
+</html>

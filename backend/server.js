@@ -26,6 +26,12 @@ app.use(express.static(path.join(__dirname, '..')));
 // ── API Routes ──────────────────────────────────
 app.use('/api', require('./routes/api'));
 
+// ── Admin Panel ─────────────────────────────────
+app.use('/admin/api', require('./routes/admin'));
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'admin.html'));
+});
+
 // ── Health check ────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 

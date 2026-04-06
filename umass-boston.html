@@ -3458,13 +3458,30 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // ── RIDE-ALONG MUSIC PLAYER ──
     var RIDE_PLAYLIST = [
-      { title: 'Bonjour', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_01_-_Bonjour.mp3' },
-      { title: 'Submarine Air-Force', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_05_-_Submarine_Air-Force.mp3' },
-      { title: 'Samurai Disco', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_07_-_Samurai_Disco.mp3' },
-      { title: 'Memory Box', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_10_-_Memory_Box.mp3' },
-      { title: 'Neon Noir', artist: 'Centz', url: 'https://archive.org/download/DWK312/Centz_-_14_-_Neon_Noir.mp3' },
-      { title: 'Hanging Lanterns', artist: 'Kalaido', url: 'https://archive.org/download/kalaido-hanging-lanterns_202101/Kalaido%20-%20Hanging%20Lanterns.mp3' },
-      { title: 'Car Radio', artist: 'flovry', url: 'https://archive.org/download/kalaido-hanging-lanterns_202101/flovry%20-%20car%20radio.mp3' }
+      { title: 'Moonlight Serenade', artist: 'Glenn Miller Orchestra', url: 'https://archive.org/download/BigBandMixRecordings1935-1945/01.MoonlightSerenade.mp3' },
+      { title: 'In a Sentimental Mood', artist: 'Duke Ellington', url: 'https://archive.org/download/78_11424-In-a-sentimental-mood/11424-In-a-sentimental-mood.mp3' },
+      { title: 'Dream a Little Dream of Me', artist: 'Louis Armstrong', url: 'https://archive.org/download/78_2283-Dream-a-little-dream-of-me/2283-Dream-a-little-dream-of-me.mp3' },
+      { title: 'La Vie en Rose', artist: 'Louis Armstrong', url: 'https://archive.org/download/78_12296-La-vie-en-rose-Take-me-to-your-herart-again/12296-La-vie-en-rose-Take-me-to-your-herart-again.mp3' },
+      { title: 'On the Sunny Side of the Street', artist: 'Louis Armstrong', url: 'https://archive.org/download/78_11532-On-the-sunny-side-of-the-street/11532-On-the-sunny-side-of-the-street.mp3' },
+      { title: "Ain't Misbehavin'", artist: 'Fats Waller', url: 'https://archive.org/download/78_9684-Aint-misbehavin/9684-Aint-misbehavin.mp3' },
+      { title: 'Cheek to Cheek', artist: 'Fred Astaire', url: 'https://archive.org/download/78_10997-Cheek-to-cheek/10997-Cheek-to-cheek.mp3' },
+      { title: 'Five Foot Two, Eyes of Blue', artist: 'Golden Gate Orchestra', url: 'https://archive.org/download/Free_20s_Jazz_Collection/Golden_Gate_Orch-5_Foot_2_11KHz.mp3' },
+      { title: 'Take the A Train', artist: 'Duke Ellington', url: 'https://archive.org/download/78_9958-Take-the-A-train/9958-Take-the-A-train.mp3' },
+      { title: 'A String of Pearls', artist: 'Glenn Miller Orchestra', url: 'https://archive.org/download/BigBandMixRecordings1935-1945/04.AStringOfPearls.mp3' },
+      { title: "Stompin' at the Savoy", artist: 'Benny Goodman', url: 'https://archive.org/download/GoodmanEnsembles/07.StompinAtTheSavoy.mp3' },
+      { title: 'Tuxedo Junction', artist: 'Glenn Miller Orchestra', url: 'https://archive.org/download/BigBandMixRecordings1935-1945/11.TuxedoJunction.mp3' },
+      { title: 'Little Brown Jug', artist: 'Glenn Miller Orchestra', url: 'https://archive.org/download/BigBandMixRecordings1935-1945/24.LittleBrownJug.mp3' },
+      { title: 'Ja-Da', artist: '1920s Jazz', url: 'https://archive.org/download/ACdsWorthOf1920s1930sJazzAndDanceMusic-Vol.1/JaDa.mp3' },
+      { title: 'Flying Home', artist: 'Benny Goodman', url: 'https://archive.org/download/GoodmanEnsembles/09.FlyingHome.mp3' },
+      { title: 'When the Saints Go Marching In', artist: 'Louis Armstrong', url: 'https://archive.org/download/78_2442-When-the-saints-go-marching-in/2442-When-the-saints-go-marching-in.mp3' },
+      { title: 'St. James Infirmary', artist: 'Louis Armstrong', url: 'https://archive.org/download/78_9595-St-James-infirmary/9595-St-James-infirmary.mp3' },
+      { title: 'I Wanna Be Loved by You', artist: 'Helen Kane', url: 'https://archive.org/download/Free_20s_Jazz_Collection/Helen_Kane-IWannabeLovedbyYou_11KHz.mp3' },
+      { title: "After You've Gone", artist: 'Benny Goodman', url: 'https://archive.org/download/GoodmanEnsembles/15.AfterYouveGone.mp3' },
+      { title: 'Tiger Rag', artist: 'Benny Goodman', url: 'https://archive.org/download/GoodmanEnsembles/06.TigerRag.mp3' },
+      { title: 'Kansas City Stomps', artist: 'Jelly Roll Morton', url: 'https://archive.org/download/JellyRollMortonCollection_201412/KANSAS%20CITY%20STOMPS.mp3' },
+      { title: 'Black Bottom Stomp', artist: 'Jelly Roll Morton', url: 'https://archive.org/download/JellyRollMortonCollection_201412/BLACK%20BOTTOM%20STOMP.mp3' },
+      { title: 'The Darktown Strutters Ball', artist: '1920s Jazz', url: 'https://archive.org/download/ACdsWorthOf1920s1930sJazzAndDanceMusic-Vol.1/TheDarktownStruttersBall.mp3' },
+      { title: 'Castle House Rag', artist: "James Reese Europe's Society Orchestra", url: 'https://archive.org/download/Europes_Society_Orch-Castle_Rag/Europes_Society_Orch-Castle_House_Rag-Victor-35372.mp3' }
     ];
     var rideAudio = null;
     var rideTrackIdx = 0;

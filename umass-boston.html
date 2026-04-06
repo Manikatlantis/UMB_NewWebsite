@@ -91,6 +91,8 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 /* ── SHUTTLE TRACKER ── */
 .btn-shuttle{padding:13px 28px;background:rgba(0,16,32,0.7);border:1px solid rgba(245,166,35,0.35);color:var(--gold);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;backdrop-filter:blur(8px);}
 .btn-shuttle:hover{background:rgba(245,166,35,0.1);border-color:var(--gold);}
+.btn-tour{padding:13px 28px;background:rgba(0,16,32,0.7);border:1px solid rgba(180,120,255,0.35);color:#b478ff;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;backdrop-filter:blur(8px);}
+.btn-tour:hover{background:rgba(180,120,255,0.1);border-color:#b478ff;}
 .shuttle-hud{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:20;display:none;align-items:center;gap:8px;padding:8px 18px;background:rgba(0,16,32,0.85);border:1px solid rgba(245,166,35,0.25);border-radius:4px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gold);}
 .shuttle-hud.vis{display:flex;}
 .shuttle-hud .pulse{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:hud-pulse 1.5s ease-in-out infinite;}
@@ -453,7 +455,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .hero-sub{font-size:15px;margin-bottom:32px;}
   .hero-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;bottom:100px;padding:0 20px;}
   .scroll-hint{bottom:10px;}
-  .hero-btns .btn-r,.hero-btns .btn-o,.hero-btns .btn-3d,.hero-btns .btn-shuttle{font-size:9px;padding:11px 10px;letter-spacing:1px;text-align:center;white-space:nowrap;}
+  .hero-btns .btn-r,.hero-btns .btn-o,.hero-btns .btn-3d,.hero-btns .btn-shuttle,.hero-btns .btn-tour{font-size:9px;padding:11px 10px;letter-spacing:1px;text-align:center;white-space:nowrap;}
   .ticker-item{padding:0 28px;}
   .t-num{font-size:24px;}
   #about{grid-template-columns:1fr;gap:36px;}
@@ -513,7 +515,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .hero-h1{letter-spacing:-1px;}
   .hero-btns{flex-wrap:wrap;justify-content:center;gap:6px;bottom:90px;padding:0 16px;}
   .scroll-hint{bottom:8px;}
-  .hero-btns .btn-r,.hero-btns .btn-o,.hero-btns .btn-3d,.hero-btns .btn-shuttle{font-size:8px;padding:10px 14px;letter-spacing:1px;}
+  .hero-btns .btn-r,.hero-btns .btn-o,.hero-btns .btn-3d,.hero-btns .btn-shuttle,.hero-btns .btn-tour{font-size:8px;padding:10px 14px;letter-spacing:1px;}
   #game-canvas{height:260px;}
   .bot-msgs{height:280px;}
   .bot-head{padding:14px 16px;}
@@ -560,6 +562,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-o">Apply Fall 2026/Spring 2027</a>
     <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()">Explore Campus 3D &rarr;</button>
     <button class="btn-3d btn-shuttle" id="btn-shuttle" onclick="enterShuttleMode()">Live Shuttle Tracker &rarr;</button>
+    <button class="btn-3d btn-tour" id="btn-tour" onclick="startCampusTour()">Campus Tour &rarr;</button>
   </div>
   <!-- Mobile gesture hint -->
   <div id="touch-hint" style="display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:25;padding:12px 24px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,212,184,0.3);border-radius:8px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:rgba(238,243,248,0.8);text-align:center;line-height:1.8;white-space:nowrap;transition:opacity 0.5s;">
@@ -2520,6 +2523,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // ── Exit 3D explore mode ──
     window.exit3DMode=function(){
       exploreMode=false;
+      if(window.cancelDroneTour) window.cancelDroneTour();
       if(typeof stopTourAudio==='function') stopTourAudio();
       if(typeof stopTourBgMusic==='function') stopTourBgMusic();
       if('speechSynthesis' in window) speechSynthesis.cancel();
@@ -2712,6 +2716,45 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       _tourActive = false;
       if(typeof stopTourAudio==='function') stopTourAudio();
       if(typeof stopTourBgMusic==='function') stopTourBgMusic();
+    };
+
+    // ── Start Campus Tour from landing page button ──
+    window.startCampusTour = function(){
+      var fullStops = ['Campus Center','Healey Library','Integrated Sciences Complex','McCormack Hall','Wheatley Hall','Quinn Administration','University Hall','Clark Athletic Center','West Garage','JFK Presidential Library','West Residence Hall','East Residence Hall'];
+      function launchTour(){
+        ttsEnabled = true;
+        var ttsBtn = document.getElementById('btn-tts');
+        if(ttsBtn){ ttsBtn.classList.add('active'); ttsBtn.innerHTML = '&#128266;'; }
+        window.droneTour(fullStops, function(name, idx){
+          var buildings = typeof CAMPUS_BUILDINGS !== 'undefined' ? CAMPUS_BUILDINGS : [];
+          var b = null;
+          for(var j = 0; j < buildings.length; j++){
+            if(buildings[j].name === name){ b = buildings[j]; break; }
+          }
+          if(b){
+            var photos = (typeof BUILDING_PHOTOS!=='undefined' && BUILDING_PHOTOS[b.name]) ? BUILDING_PHOTOS[b.name] : [];
+            var photoHtml = photos.length > 0 ? '<br><img src="'+photos[0]+'" alt="'+b.name+'" style="width:100%;max-width:260px;border-radius:6px;margin-top:8px;border:1px solid rgba(0,212,184,0.2);" onerror="this.style.display=\'none\'">' : '';
+            var nar = (typeof BUILDING_NARRATION!=='undefined' && BUILDING_NARRATION[b.name]) ? BUILDING_NARRATION[b.name] : null;
+            var narText = nar ? nar.text : b.desc;
+            var msg = '<strong>Stop '+(idx+1)+': '+b.name+'</strong><br>'+narText+photoHtml;
+            addMsg('assistant', msg);
+          }
+        });
+      }
+      if(!exploreMode){
+        var heroEl = document.getElementById('hero');
+        var heroTop = heroEl.offsetTop;
+        window.scrollTo(0, heroTop);
+        setTimeout(function(){
+          window.scrollTo(0, heroTop);
+          enter3DMode();
+          _savedScrollY = 0;
+          document.body.style.top = '0px';
+          setTimeout(launchTour, 1500);
+        }, 300);
+      } else {
+        launchTour();
+      }
     };
 
     // ── CAMPUS ROAD POLYLINE (hand-captured waypoints) ──

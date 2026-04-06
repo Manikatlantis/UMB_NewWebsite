@@ -827,9 +827,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ─── HARBOR GAME ─── -->
 <section id="harbor-game-section">
-  <div class="sec-tag" style="justify-content:center">Mini-Game</div>
-  <h2 class="sec-title reveal" style="text-align:center">Fish the <em>Harbor</em></h2>
-  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto">Cast your line into Boston Harbor! Move with <strong style="color:var(--teal)">Arrow Keys</strong>, press <strong style="color:var(--teal)">Space</strong> to cast &amp; reel. Catch enough fish each wave to advance.</p>
+  <div class="sec-tag" style="justify-content:center" data-i18n="mini_game">Mini-Game</div>
+  <h2 class="sec-title reveal" style="text-align:center" data-i18n-html="fish_harbor">Fish the <em>Harbor</em></h2>
+  <p class="reveal" style="text-align:center;color:rgba(238,243,248,0.5);font-size:16px;max-width:500px;margin:0 auto" data-i18n-html="fish_desc">Cast your line into Boston Harbor! Move with <strong style="color:var(--teal)">Arrow Keys</strong>, press <strong style="color:var(--teal)">Space</strong> to cast &amp; reel. Catch enough fish each wave to advance.</p>
   <div class="game-wrap reveal">
     <canvas id="game-canvas"></canvas>
     <div class="game-ui">
@@ -6259,7 +6259,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'Ciencias de la Computación',
       prog_education: 'Educación',
       prog_policy: 'Políticas Públicas',
-      prog_grad: 'Investigación de Posgrado'
+      prog_grad: 'Investigación de Posgrado',
+      mini_game: 'Mini-Juego',
+      fish_harbor: 'Pesca en el <em>Puerto</em>',
+      fish_desc: '¡Lanza tu línea al Puerto de Boston! Muévete con las <strong style="color:var(--teal)">Flechas</strong>, presiona <strong style="color:var(--teal)">Espacio</strong> para lanzar y recoger. Atrapa suficientes peces en cada ola para avanzar.'
     },
     zh: {
       hero_kicker: '波士顿港首屈一指的公立研究型大学',
@@ -6309,7 +6312,10 @@ window.addEventListener('resize', function() {
       prog_cs: '计算机科学',
       prog_education: '教育',
       prog_policy: '公共政策',
-      prog_grad: '研究生研究'
+      prog_grad: '研究生研究',
+      mini_game: '小游戏',
+      fish_harbor: '在<em>港口</em>钓鱼',
+      fish_desc: '在波士顿港抛下你的鱼线！用<strong style="color:var(--teal)">方向键</strong>移动，按<strong style="color:var(--teal)">空格</strong>抛竿和收线。每波抓够鱼才能过关。'
     },
     vi: {
       hero_kicker: 'Đại Học Nghiên Cứu Công Lập Hàng Đầu Tại Cảng Boston',
@@ -6359,7 +6365,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'Khoa Học Máy Tính',
       prog_education: 'Giáo Dục',
       prog_policy: 'Chính Sách Công',
-      prog_grad: 'Nghiên Cứu Sau Đại Học'
+      prog_grad: 'Nghiên Cứu Sau Đại Học',
+      mini_game: 'Trò Chơi Nhỏ',
+      fish_harbor: 'Câu Cá Ở <em>Cảng</em>',
+      fish_desc: 'Thả câu xuống Cảng Boston! Di chuyển bằng <strong style="color:var(--teal)">Phím Mũi Tên</strong>, nhấn <strong style="color:var(--teal)">Phím Cách</strong> để thả và kéo câu. Bắt đủ cá mỗi đợt để tiến lên.'
     },
     ht: {
       hero_kicker: 'Inivèsite Rechèch Piblik Premye nan Pò Boston',
@@ -6409,7 +6418,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'Enfòmatik',
       prog_education: 'Edikasyon',
       prog_policy: 'Politik Piblik',
-      prog_grad: 'Rechèch Gradye'
+      prog_grad: 'Rechèch Gradye',
+      mini_game: 'Mini-Jwèt',
+      fish_harbor: 'Peche nan <em>Pò a</em>',
+      fish_desc: 'Voye liy ou nan Pò Boston! Deplase ak <strong style="color:var(--teal)">Flèch yo</strong>, peze <strong style="color:var(--teal)">Espas</strong> pou voye ak rale. Kenbe ase pwason chak vag pou avanse.'
     },
     pt: {
       hero_kicker: 'A Principal Universidade Pública de Pesquisa do Porto de Boston',
@@ -6459,7 +6471,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'Ciência da Computação',
       prog_education: 'Educação',
       prog_policy: 'Políticas Públicas',
-      prog_grad: 'Pesquisa de Pós-Graduação'
+      prog_grad: 'Pesquisa de Pós-Graduação',
+      mini_game: 'Mini-Jogo',
+      fish_harbor: 'Pesque no <em>Porto</em>',
+      fish_desc: 'Lance sua linha no Porto de Boston! Mova com as <strong style="color:var(--teal)">Setas</strong>, pressione <strong style="color:var(--teal)">Espaço</strong> para lançar e recolher. Pegue peixes suficientes em cada onda para avançar.'
     },
     ar: {
       hero_kicker: 'الجامعة البحثية العامة الرائدة في ميناء بوسطن',
@@ -6509,7 +6524,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'علوم الحاسوب',
       prog_education: 'التعليم',
       prog_policy: 'السياسة العامة',
-      prog_grad: 'بحث الدراسات العليا'
+      prog_grad: 'بحث الدراسات العليا',
+      mini_game: 'لعبة صغيرة',
+      fish_harbor: 'اصطد في <em>الميناء</em>',
+      fish_desc: 'ألقِ خيطك في ميناء بوسطن! تحرّك بـ<strong style="color:var(--teal)">مفاتيح الأسهم</strong>، اضغط <strong style="color:var(--teal)">مسافة</strong> للرمي والسحب. اصطد ما يكفي من الأسماك في كل موجة للتقدم.'
     },
     fr: {
       hero_kicker: 'La Première Université Publique de Recherche du Port de Boston',
@@ -6559,7 +6577,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'Informatique',
       prog_education: 'Éducation',
       prog_policy: 'Politiques Publiques',
-      prog_grad: 'Recherche Supérieure'
+      prog_grad: 'Recherche Supérieure',
+      mini_game: 'Mini-Jeu',
+      fish_harbor: 'Pêchez dans le <em>Port</em>',
+      fish_desc: 'Lancez votre ligne dans le Port de Boston ! Déplacez-vous avec les <strong style="color:var(--teal)">Flèches</strong>, appuyez sur <strong style="color:var(--teal)">Espace</strong> pour lancer et mouliner. Attrapez assez de poissons à chaque vague pour avancer.'
     },
     hi: {
       hero_kicker: 'बोस्टन हार्बर का प्रमुख सार्वजनिक शोध विश्वविद्यालय',
@@ -6609,7 +6630,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'कंप्यूटर विज्ञान',
       prog_education: 'शिक्षा',
       prog_policy: 'सार्वजनिक नीति',
-      prog_grad: 'स्नातकोत्तर शोध'
+      prog_grad: 'स्नातकोत्तर शोध',
+      mini_game: 'मिनी-गेम',
+      fish_harbor: '<em>बंदरगाह</em> में मछली पकड़ो',
+      fish_desc: 'बोस्टन हार्बर में अपनी लाइन डालें! <strong style="color:var(--teal)">एरो कीज़</strong> से चलें, <strong style="color:var(--teal)">स्पेस</strong> दबाकर डालें और खींचें। आगे बढ़ने के लिए हर लहर में पर्याप्त मछलियाँ पकड़ें।'
     },
     bn: {
       hero_kicker: 'বোস্টন হারবারের প্রধান পাবলিক গবেষণা বিশ্ববিদ্যালয়',
@@ -6659,7 +6683,10 @@ window.addEventListener('resize', function() {
       prog_cs: 'কম্পিউটার বিজ্ঞান',
       prog_education: 'শিক্ষা',
       prog_policy: 'জননীতি',
-      prog_grad: 'স্নাতকোত্তর গবেষণা'
+      prog_grad: 'স্নাতকোত্তর গবেষণা',
+      mini_game: 'মিনি-গেম',
+      fish_harbor: '<em>হারবারে</em> মাছ ধরো',
+      fish_desc: 'বোস্টন হারবারে তোমার লাইন ফেলো! <strong style="color:var(--teal)">অ্যারো কী</strong> দিয়ে চলো, <strong style="color:var(--teal)">স্পেস</strong> চেপে ফেলো ও টানো। এগিয়ে যেতে প্রতিটি তরঙ্গে যথেষ্ট মাছ ধরো।'
     }
   };
 

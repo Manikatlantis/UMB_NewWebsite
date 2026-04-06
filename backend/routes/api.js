@@ -2,6 +2,7 @@ const express       = require('express');
 const router        = express.Router();
 const Anthropic     = require('@anthropic-ai/sdk');
 const multer        = require('multer');
+const fs            = require('fs');
 const path          = require('path');
 const xml2js        = require('xml2js');
 const Visit         = require('../models/Visit');
@@ -274,6 +275,37 @@ router.get('/building-photos/:building', async (req, res) => {
   }
 });
 
+// ── Image moderation via Claude Vision ──
+async function moderateImage(filePath, mimeType) {
+  const client = getAnthropic();
+  if (!client) return { safe: true }; // skip if no API key
+
+  const imageData = fs.readFileSync(filePath).toString('base64');
+  const mediaType = mimeType === 'image/jpg' ? 'image/jpeg' : mimeType;
+
+  try {
+    const resp = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 150,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageData } },
+          { type: 'text', text: 'You are a content moderator for a university campus website. Analyze this image and respond with ONLY a JSON object: {"safe": true} or {"safe": false, "reason": "brief reason"}. Reject if the image contains: nudity/sexual content, graphic violence/gore, hate symbols/slurs, political campaign material/propaganda, drugs/drug paraphernalia, weapons, spam/ads, or anything not appropriate for a public university website. A normal photo of a campus building, landscape, students, or campus life is safe.' }
+        ]
+      }]
+    });
+
+    const text = resp.content[0].text.trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return { safe: true };
+  } catch (e) {
+    console.error('Moderation check failed:', e.message);
+    return { safe: true }; // allow on error to not block uploads
+  }
+}
+
 // ── POST /api/building-photos ───────────────────
 // Upload a photo for a building (multipart/form-data with 'photo' file field)
 router.post('/building-photos', (req, res) => {
@@ -284,6 +316,24 @@ router.post('/building-photos', (req, res) => {
       if (!building || face === undefined) {
         return res.status(400).json({ error: 'building and face are required' });
       }
+
+      // Moderate uploaded image before accepting
+      if (req.file) {
+        const result = await moderateImage(req.file.path, req.file.mimetype);
+        if (!result.safe) {
+          fs.unlink(req.file.path, () => {});
+          return res.status(400).json({
+            error: 'Photo rejected: ' + (result.reason || 'Content not appropriate for a university website.')
+          });
+        }
+      }
+
+      // Quick text check on caption
+      if (caption && caption.length > 500) {
+        if (req.file) fs.unlink(req.file.path, () => {});
+        return res.status(400).json({ error: 'Caption too long (500 char max).' });
+      }
+
       const photoUrl = req.file
         ? `/uploads/photos/${req.file.filename}`
         : req.body.photoUrl;

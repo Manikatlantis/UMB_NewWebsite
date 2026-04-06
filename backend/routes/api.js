@@ -9,6 +9,17 @@ const Visit         = require('../models/Visit');
 const ChatLog       = require('../models/ChatLog');
 const BuildingPhoto = require('../models/BuildingPhoto');
 
+// ── HTML sanitization ──
+function escapeHtml(str) {
+  if (!str) return str;
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── Multer config for photo uploads ──
 const photoStorage = multer.diskStorage({
   destination: path.join(__dirname, '..', 'uploads', 'photos'),
@@ -341,9 +352,9 @@ router.post('/building-photos', (req, res) => {
         return res.status(400).json({ error: 'photo file or photoUrl is required' });
       }
       const photo = await BuildingPhoto.create({
-        building, face: Number(face), floor: Number(floor || 0), col: Number(col || 0),
-        photoUrl, caption: caption || '', season: season || '',
-        uploadedBy: uploadedBy || 'Anonymous', status: 'approved'
+        building: escapeHtml(building), face: Number(face), floor: Number(floor || 0), col: Number(col || 0),
+        photoUrl, caption: escapeHtml(caption) || '', season: escapeHtml(season) || '',
+        uploadedBy: escapeHtml(uploadedBy) || 'Anonymous', status: 'approved'
       });
       res.status(201).json({ photo });
     } catch (e) {

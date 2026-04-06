@@ -612,6 +612,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <li onclick="setLanguage('fr')"><span class="lm-flag">🇫🇷</span><span class="lm-name">Français</span><span class="lm-check">✓</span></li>
       <li onclick="setLanguage('hi')"><span class="lm-flag">🇮🇳</span><span class="lm-name">हिन्दी</span><span class="lm-check">✓</span></li>
       <li onclick="setLanguage('bn')"><span class="lm-flag">🇧🇩</span><span class="lm-name">বাংলা</span><span class="lm-check">✓</span></li>
+      <li onclick="setLanguage('de')"><span class="lm-flag">🇩🇪</span><span class="lm-name">Deutsch</span><span class="lm-check">✓</span></li>
     </ul>
   </div>
   <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="nav-apply" data-i18n="apply_now">Apply Now</a>
@@ -6687,6 +6688,59 @@ window.addEventListener('resize', function() {
       mini_game: 'মিনি-গেম',
       fish_harbor: '<em>হারবারে</em> মাছ ধরো',
       fish_desc: 'বোস্টন হারবারে তোমার লাইন ফেলো! <strong style="color:var(--teal)">অ্যারো কী</strong> দিয়ে চলো, <strong style="color:var(--teal)">স্পেস</strong> চেপে ফেলো ও টানো। এগিয়ে যেতে প্রতিটি তরঙ্গে যথেষ্ট মাছ ধরো।'
+    },
+    de: {
+      hero_kicker: 'Bostons führende öffentliche Forschungsuniversität am Hafen',
+      hero_h1: '<span class="dim">Wo</span> <span class="glow">Brillanz</span><br><span class="dim">auf die</span> Zeit trifft',
+      hero_sub: 'UMass Boston — eine Carnegie R1-Forschungsuniversität auf einer 120 Hektar großen Halbinsel am Hafen, die jedes Jahr 16.000 Leben verändert.',
+      explore_programs: 'Programme entdecken',
+      apply_semester: 'Bewerben Herbst 2026/Frühjahr 2027',
+      explore_3d: 'Campus 3D erkunden →',
+      shuttle_tracker: 'Live Shuttle-Tracker →',
+      campus_tour: 'Campus-Tour →',
+      apply_now: 'Jetzt bewerben',
+      most_diverse: 'Vielfältigste in Neuengland',
+      our_story: 'Unsere Geschichte',
+      about_title: 'Ein Leuchtturm am <em>Bostoner Hafen</em>',
+      about_desc: 'Gegründet 1964, ist UMass Boston die einzige öffentliche Forschungsuniversität in der Stadt Boston — eine Ankerinstitution mit erstklassiger Bildung und Forschung.',
+      about_b1: 'Carnegie R1-Klassifikation — höchste Stufe der Doktorandenforschung',
+      about_b2: 'Auf einer 120 Hektar großen Halbinsel an Columbia Point, umgeben vom Hafen',
+      about_b3: '10 Fakultäten für Wissenschaft, Kunst, Wirtschaft, Gesundheit und Politik',
+      about_b4: 'Über 100 Mio. $ jährliche Forschungsförderung',
+      about_b5: 'Neben der JFK Presidential Library & Museum',
+      discover_mission: 'Unsere Mission entdecken',
+      academic_excellence: 'Akademische Exzellenz',
+      pathways_title: '200+ Wege in die <em>Zukunft</em>',
+      latest_umb: 'Neuigkeiten von UMB',
+      news_title: 'Nachrichten & <em>Wirkung</em>',
+      whats_happening: 'Was passiert',
+      events_title: 'Campus-<em>Veranstaltungen</em>',
+      campus_lens: 'Der Campus durch Ihre Linse',
+      gallery_title: 'Foto-<em>Galerie</em>',
+      ai_assistant: 'KI-Assistent',
+      ask_harbor: 'Frag <em>Harbor</em>',
+      harbor_desc: 'Ihr intelligenter Ratgeber für alles rund um UMass Boston — Zulassung, Programme, Forschung, Campusleben und mehr.',
+      nav_academics: 'Studium',
+      nav_admissions: 'Zulassung',
+      nav_research: 'Forschung',
+      nav_campus_life: 'Campusleben',
+      nav_events: 'Veranstaltungen',
+      nav_gallery: 'Galerie',
+      nav_play: 'Spielen',
+      nav_ask_harbor: 'Frag Harbor',
+      all_programs: 'Alle Programme →',
+      drag_orbs: 'Ziehe die Kugeln — beobachte den Textfluss',
+      prog_science: 'Naturwissenschaften & Mathematik',
+      prog_arts: 'Geisteswissenschaften',
+      prog_business: 'Wirtschaft',
+      prog_nursing: 'Pflege & Gesundheit',
+      prog_cs: 'Informatik',
+      prog_education: 'Bildung',
+      prog_policy: 'Öffentliche Politik',
+      prog_grad: 'Graduiertenforschung',
+      mini_game: 'Mini-Spiel',
+      fish_harbor: 'Angel im <em>Hafen</em>',
+      fish_desc: 'Wirf deine Angel in den Bostoner Hafen! Bewege dich mit den <strong style="color:var(--teal)">Pfeiltasten</strong>, drücke <strong style="color:var(--teal)">Leertaste</strong> zum Werfen und Einholen. Fange in jeder Welle genug Fische, um weiterzukommen.'
     }
   };
 
@@ -6717,7 +6771,7 @@ window.addEventListener('resize', function() {
       li.classList.remove('active');
     });
     var items = document.querySelectorAll('#lang-menu li');
-    var langOrder = ['en','es','zh','vi','ht','pt','ar','fr','hi','bn'];
+    var langOrder = ['en','es','zh','vi','ht','pt','ar','fr','hi','bn','de'];
     var idx = langOrder.indexOf(lang);
     if(idx >= 0 && items[idx]) items[idx].classList.add('active');
 

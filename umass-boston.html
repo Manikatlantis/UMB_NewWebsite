@@ -407,11 +407,17 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 .bp-photo-grid.single-photo .bp-photo-slot{aspect-ratio:16/9;}
 
 /* ── PHOTO LIGHTBOX ── */
-#photo-lightbox{position:fixed;inset:0;background:rgba(0,5,12,0.95);z-index:1002;display:none;align-items:center;justify-content:center;flex-direction:column;}
+#photo-lightbox{position:fixed;inset:0;background:rgba(0,5,12,0.95);z-index:1002;display:none;align-items:center;justify-content:center;flex-direction:column;cursor:zoom-out;}
 #photo-lightbox.open{display:flex;}
-.lb-close{position:absolute;top:20px;right:20px;width:40px;height:40px;background:rgba(0,212,184,0.1);border:1px solid rgba(0,212,184,0.2);color:var(--teal);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;}
-.lb-content{max-width:80vw;max-height:80vh;display:flex;align-items:center;justify-content:center;}
-.lb-content img{max-width:100%;max-height:80vh;object-fit:contain;}
+.lb-close{position:absolute;top:20px;right:20px;width:44px;height:44px;background:rgba(238,243,248,0.08);border:1px solid rgba(238,243,248,0.15);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;border-radius:50%;backdrop-filter:blur(8px);transition:all 0.3s;z-index:10;}
+.lb-close:hover{background:rgba(238,243,248,0.15);border-color:rgba(238,243,248,0.3);}
+.lb-wrap{position:relative;max-width:90vw;max-height:90vh;display:flex;align-items:center;justify-content:center;cursor:default;}
+.lb-wrap img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:4px;display:block;}
+.lb-info{position:absolute;bottom:0;left:0;right:0;padding:24px 28px 20px;background:linear-gradient(transparent,rgba(0,5,12,0.85) 40%,rgba(0,5,12,0.95));border-radius:0 0 4px 4px;pointer-events:none;}
+.lb-building{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:0.5px;text-shadow:0 2px 8px rgba(0,0,0,0.6);}
+.lb-caption{font-family:'Space Mono',monospace;font-size:12px;color:rgba(238,243,248,0.6);margin-top:6px;letter-spacing:0.5px;}
+.lb-season{display:inline-block;margin-left:10px;padding:2px 8px;background:rgba(0,180,220,0.15);border:1px solid rgba(0,180,220,0.3);border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:rgba(0,210,240,0.8);vertical-align:middle;}
+.lb-meta{font-family:'Space Mono',monospace;font-size:10px;color:rgba(238,243,248,0.3);margin-top:8px;letter-spacing:0.5px;}
 .lb-msg{font-family:'Space Mono',monospace;font-size:12px;color:rgba(238,243,248,0.5);letter-spacing:2px;text-align:center;padding:20px;}
 
 /* ══════════════════════════════════════════════════
@@ -624,9 +630,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 </div>
 
 <!-- ─── PHOTO LIGHTBOX ─── -->
-<div id="photo-lightbox">
+<div id="photo-lightbox" onclick="if(event.target===this)closeLightbox()">
   <button class="lb-close" onclick="closeLightbox()">&times;</button>
-  <div class="lb-content" id="lb-content">
+  <div class="lb-wrap" id="lb-content">
     <div class="lb-msg">No photo yet — check back soon!</div>
   </div>
 </div>
@@ -1908,7 +1914,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       .then(res=>{
         if(res.photos&&res.photos.length>0){
           const p=res.photos[0];
-          content.innerHTML=`<img src="${p.photoUrl}" alt="${data.building} window photo">`;
+          content.innerHTML=`<img src="${p.photoUrl}" alt="${data.building} window photo"><div class="lb-info"><div class="lb-building">${data.building}</div>${p.caption?'<div class="lb-caption">'+p.caption+'</div>':''}</div>`;
         }
       })
       .catch(()=>{});
@@ -2074,7 +2080,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         slot.addEventListener('click',function(){
           var lb=document.getElementById('photo-lightbox');
           var lbContent=document.getElementById('lb-content');
-          lbContent.innerHTML='<img src="'+url+'" alt="'+data.name+'" style="max-width:100%;max-height:80vh;border-radius:6px;">';
+          lbContent.innerHTML='<img src="'+url+'" alt="'+data.name+'">'
+            +'<div class="lb-info"><div class="lb-building">'+data.name+'</div></div>';
           lb.classList.add('open');
         });
         grid.appendChild(slot);
@@ -5369,8 +5376,13 @@ function loadGallery(){
           + (p.caption ? '<div class="gi-caption">'+p.caption+'</div>' : '')+'</div>';
         item.addEventListener('click', function(){
           var lb = document.getElementById('photo-lightbox');
-          document.getElementById('lb-content').innerHTML = '<img src="'+p.photoUrl+'" alt="'+p.building+'" style="max-width:100%;max-height:80vh;border-radius:6px;">'
-            + '<div style="text-align:center;margin-top:12px;font-size:13px;color:rgba(238,243,248,0.6);">'+p.building+(p.caption?' — '+p.caption:'')+'</div>';
+          var viewNames = {0:'Front',1:'Back',2:'Left Side',3:'Right Side',4:'Inside'};
+          var viewLabel = viewNames[p.face] || '';
+          var seasonHtml = p.season ? '<span class="lb-season">'+p.season+'</span>' : '';
+          var captionHtml = p.caption ? '<div class="lb-caption">'+p.caption+'</div>' : '';
+          var metaHtml = '<div class="lb-meta">'+(viewLabel?viewLabel+' view':'')+(p.uploadedBy&&p.uploadedBy!=='Anonymous'?' · Photo by '+p.uploadedBy:'')+'</div>';
+          document.getElementById('lb-content').innerHTML = '<img src="'+p.photoUrl+'" alt="'+p.building+'">'
+            + '<div class="lb-info"><div class="lb-building">'+p.building+seasonHtml+'</div>'+captionHtml+metaHtml+'</div>';
           lb.classList.add('open');
         });
         grid.appendChild(item);

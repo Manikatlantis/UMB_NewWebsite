@@ -1003,19 +1003,19 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
       <div class="typing-dots"><span></span><span></span><span></span></div>
     </div>
     <div class="quick-chips">
-      <button class="qchip" onclick="sendQ(this)">How do I apply?</button>
-      <button class="qchip" onclick="sendQ(this)">Tuition & financial aid</button>
-      <button class="qchip" onclick="sendQ(this)">Best research programs</button>
-      <button class="qchip" onclick="sendQ(this)">Campus housing</button>
-      <button class="qchip" onclick="sendQ(this)">Graduate school</button>
-      <button class="qchip" onclick="sendQ(this)">Student life & clubs</button>
-      <button class="qchip" onclick="sendQ(this)">Give me a campus tour</button>
-      <button class="qchip" onclick="sendQ(this)">Show me the science building</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip1">How do I apply?</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip2">Tuition & financial aid</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip3">Best research programs</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip4">Campus housing</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip5">Graduate school</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip6">Student life & clubs</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip7">Give me a campus tour</button>
+      <button class="qchip" onclick="sendQ(this)" data-i18n="chip8">Show me the science building</button>
     </div>
     <div class="bot-input">
-      <input type="text" id="chat-in" placeholder="Ask me anything about UMass Boston…"/>
+      <input type="text" id="chat-in" data-i18n-placeholder="chat_placeholder" placeholder="Ask me anything about UMass Boston…"/>
       <button class="btn-mic" id="btn-mic" onclick="toggleVoiceInput()" title="Voice input">&#127908;</button>
-      <button onclick="sendMsg()">Send</button>
+      <button onclick="sendMsg()" data-i18n="send_btn">Send</button>
     </div>
   </div>
 </section>
@@ -1025,14 +1025,14 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="foot-grid">
     <div class="foot-brand">
       <img src="Umass-Boston-Logo-01.png" alt="UMass Boston" style="height:80px;width:auto;filter:brightness(0) invert(1);opacity:0.9;margin-bottom:12px;">
-      <p>100 Morrissey Boulevard, Boston, MA 02125. Massachusetts' only public research university in the City of Boston, serving the Commonwealth since 1964.</p>
+      <p data-i18n="foot_desc">100 Morrissey Boulevard, Boston, MA 02125. Massachusetts' only public research university in the City of Boston, serving the Commonwealth since 1964.</p>
     </div>
-    <div class="foot-col"><h5>Academics</h5><a href="https://www.umb.edu/academics/" target="_blank">All Programs</a><a href="https://www.umb.edu/academics/graduate/" target="_blank">Graduate School</a><a href="https://www.umb.edu/research/" target="_blank">Research</a><a href="https://www.umb.edu/library/" target="_blank">Healey Library</a></div>
-    <div class="foot-col"><h5>Admissions</h5><a href="https://www.umb.edu/admissions/" target="_blank">Undergrad Admissions</a><a href="https://www.umb.edu/admissions/graduate/" target="_blank">Graduate Admissions</a><a href="https://www.umb.edu/admissions/financial-aid/" target="_blank">Financial Aid</a><a href="https://www.umb.edu/admissions/visit/" target="_blank">Visit Campus</a></div>
-    <div class="foot-col"><h5>Campus</h5><a href="https://www.umb.edu/campus-life/" target="_blank">Student Life</a><a href="https://www.umb.edu/campus-life/housing/" target="_blank">Housing</a><a href="https://www.umb.edu/athletics/" target="_blank">Athletics</a><a href="https://www.umb.edu/about/contact/" target="_blank">Contact Us</a></div>
+    <div class="foot-col"><h5 data-i18n="foot_academics">Academics</h5><a href="https://www.umb.edu/academics/" target="_blank" data-i18n="foot_all_programs">All Programs</a><a href="https://www.umb.edu/academics/graduate/" target="_blank" data-i18n="foot_grad_school">Graduate School</a><a href="https://www.umb.edu/research/" target="_blank" data-i18n="foot_research">Research</a><a href="https://www.umb.edu/library/" target="_blank" data-i18n="foot_library">Healey Library</a></div>
+    <div class="foot-col"><h5 data-i18n="foot_admissions">Admissions</h5><a href="https://www.umb.edu/admissions/" target="_blank" data-i18n="foot_undergrad">Undergrad Admissions</a><a href="https://www.umb.edu/admissions/graduate/" target="_blank" data-i18n="foot_grad_adm">Graduate Admissions</a><a href="https://www.umb.edu/admissions/financial-aid/" target="_blank" data-i18n="foot_finaid">Financial Aid</a><a href="https://www.umb.edu/admissions/visit/" target="_blank" data-i18n="foot_visit">Visit Campus</a></div>
+    <div class="foot-col"><h5 data-i18n="foot_campus">Campus</h5><a href="https://www.umb.edu/campus-life/" target="_blank" data-i18n="foot_student_life">Student Life</a><a href="https://www.umb.edu/campus-life/housing/" target="_blank" data-i18n="foot_housing">Housing</a><a href="https://www.umb.edu/athletics/" target="_blank" data-i18n="foot_athletics">Athletics</a><a href="https://www.umb.edu/about/contact/" target="_blank" data-i18n="foot_contact">Contact Us</a></div>
   </div>
   <div class="foot-bottom">
-    <p>© 2025 University of Massachusetts Boston. Concept page — <a href="https://www.umb.edu" target="_blank">visit umb.edu for official site</a></p>
+    <p data-i18n-html="foot_copy">© 2025 University of Massachusetts Boston. Concept page — <a href="https://www.umb.edu" target="_blank">visit umb.edu for official site</a></p>
 </div>
 </footer>
 
@@ -6271,7 +6271,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'Investigación de Posgrado',
       mini_game: 'Mini-Juego',
       fish_harbor: 'Pesca en el <em>Puerto</em>',
-      fish_desc: '¡Lanza tu línea al Puerto de Boston! Muévete con las <strong style="color:var(--teal)">Flechas</strong>, presiona <strong style="color:var(--teal)">Espacio</strong> para lanzar y recoger. Atrapa suficientes peces en cada ola para avanzar.'
+      fish_desc: '¡Lanza tu línea al Puerto de Boston! Muévete con las <strong style="color:var(--teal)">Flechas</strong>, presiona <strong style="color:var(--teal)">Espacio</strong> para lanzar y recoger. Atrapa suficientes peces en cada ola para avanzar.',
+      chip1: '¿Cómo me inscribo?', chip2: 'Matrícula y ayuda financiera', chip3: 'Mejores programas de investigación', chip4: 'Vivienda en el campus', chip5: 'Escuela de posgrado', chip6: 'Vida estudiantil y clubes', chip7: 'Dame un recorrido por el campus', chip8: 'Muéstrame el edificio de ciencias',
+      chat_placeholder: 'Pregúntame lo que quieras sobre UMass Boston…', send_btn: 'Enviar',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. La única universidad pública de investigación en la ciudad de Boston, sirviendo a la Commonwealth desde 1964.',
+      foot_academics: 'Académicos', foot_all_programs: 'Todos los Programas', foot_grad_school: 'Escuela de Posgrado', foot_research: 'Investigación', foot_library: 'Biblioteca Healey',
+      foot_admissions: 'Admisiones', foot_undergrad: 'Admisiones de Pregrado', foot_grad_adm: 'Admisiones de Posgrado', foot_finaid: 'Ayuda Financiera', foot_visit: 'Visitar el Campus',
+      foot_campus: 'Campus', foot_student_life: 'Vida Estudiantil', foot_housing: 'Vivienda', foot_athletics: 'Atletismo', foot_contact: 'Contáctenos',
+      foot_copy: '© 2025 Universidad de Massachusetts Boston. Página concepto — <a href="https://www.umb.edu" target="_blank">visita umb.edu para el sitio oficial</a>'
     },
     zh: {
       hero_kicker: '波士顿港首屈一指的公立研究型大学',
@@ -6327,7 +6334,14 @@ window.addEventListener('resize', function() {
       prog_grad: '研究生研究',
       mini_game: '小游戏',
       fish_harbor: '在<em>港口</em>钓鱼',
-      fish_desc: '在波士顿港抛下你的鱼线！用<strong style="color:var(--teal)">方向键</strong>移动，按<strong style="color:var(--teal)">空格</strong>抛竿和收线。每波抓够鱼才能过关。'
+      fish_desc: '在波士顿港抛下你的鱼线！用<strong style="color:var(--teal)">方向键</strong>移动，按<strong style="color:var(--teal)">空格</strong>抛竿和收线。每波抓够鱼才能过关。',
+      chip1: '如何申请？', chip2: '学费和助学金', chip3: '最佳研究项目', chip4: '校园住宿', chip5: '研究生院', chip6: '学生生活和社团', chip7: '带我参观校园', chip8: '给我看科学大楼',
+      chat_placeholder: '问我任何关于麻省大学波士顿分校的问题…', send_btn: '发送',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125。波士顿市唯一的公立研究型大学，自1964年起服务于联邦。',
+      foot_academics: '学术', foot_all_programs: '所有项目', foot_grad_school: '研究生院', foot_research: '研究', foot_library: 'Healey图书馆',
+      foot_admissions: '招生', foot_undergrad: '本科招生', foot_grad_adm: '研究生招生', foot_finaid: '助学金', foot_visit: '参观校园',
+      foot_campus: '校园', foot_student_life: '学生生活', foot_housing: '住宿', foot_athletics: '体育', foot_contact: '联系我们',
+      foot_copy: '© 2025 麻省大学波士顿分校。概念页面 — <a href="https://www.umb.edu" target="_blank">访问umb.edu查看官方网站</a>'
     },
     vi: {
       hero_kicker: 'Đại Học Nghiên Cứu Công Lập Hàng Đầu Tại Cảng Boston',
@@ -6383,7 +6397,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'Nghiên Cứu Sau Đại Học',
       mini_game: 'Trò Chơi Nhỏ',
       fish_harbor: 'Câu Cá Ở <em>Cảng</em>',
-      fish_desc: 'Thả câu xuống Cảng Boston! Di chuyển bằng <strong style="color:var(--teal)">Phím Mũi Tên</strong>, nhấn <strong style="color:var(--teal)">Phím Cách</strong> để thả và kéo câu. Bắt đủ cá mỗi đợt để tiến lên.'
+      fish_desc: 'Thả câu xuống Cảng Boston! Di chuyển bằng <strong style="color:var(--teal)">Phím Mũi Tên</strong>, nhấn <strong style="color:var(--teal)">Phím Cách</strong> để thả và kéo câu. Bắt đủ cá mỗi đợt để tiến lên.',
+      chip1: 'Làm sao để nộp đơn?', chip2: 'Học phí và hỗ trợ tài chính', chip3: 'Chương trình nghiên cứu tốt nhất', chip4: 'Nhà ở trong khuôn viên', chip5: 'Trường sau đại học', chip6: 'Đời sống sinh viên và câu lạc bộ', chip7: 'Đưa tôi tham quan khuôn viên', chip8: 'Cho tôi xem tòa nhà khoa học',
+      chat_placeholder: 'Hỏi tôi bất cứ điều gì về UMass Boston…', send_btn: 'Gửi',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. Đại học nghiên cứu công lập duy nhất tại thành phố Boston, phục vụ Commonwealth từ năm 1964.',
+      foot_academics: 'Học thuật', foot_all_programs: 'Tất cả chương trình', foot_grad_school: 'Trường Sau đại học', foot_research: 'Nghiên cứu', foot_library: 'Thư viện Healey',
+      foot_admissions: 'Tuyển sinh', foot_undergrad: 'Tuyển sinh Đại học', foot_grad_adm: 'Tuyển sinh Sau đại học', foot_finaid: 'Hỗ trợ Tài chính', foot_visit: 'Tham quan',
+      foot_campus: 'Khuôn viên', foot_student_life: 'Đời sống Sinh viên', foot_housing: 'Nhà ở', foot_athletics: 'Thể thao', foot_contact: 'Liên hệ',
+      foot_copy: '© 2025 Đại học Massachusetts Boston. Trang khái niệm — <a href="https://www.umb.edu" target="_blank">truy cập umb.edu cho trang chính thức</a>'
     },
     ht: {
       hero_kicker: 'Inivèsite Rechèch Piblik Premye nan Pò Boston',
@@ -6439,7 +6460,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'Rechèch Gradye',
       mini_game: 'Mini-Jwèt',
       fish_harbor: 'Peche nan <em>Pò a</em>',
-      fish_desc: 'Voye liy ou nan Pò Boston! Deplase ak <strong style="color:var(--teal)">Flèch yo</strong>, peze <strong style="color:var(--teal)">Espas</strong> pou voye ak rale. Kenbe ase pwason chak vag pou avanse.'
+      fish_desc: 'Voye liy ou nan Pò Boston! Deplase ak <strong style="color:var(--teal)">Flèch yo</strong>, peze <strong style="color:var(--teal)">Espas</strong> pou voye ak rale. Kenbe ase pwason chak vag pou avanse.',
+      chip1: 'Kijan pou m aplike?', chip2: 'Frè ekolaj ak èd finansye', chip3: 'Pi bon pwogram rechèch', chip4: 'Lojman sou kanpis', chip5: 'Lekòl gradye', chip6: 'Lavi etidyan ak klib', chip7: 'Ban m yon vizit kanpis', chip8: 'Montre m bilding syans la',
+      chat_placeholder: 'Mande m nenpòt bagay sou UMass Boston…', send_btn: 'Voye',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. Sèl inivèsite rechèch piblik nan vil Boston, ki sèvi Commonwealth depi 1964.',
+      foot_academics: 'Akademik', foot_all_programs: 'Tout Pwogram', foot_grad_school: 'Lekòl Gradye', foot_research: 'Rechèch', foot_library: 'Bibliyotèk Healey',
+      foot_admissions: 'Admisyon', foot_undergrad: 'Admisyon Lisans', foot_grad_adm: 'Admisyon Gradye', foot_finaid: 'Èd Finansye', foot_visit: 'Vizite Kanpis',
+      foot_campus: 'Kanpis', foot_student_life: 'Lavi Etidyan', foot_housing: 'Lojman', foot_athletics: 'Atletik', foot_contact: 'Kontakte Nou',
+      foot_copy: '© 2025 Inivèsite Massachusetts Boston. Paj konsèp — <a href="https://www.umb.edu" target="_blank">vizite umb.edu pou sit ofisyèl la</a>'
     },
     pt: {
       hero_kicker: 'A Principal Universidade Pública de Pesquisa do Porto de Boston',
@@ -6495,7 +6523,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'Pesquisa de Pós-Graduação',
       mini_game: 'Mini-Jogo',
       fish_harbor: 'Pesque no <em>Porto</em>',
-      fish_desc: 'Lance sua linha no Porto de Boston! Mova com as <strong style="color:var(--teal)">Setas</strong>, pressione <strong style="color:var(--teal)">Espaço</strong> para lançar e recolher. Pegue peixes suficientes em cada onda para avançar.'
+      fish_desc: 'Lance sua linha no Porto de Boston! Mova com as <strong style="color:var(--teal)">Setas</strong>, pressione <strong style="color:var(--teal)">Espaço</strong> para lançar e recolher. Pegue peixes suficientes em cada onda para avançar.',
+      chip1: 'Como me inscrevo?', chip2: 'Mensalidade e ajuda financeira', chip3: 'Melhores programas de pesquisa', chip4: 'Moradia no campus', chip5: 'Pós-graduação', chip6: 'Vida estudantil e clubes', chip7: 'Faça um tour pelo campus', chip8: 'Mostre o prédio de ciências',
+      chat_placeholder: 'Pergunte qualquer coisa sobre a UMass Boston…', send_btn: 'Enviar',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. A única universidade pública de pesquisa na cidade de Boston, servindo a Commonwealth desde 1964.',
+      foot_academics: 'Acadêmico', foot_all_programs: 'Todos os Programas', foot_grad_school: 'Pós-Graduação', foot_research: 'Pesquisa', foot_library: 'Biblioteca Healey',
+      foot_admissions: 'Admissões', foot_undergrad: 'Admissões Graduação', foot_grad_adm: 'Admissões Pós-Graduação', foot_finaid: 'Ajuda Financeira', foot_visit: 'Visitar o Campus',
+      foot_campus: 'Campus', foot_student_life: 'Vida Estudantil', foot_housing: 'Moradia', foot_athletics: 'Esportes', foot_contact: 'Fale Conosco',
+      foot_copy: '© 2025 Universidade de Massachusetts Boston. Página conceito — <a href="https://www.umb.edu" target="_blank">visite umb.edu para o site oficial</a>'
     },
     ar: {
       hero_kicker: 'الجامعة البحثية العامة الرائدة في ميناء بوسطن',
@@ -6551,7 +6586,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'بحث الدراسات العليا',
       mini_game: 'لعبة صغيرة',
       fish_harbor: 'اصطد في <em>الميناء</em>',
-      fish_desc: 'ألقِ خيطك في ميناء بوسطن! تحرّك بـ<strong style="color:var(--teal)">مفاتيح الأسهم</strong>، اضغط <strong style="color:var(--teal)">مسافة</strong> للرمي والسحب. اصطد ما يكفي من الأسماك في كل موجة للتقدم.'
+      fish_desc: 'ألقِ خيطك في ميناء بوسطن! تحرّك بـ<strong style="color:var(--teal)">مفاتيح الأسهم</strong>، اضغط <strong style="color:var(--teal)">مسافة</strong> للرمي والسحب. اصطد ما يكفي من الأسماك في كل موجة للتقدم.',
+      chip1: 'كيف أتقدم؟', chip2: 'الرسوم والمساعدة المالية', chip3: 'أفضل برامج البحث', chip4: 'السكن الجامعي', chip5: 'الدراسات العليا', chip6: 'الحياة الطلابية والأندية', chip7: 'خذني في جولة بالحرم', chip8: 'أرني مبنى العلوم',
+      chat_placeholder: 'اسألني أي شيء عن جامعة ماساتشوستس بوسطن…', send_btn: 'إرسال',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. الجامعة البحثية العامة الوحيدة في مدينة بوسطن، تخدم الكومنولث منذ 1964.',
+      foot_academics: 'الأكاديميات', foot_all_programs: 'جميع البرامج', foot_grad_school: 'الدراسات العليا', foot_research: 'البحث', foot_library: 'مكتبة هيلي',
+      foot_admissions: 'القبول', foot_undergrad: 'قبول البكالوريوس', foot_grad_adm: 'قبول الدراسات العليا', foot_finaid: 'المساعدة المالية', foot_visit: 'زيارة الحرم',
+      foot_campus: 'الحرم الجامعي', foot_student_life: 'الحياة الطلابية', foot_housing: 'السكن', foot_athletics: 'الرياضة', foot_contact: 'اتصل بنا',
+      foot_copy: '© 2025 جامعة ماساتشوستس بوسطن. صفحة مفهومية — <a href="https://www.umb.edu" target="_blank">زُر umb.edu للموقع الرسمي</a>'
     },
     fr: {
       hero_kicker: 'La Première Université Publique de Recherche du Port de Boston',
@@ -6607,7 +6649,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'Recherche Supérieure',
       mini_game: 'Mini-Jeu',
       fish_harbor: 'Pêchez dans le <em>Port</em>',
-      fish_desc: 'Lancez votre ligne dans le Port de Boston ! Déplacez-vous avec les <strong style="color:var(--teal)">Flèches</strong>, appuyez sur <strong style="color:var(--teal)">Espace</strong> pour lancer et mouliner. Attrapez assez de poissons à chaque vague pour avancer.'
+      fish_desc: 'Lancez votre ligne dans le Port de Boston ! Déplacez-vous avec les <strong style="color:var(--teal)">Flèches</strong>, appuyez sur <strong style="color:var(--teal)">Espace</strong> pour lancer et mouliner. Attrapez assez de poissons à chaque vague pour avancer.',
+      chip1: 'Comment postuler ?', chip2: 'Frais de scolarité et aide financière', chip3: 'Meilleurs programmes de recherche', chip4: 'Logement sur le campus', chip5: 'École supérieure', chip6: 'Vie étudiante et clubs', chip7: 'Faites-moi visiter le campus', chip8: 'Montrez-moi le bâtiment des sciences',
+      chat_placeholder: 'Demandez-moi n\'importe quoi sur UMass Boston…', send_btn: 'Envoyer',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. La seule université publique de recherche de la ville de Boston, au service du Commonwealth depuis 1964.',
+      foot_academics: 'Académique', foot_all_programs: 'Tous les Programmes', foot_grad_school: 'École Supérieure', foot_research: 'Recherche', foot_library: 'Bibliothèque Healey',
+      foot_admissions: 'Admissions', foot_undergrad: 'Admissions Licence', foot_grad_adm: 'Admissions Master', foot_finaid: 'Aide Financière', foot_visit: 'Visiter le Campus',
+      foot_campus: 'Campus', foot_student_life: 'Vie Étudiante', foot_housing: 'Logement', foot_athletics: 'Sports', foot_contact: 'Nous Contacter',
+      foot_copy: '© 2025 Université du Massachusetts Boston. Page concept — <a href="https://www.umb.edu" target="_blank">visitez umb.edu pour le site officiel</a>'
     },
     hi: {
       hero_kicker: 'बोस्टन हार्बर का प्रमुख सार्वजनिक शोध विश्वविद्यालय',
@@ -6663,7 +6712,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'स्नातकोत्तर शोध',
       mini_game: 'मिनी-गेम',
       fish_harbor: '<em>बंदरगाह</em> में मछली पकड़ो',
-      fish_desc: 'बोस्टन हार्बर में अपनी लाइन डालें! <strong style="color:var(--teal)">एरो कीज़</strong> से चलें, <strong style="color:var(--teal)">स्पेस</strong> दबाकर डालें और खींचें। आगे बढ़ने के लिए हर लहर में पर्याप्त मछलियाँ पकड़ें।'
+      fish_desc: 'बोस्टन हार्बर में अपनी लाइन डालें! <strong style="color:var(--teal)">एरो कीज़</strong> से चलें, <strong style="color:var(--teal)">स्पेस</strong> दबाकर डालें और खींचें। आगे बढ़ने के लिए हर लहर में पर्याप्त मछलियाँ पकड़ें।',
+      chip1: 'मैं कैसे आवेदन करूँ?', chip2: 'ट्यूशन और वित्तीय सहायता', chip3: 'सर्वश्रेष्ठ शोध कार्यक्रम', chip4: 'कैंपस आवास', chip5: 'स्नातकोत्तर स्कूल', chip6: 'छात्र जीवन और क्लब', chip7: 'मुझे कैंपस टूर दें', chip8: 'मुझे विज्ञान भवन दिखाएं',
+      chat_placeholder: 'UMass Boston के बारे में कुछ भी पूछें…', send_btn: 'भेजें',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125। बोस्टन शहर का एकमात्र सार्वजनिक शोध विश्वविद्यालय, 1964 से Commonwealth की सेवा में।',
+      foot_academics: 'शैक्षणिक', foot_all_programs: 'सभी कार्यक्रम', foot_grad_school: 'स्नातकोत्तर स्कूल', foot_research: 'अनुसंधान', foot_library: 'Healey पुस्तकालय',
+      foot_admissions: 'प्रवेश', foot_undergrad: 'स्नातक प्रवेश', foot_grad_adm: 'स्नातकोत्तर प्रवेश', foot_finaid: 'वित्तीय सहायता', foot_visit: 'कैंपस देखें',
+      foot_campus: 'कैंपस', foot_student_life: 'छात्र जीवन', foot_housing: 'आवास', foot_athletics: 'खेल', foot_contact: 'संपर्क करें',
+      foot_copy: '© 2025 मैसाचुसेट्स विश्वविद्यालय बोस्टन। कॉन्सेप्ट पेज — <a href="https://www.umb.edu" target="_blank">आधिकारिक साइट के लिए umb.edu पर जाएं</a>'
     },
     bn: {
       hero_kicker: 'বোস্টন হারবারের প্রধান পাবলিক গবেষণা বিশ্ববিদ্যালয়',
@@ -6719,7 +6775,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'স্নাতকোত্তর গবেষণা',
       mini_game: 'মিনি-গেম',
       fish_harbor: '<em>হারবারে</em> মাছ ধরো',
-      fish_desc: 'বোস্টন হারবারে তোমার লাইন ফেলো! <strong style="color:var(--teal)">অ্যারো কী</strong> দিয়ে চলো, <strong style="color:var(--teal)">স্পেস</strong> চেপে ফেলো ও টানো। এগিয়ে যেতে প্রতিটি তরঙ্গে যথেষ্ট মাছ ধরো।'
+      fish_desc: 'বোস্টন হারবারে তোমার লাইন ফেলো! <strong style="color:var(--teal)">অ্যারো কী</strong> দিয়ে চলো, <strong style="color:var(--teal)">স্পেস</strong> চেপে ফেলো ও টানো। এগিয়ে যেতে প্রতিটি তরঙ্গে যথেষ্ট মাছ ধরো।',
+      chip1: 'কীভাবে আবেদন করব?', chip2: 'টিউশন ও আর্থিক সহায়তা', chip3: 'সেরা গবেষণা প্রোগ্রাম', chip4: 'ক্যাম্পাস আবাসন', chip5: 'স্নাতকোত্তর স্কুল', chip6: 'ছাত্রজীবন ও ক্লাব', chip7: 'ক্যাম্পাস ট্যুর দিন', chip8: 'বিজ্ঞান ভবন দেখান',
+      chat_placeholder: 'UMass Boston সম্পর্কে যেকোনো কিছু জিজ্ঞাসা করুন…', send_btn: 'পাঠান',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125। বোস্টন শহরের একমাত্র পাবলিক গবেষণা বিশ্ববিদ্যালয়, ১৯৬৪ সাল থেকে কমনওয়েলথের সেবায়।',
+      foot_academics: 'একাডেমিক', foot_all_programs: 'সকল প্রোগ্রাম', foot_grad_school: 'স্নাতকোত্তর স্কুল', foot_research: 'গবেষণা', foot_library: 'Healey লাইব্রেরি',
+      foot_admissions: 'ভর্তি', foot_undergrad: 'স্নাতক ভর্তি', foot_grad_adm: 'স্নাতকোত্তর ভর্তি', foot_finaid: 'আর্থিক সহায়তা', foot_visit: 'ক্যাম্পাস দেখুন',
+      foot_campus: 'ক্যাম্পাস', foot_student_life: 'ছাত্রজীবন', foot_housing: 'আবাসন', foot_athletics: 'খেলাধুলা', foot_contact: 'যোগাযোগ',
+      foot_copy: '© ২০২৫ ম্যাসাচুসেটস বিশ্ববিদ্যালয় বোস্টন। কনসেপ্ট পেজ — <a href="https://www.umb.edu" target="_blank">অফিসিয়াল সাইটের জন্য umb.edu দেখুন</a>'
     },
     de: {
       hero_kicker: 'Bostons führende öffentliche Forschungsuniversität am Hafen',
@@ -6775,7 +6838,14 @@ window.addEventListener('resize', function() {
       prog_grad: 'Graduiertenforschung',
       mini_game: 'Mini-Spiel',
       fish_harbor: 'Angel im <em>Hafen</em>',
-      fish_desc: 'Wirf deine Angel in den Bostoner Hafen! Bewege dich mit den <strong style="color:var(--teal)">Pfeiltasten</strong>, drücke <strong style="color:var(--teal)">Leertaste</strong> zum Werfen und Einholen. Fange in jeder Welle genug Fische, um weiterzukommen.'
+      fish_desc: 'Wirf deine Angel in den Bostoner Hafen! Bewege dich mit den <strong style="color:var(--teal)">Pfeiltasten</strong>, drücke <strong style="color:var(--teal)">Leertaste</strong> zum Werfen und Einholen. Fange in jeder Welle genug Fische, um weiterzukommen.',
+      chip1: 'Wie bewerbe ich mich?', chip2: 'Studiengebühren und Finanzhilfe', chip3: 'Beste Forschungsprogramme', chip4: 'Campuswohnungen', chip5: 'Graduiertenschule', chip6: 'Studentenleben und Clubs', chip7: 'Zeig mir eine Campustour', chip8: 'Zeig mir das Wissenschaftsgebäude',
+      chat_placeholder: 'Fragen Sie mich alles über UMass Boston…', send_btn: 'Senden',
+      foot_desc: '100 Morrissey Boulevard, Boston, MA 02125. Die einzige öffentliche Forschungsuniversität in der Stadt Boston, im Dienst des Commonwealth seit 1964.',
+      foot_academics: 'Akademisch', foot_all_programs: 'Alle Programme', foot_grad_school: 'Graduiertenschule', foot_research: 'Forschung', foot_library: 'Healey-Bibliothek',
+      foot_admissions: 'Zulassung', foot_undergrad: 'Bachelor-Zulassung', foot_grad_adm: 'Master-Zulassung', foot_finaid: 'Finanzhilfe', foot_visit: 'Campus besuchen',
+      foot_campus: 'Campus', foot_student_life: 'Studentenleben', foot_housing: 'Wohnheim', foot_athletics: 'Sport', foot_contact: 'Kontakt',
+      foot_copy: '© 2025 Universität von Massachusetts Boston. Konzeptseite — <a href="https://www.umb.edu" target="_blank">besuchen Sie umb.edu für die offizielle Seite</a>'
     }
   };
 
@@ -6788,6 +6858,9 @@ window.addEventListener('resize', function() {
     });
     document.querySelectorAll('[data-i18n-html]').forEach(function(el){
       originals[el.getAttribute('data-i18n-html')] = el.innerHTML;
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+      originals[el.getAttribute('data-i18n-placeholder')] = el.placeholder;
     });
   }
   storeOriginals();
@@ -6835,6 +6908,10 @@ window.addEventListener('resize', function() {
         var key = el.getAttribute('data-i18n-html');
         if(originals[key]) el.innerHTML = originals[key];
       });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+        var key = el.getAttribute('data-i18n-placeholder');
+        if(originals[key]) el.placeholder = originals[key];
+      });
       document.documentElement.dir = 'ltr';
       if(window.updatePretextLang) window.updatePretextLang(PRETEXT_EN);
       return;
@@ -6850,6 +6927,10 @@ window.addEventListener('resize', function() {
     document.querySelectorAll('[data-i18n-html]').forEach(function(el){
       var key = el.getAttribute('data-i18n-html');
       if(dict[key]) el.innerHTML = dict[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){
+      var key = el.getAttribute('data-i18n-placeholder');
+      if(dict[key]) el.placeholder = dict[key];
     });
 
     // RTL support for Arabic

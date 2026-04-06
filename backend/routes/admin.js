@@ -2,7 +2,7 @@ const express    = require('express');
 const router     = express.Router();
 const jwt        = require('jsonwebtoken');
 const bcrypt     = require('bcryptjs');
-const { authenticator } = require('otplib');
+const otplib       = require('otplib');
 const QRCode     = require('qrcode');
 const fs         = require('fs');
 const path       = require('path');
@@ -84,10 +84,10 @@ router.post('/setup', async (req, res) => {
   }
 
   const hash = await bcrypt.hash(passphrase, 12);
-  const totpSecret = authenticator.generateSecret();
+  const totpSecret = otplib.generateSecret();
 
   // Generate QR code for Google Authenticator
-  const otpauthUrl = authenticator.keyuri('admin', TOTP_ISSUER, totpSecret);
+  const otpauthUrl = otplib.generateURI({ issuer: TOTP_ISSUER, accountName: 'admin', secret: totpSecret });
   const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
 
   // Save but mark setup as incomplete until TOTP is verified
@@ -108,8 +108,8 @@ router.post('/verify-setup', (req, res) => {
   }
 
   const { code } = req.body;
-  const valid = authenticator.verify({ token: code, secret: secrets.totpSecret });
-  if (!valid) {
+  const result = otplib.verifySync({ token: code, secret: secrets.totpSecret });
+  if (!result || !result.valid) {
     return res.status(400).json({ error: 'Invalid code. Try again.' });
   }
 
@@ -145,8 +145,8 @@ router.post('/login', async (req, res) => {
   }
 
   // Verify TOTP
-  const totpValid = authenticator.verify({ token: totpCode, secret: secrets.totpSecret });
-  if (!totpValid) {
+  const totpResult = otplib.verifySync({ token: totpCode, secret: secrets.totpSecret });
+  if (!totpResult || !totpResult.valid) {
     recordFailedAttempt(ip);
     return res.status(401).json({ error: 'Invalid credentials.' });
   }

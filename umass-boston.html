@@ -167,6 +167,8 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 @keyframes beacon-glow{0%,100%{opacity:0.75;}50%{opacity:1;}}
 @keyframes beacon-wave{0%,100%{transform:rotate(0deg);}50%{transform:rotate(-35deg);}}
 @keyframes beacon-bounce{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-6px) scale(1.08);}}
+@keyframes beacon-attention{0%{transform:scale(1);}15%{transform:scale(1.35);}30%{transform:scale(1.25);}50%{transform:scale(1.3);}100%{transform:scale(1);}}
+#beacon-mascot.attention{animation:beacon-attention 1.2s ease-in-out;z-index:25;}
 
 /* ── BUS LABELS (HTML overlays) ── */
 .bus-label{position:absolute;pointer-events:none;z-index:15;transform:translate(-50%,-100%);white-space:nowrap;padding:3px 8px;background:rgba(0,16,48,0.92);border:1px solid rgba(245,166,35,0.5);border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
@@ -621,8 +623,9 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <svg viewBox="0 0 80 120" width="80" height="120" xmlns="http://www.w3.org/2000/svg">
       <!-- Light beam (behind) -->
       <g class="beacon-beam">
-        <polygon points="32,24 48,24 72,-20 8,-20" fill="rgba(245,166,35,0.12)"/>
-        <polygon points="35,24 45,24 60,-10 20,-10" fill="rgba(245,166,35,0.08)"/>
+        <polygon points="28,24 52,24 80,-30 0,-30" fill="rgba(245,186,65,0.18)"/>
+        <polygon points="32,24 48,24 68,-20 12,-20" fill="rgba(245,200,80,0.25)"/>
+        <polygon points="36,24 44,24 56,-10 24,-10" fill="rgba(255,220,100,0.3)"/>
       </g>
       <!-- Base/foundation -->
       <rect x="18" y="95" width="44" height="10" rx="5" fill="#0a3d6b"/>
@@ -4315,33 +4318,155 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var bubbleEl = document.getElementById('beacon-bubble');
       var factEl   = document.getElementById('beacon-fact-text');
       var beaconTimer = null, bubbleTimer = null, factIndex = 0, dismissed = false;
+      var lastCommentedBuilding = null, viewCheckTimer = null;
 
+      // General facts (used when no building is in view)
       var FACTS = [
         "I'm Beacon, UMass Boston's mascot! Welcome to Columbia Point!",
         "This 120-acre peninsula was once Boston's largest landfill. Look at it now!",
         "The Edward M. Kennedy Institute for the U.S. Senate is right on our campus.",
         "UMass Boston is the only public research university in the Boston area.",
-        "The JFK Presidential Library and Museum is our next-door neighbor!",
         "Over 16,000 students from 150+ countries study here each year.",
         "We achieved Carnegie R1 'Very High Research Activity' status. Big deal!",
-        "The Integrated Sciences Complex has one of the largest bio labs in New England.",
         "Boston Harbor was once so polluted it was a national joke. Now it's one of the cleanest!",
         "UMass Boston was founded in 1964 as part of the UMass system.",
         "Our harborwalk stretches over 1 mile along the waterfront. Great for walks!",
-        "Healey Library has 600,000+ volumes and a spectacular harbor view from the 11th floor.",
         "The campus was originally downtown on Arlington Street before moving here in 1974.",
         "We're designated as an AANAPISI \u2014 Asian American and Native American Pacific Islander-Serving Institution.",
         "Dorchester Bay surrounds us on three sides. One of the most scenic urban campuses in the U.S.!",
         "The Nantucket Field Station lets students do marine biology research on the island.",
         "U.S. News ranks us a top university for social mobility.",
-        "University Hall opened in 2015 \u2014 it's the largest academic building in Massachusetts!",
-        "You can see the Boston skyline, Thompson Island, and planes landing at Logan from right here!",
         "The Campus Center is LEED-certified. We're green and we're proud!"
       ];
+
+      // Contextual comments per building (triggered when user looks at them)
+      var BUILDING_COMMENTS = {
+        'Campus Center': [
+          "Hey, that's the Campus Center! Grab some food at the dining hall — trust me, the views are worth it.",
+          "The Campus Center is where all the action is. Clubs, events, study hangouts — you name it!",
+          "Fun fact: this building is LEED-certified. Green and gorgeous!"
+        ],
+        'Healey Library': [
+          "Whoa, Healey Library! 11 floors of knowledge. The view from the top is unreal.",
+          "600,000+ books live in there. And the 11th floor? Best harbor view on campus.",
+          "That's Brutalist architecture at its finest. Built in 1974 by Harry Weese!"
+        ],
+        'Integrated Sciences Complex': [
+          "The ISC! One of the largest bio labs in New England is right in there.",
+          "That crystalline glass building is where cutting-edge research happens every day.",
+          "Chemistry, biology, physics — if it's science, it's happening in the ISC."
+        ],
+        'McCormack Hall': [
+          "McCormack Hall! Home to the College of Liberal Arts. Great professors in there.",
+          "Named after John W. McCormack, former Speaker of the House. Pretty cool, right?",
+          "If you're into political science or sociology, this is your building!"
+        ],
+        'Wheatley Hall': [
+          "That's Wheatley Hall — named after Phillis Wheatley, the first published African American poet.",
+          "The College of Education and Human Development calls Wheatley home.",
+          "Teacher training, counseling programs, and more — all happening right there!"
+        ],
+        'Quinn Administration': [
+          "Quinn Administration — that's where the university's leadership works.",
+          "Need to handle enrollment or financial aid? Quinn is the place.",
+          "Named after Robert Quinn, a former Massachusetts Attorney General."
+        ],
+        'University Hall': [
+          "University Hall — the newest and largest academic building in Massachusetts!",
+          "Opened in 2015, it's got state-of-the-art classrooms and a stunning atrium.",
+          "The College of Management and College of Nursing are based here."
+        ],
+        'Clark Athletic Center': [
+          "Clark Athletic Center! Home to the Beacons — that's my team!",
+          "Gym, fitness center, basketball courts — everything you need to stay active.",
+          "Fun fact: UMass Boston competes in NCAA Division III!"
+        ],
+        'West Garage': [
+          "That's the West Garage — 1,300 parking spaces. Finding a spot? That's the real sport.",
+          "Pro tip: come early if you're driving. The garage fills up fast!",
+          "It connects directly to the main campus walkways. Pretty convenient!"
+        ],
+        'JFK Presidential Library': [
+          "The JFK Presidential Library and Museum! It's right next door to us.",
+          "Designed by I.M. Pei — the same architect who did the Louvre pyramid in Paris.",
+          "Students get free admission. Seriously, go check it out!"
+        ],
+        'West Residence Hall': [
+          "West Residence Hall — campus living with harbor views!",
+          "Opened in 2018, it's one of the newest buildings on campus.",
+          "Living on campus means rolling out of bed and being in class in 5 minutes."
+        ],
+        'East Residence Hall': [
+          "East Residence Hall — more campus housing with amazing waterfront proximity.",
+          "The residence halls really changed campus life. UMB used to be all commuters!",
+          "Community events, study lounges, and sunrise views over the harbor."
+        ]
+      };
 
       for(var i = FACTS.length - 1; i > 0; i--){
         var j = Math.floor(Math.random() * (i + 1));
         var t = FACTS[i]; FACTS[i] = FACTS[j]; FACTS[j] = t;
+      }
+
+      // Detect which building the camera is looking at
+      function getBuildingInView(){
+        try {
+          var camPos = viewer.camera.positionCartographic;
+          if(!camPos) return null;
+          var camLat = Cesium.Math.toDegrees(camPos.latitude);
+          var camLng = Cesium.Math.toDegrees(camPos.longitude);
+          // Get camera direction to find what we're looking toward
+          var dir = viewer.camera.directionWC;
+          var pos = viewer.camera.positionWC;
+          // Cast a ray 300m ahead of camera
+          var ray = new Cesium.Ray(pos, dir);
+          var lookPt = Cesium.Ray.getPoint(ray, 300);
+          var lookCarto = Cesium.Cartographic.fromCartesian(lookPt);
+          if(!lookCarto) return null;
+          var lookLat = Cesium.Math.toDegrees(lookCarto.latitude);
+          var lookLng = Cesium.Math.toDegrees(lookCarto.longitude);
+          // Find nearest building to look point
+          var best = null, minD = Infinity;
+          for(var i = 0; i < CAMPUS_BUILDINGS.length; i++){
+            var b = CAMPUS_BUILDINGS[i];
+            var d = Math.hypot(b.lat - lookLat, b.lng - lookLng);
+            if(d < minD){ minD = d; best = b; }
+          }
+          return (minD < 0.0015) ? best : null; // ~150m threshold
+        } catch(e){ return null; }
+      }
+
+      // Periodically check what's in view and comment on it
+      function startViewChecking(){
+        viewCheckTimer = setInterval(function(){
+          if(!exploreMode || _tourActive || dismissed) return;
+          if(bubbleEl.classList.contains('vis')) return; // don't interrupt active bubble
+          var b = getBuildingInView();
+          if(b && b.name !== lastCommentedBuilding && BUILDING_COMMENTS[b.name]){
+            lastCommentedBuilding = b.name;
+            var comments = BUILDING_COMMENTS[b.name];
+            var comment = comments[Math.floor(Math.random() * comments.length)];
+            // Attention-grab: scale up then show comment
+            clearTimeout(beaconTimer);
+            clearTimeout(bubbleTimer);
+            beaconEl.classList.add('attention');
+            setTimeout(function(){ beaconEl.classList.remove('attention'); }, 1200);
+            setTimeout(function(){
+              factEl.textContent = comment;
+              bubbleEl.classList.add('vis');
+              bubbleTimer = setTimeout(function(){
+                bubbleEl.classList.remove('vis');
+                beaconTimer = setTimeout(showFact, 25000 + Math.random() * 15000);
+              }, 9000);
+            }, 400);
+          }
+        }, 5000); // check every 5 seconds
+      }
+
+      function stopViewChecking(){
+        clearInterval(viewCheckTimer);
+        viewCheckTimer = null;
+        lastCommentedBuilding = null;
       }
 
       function showBeacon(){
@@ -4351,13 +4476,16 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         beaconEl.classList.add('waving');
         setTimeout(function(){ beaconEl.classList.remove('waving'); }, 1800);
         beaconTimer = setTimeout(showFact, 2500);
+        startViewChecking();
       }
 
       function hideBeacon(){
         beaconEl.classList.remove('vis');
+        beaconEl.classList.remove('attention');
         bubbleEl.classList.remove('vis');
         clearTimeout(beaconTimer);
         clearTimeout(bubbleTimer);
+        stopViewChecking();
         dismissed = false;
       }
 
@@ -4375,8 +4503,16 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           beaconTimer = setTimeout(showFact, 10000);
           return;
         }
-        factEl.textContent = FACTS[factIndex % FACTS.length];
-        factIndex++;
+        // Try contextual comment first
+        var b = getBuildingInView();
+        if(b && BUILDING_COMMENTS[b.name] && b.name !== lastCommentedBuilding){
+          lastCommentedBuilding = b.name;
+          var comments = BUILDING_COMMENTS[b.name];
+          factEl.textContent = comments[Math.floor(Math.random() * comments.length)];
+        } else {
+          factEl.textContent = FACTS[factIndex % FACTS.length];
+          factIndex++;
+        }
         bubbleEl.classList.add('vis');
         var duration = 8000 + Math.random() * 2000;
         bubbleTimer = setTimeout(function(){

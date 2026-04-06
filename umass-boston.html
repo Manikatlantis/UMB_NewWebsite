@@ -167,8 +167,11 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 @keyframes beacon-glow{0%,100%{opacity:0.75;}50%{opacity:1;}}
 @keyframes beacon-wave{0%,100%{transform:rotate(0deg);}50%{transform:rotate(-35deg);}}
 @keyframes beacon-bounce{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-6px) scale(1.08);}}
-@keyframes beacon-attention{0%{transform:scale(1);}15%{transform:scale(1.35);}30%{transform:scale(1.25);}50%{transform:scale(1.3);}100%{transform:scale(1);}}
-#beacon-mascot.attention{animation:beacon-attention 1.2s ease-in-out;z-index:25;}
+@keyframes beacon-attention{0%{transform:scale(1) rotateY(0deg);}10%{transform:scale(1.4) rotateY(0deg);}20%{transform:scale(1.4) rotateY(90deg);}40%{transform:scale(1.35) rotateY(180deg);}60%{transform:scale(1.4) rotateY(270deg);}75%{transform:scale(1.35) rotateY(360deg);}100%{transform:scale(1) rotateY(360deg);}}
+@keyframes beacon-beam-flash{0%,100%{transform:rotate(-15deg);opacity:0.8;}25%{transform:rotate(90deg);opacity:1;}50%{transform:rotate(195deg);opacity:1;}75%{transform:rotate(345deg);opacity:0.9;}}
+#beacon-mascot.attention{animation:beacon-attention 2.5s ease-in-out;z-index:25;}
+#beacon-mascot.attention .beacon-beam{animation:beacon-beam-flash 2.5s ease-in-out !important;transform-origin:40px 24px;}
+#beacon-mascot.attention .beacon-lantern{animation:none !important;opacity:1;filter:brightness(1.8) drop-shadow(0 0 8px rgba(255,200,50,0.9));}
 
 /* ── BUS LABELS (HTML overlays) ── */
 .bus-label{position:absolute;pointer-events:none;z-index:15;transform:translate(-50%,-100%);white-space:nowrap;padding:3px 8px;background:rgba(0,16,48,0.92);border:1px solid rgba(245,166,35,0.5);border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
@@ -4450,7 +4453,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             clearTimeout(beaconTimer);
             clearTimeout(bubbleTimer);
             beaconEl.classList.add('attention');
-            setTimeout(function(){ beaconEl.classList.remove('attention'); }, 1200);
+            setTimeout(function(){ beaconEl.classList.remove('attention'); }, 2600);
             setTimeout(function(){
               factEl.textContent = comment;
               bubbleEl.classList.add('vis');
@@ -4458,7 +4461,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
                 bubbleEl.classList.remove('vis');
                 beaconTimer = setTimeout(showFact, 25000 + Math.random() * 15000);
               }, 9000);
-            }, 400);
+            }, 1200);
           }
         }, 5000); // check every 5 seconds
       }

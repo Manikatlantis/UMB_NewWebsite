@@ -840,17 +840,17 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     </div>
     <div class="game-overlay" id="game-overlay">
       <div id="overlay-start">
-        <h3>🎣 Harbor Fishing</h3>
-        <p>Cast your line · Catch fish · Survive each wave</p>
-        <button class="btn-game" onclick="startGame()">Cast Off!</button>
+        <h3 data-i18n-html="game_title">🎣 Harbor Fishing</h3>
+        <p data-i18n="game_tagline">Cast your line · Catch fish · Survive each wave</p>
+        <button class="btn-game" onclick="startGame()" data-i18n="game_start">Cast Off!</button>
       </div>
       <div id="overlay-end" style="display:none;text-align:center;">
-        <h3>Master Angler!</h3>
+        <h3 data-i18n="game_win">Master Angler!</h3>
         <div class="final-score" id="final-score-val">0</div>
         <div class="high-score" id="high-score-val">Best: 0</div>
         <div style="display:flex;gap:0;justify-content:center;">
-          <button class="btn-game" onclick="startGame()">Fish Again</button>
-          <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-game sec">Apply to UMB →</a>
+          <button class="btn-game" onclick="startGame()" data-i18n="game_again">Fish Again</button>
+          <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="btn-game sec" data-i18n="game_apply">Apply to UMB →</a>
         </div>
       </div>
     </div>
@@ -6278,7 +6278,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'Académicos', foot_all_programs: 'Todos los Programas', foot_grad_school: 'Escuela de Posgrado', foot_research: 'Investigación', foot_library: 'Biblioteca Healey',
       foot_admissions: 'Admisiones', foot_undergrad: 'Admisiones de Pregrado', foot_grad_adm: 'Admisiones de Posgrado', foot_finaid: 'Ayuda Financiera', foot_visit: 'Visitar el Campus',
       foot_campus: 'Campus', foot_student_life: 'Vida Estudiantil', foot_housing: 'Vivienda', foot_athletics: 'Atletismo', foot_contact: 'Contáctenos',
-      foot_copy: '© 2025 Universidad de Massachusetts Boston. Página concepto — <a href="https://www.umb.edu" target="_blank">visita umb.edu para el sitio oficial</a>'
+      foot_copy: '© 2025 Universidad de Massachusetts Boston. Página concepto — <a href="https://www.umb.edu" target="_blank">visita umb.edu para el sitio oficial</a>',
+      game_title: '🎣 Pesca en el Puerto', game_tagline: 'Lanza tu línea · Atrapa peces · Sobrevive cada ola', game_start: '¡A Pescar!', game_win: '¡Maestro Pescador!', game_again: 'Pescar de Nuevo', game_apply: 'Aplica a UMB →'
     },
     zh: {
       hero_kicker: '波士顿港首屈一指的公立研究型大学',
@@ -6341,7 +6342,8 @@ window.addEventListener('resize', function() {
       foot_academics: '学术', foot_all_programs: '所有项目', foot_grad_school: '研究生院', foot_research: '研究', foot_library: 'Healey图书馆',
       foot_admissions: '招生', foot_undergrad: '本科招生', foot_grad_adm: '研究生招生', foot_finaid: '助学金', foot_visit: '参观校园',
       foot_campus: '校园', foot_student_life: '学生生活', foot_housing: '住宿', foot_athletics: '体育', foot_contact: '联系我们',
-      foot_copy: '© 2025 麻省大学波士顿分校。概念页面 — <a href="https://www.umb.edu" target="_blank">访问umb.edu查看官方网站</a>'
+      foot_copy: '© 2025 麻省大学波士顿分校。概念页面 — <a href="https://www.umb.edu" target="_blank">访问umb.edu查看官方网站</a>',
+      game_title: '🎣 港口钓鱼', game_tagline: '抛竿 · 钓鱼 · 挺过每波', game_start: '开始钓鱼！', game_win: '钓鱼大师！', game_again: '再钓一次', game_apply: '申请UMB →'
     },
     vi: {
       hero_kicker: 'Đại Học Nghiên Cứu Công Lập Hàng Đầu Tại Cảng Boston',
@@ -6404,7 +6406,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'Học thuật', foot_all_programs: 'Tất cả chương trình', foot_grad_school: 'Trường Sau đại học', foot_research: 'Nghiên cứu', foot_library: 'Thư viện Healey',
       foot_admissions: 'Tuyển sinh', foot_undergrad: 'Tuyển sinh Đại học', foot_grad_adm: 'Tuyển sinh Sau đại học', foot_finaid: 'Hỗ trợ Tài chính', foot_visit: 'Tham quan',
       foot_campus: 'Khuôn viên', foot_student_life: 'Đời sống Sinh viên', foot_housing: 'Nhà ở', foot_athletics: 'Thể thao', foot_contact: 'Liên hệ',
-      foot_copy: '© 2025 Đại học Massachusetts Boston. Trang khái niệm — <a href="https://www.umb.edu" target="_blank">truy cập umb.edu cho trang chính thức</a>'
+      foot_copy: '© 2025 Đại học Massachusetts Boston. Trang khái niệm — <a href="https://www.umb.edu" target="_blank">truy cập umb.edu cho trang chính thức</a>',
+      game_title: '🎣 Câu Cá Cảng', game_tagline: 'Thả câu · Bắt cá · Vượt qua mỗi đợt', game_start: 'Thả Câu!', game_win: 'Bậc Thầy Câu Cá!', game_again: 'Câu Lại', game_apply: 'Nộp Đơn UMB →'
     },
     ht: {
       hero_kicker: 'Inivèsite Rechèch Piblik Premye nan Pò Boston',
@@ -6467,7 +6470,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'Akademik', foot_all_programs: 'Tout Pwogram', foot_grad_school: 'Lekòl Gradye', foot_research: 'Rechèch', foot_library: 'Bibliyotèk Healey',
       foot_admissions: 'Admisyon', foot_undergrad: 'Admisyon Lisans', foot_grad_adm: 'Admisyon Gradye', foot_finaid: 'Èd Finansye', foot_visit: 'Vizite Kanpis',
       foot_campus: 'Kanpis', foot_student_life: 'Lavi Etidyan', foot_housing: 'Lojman', foot_athletics: 'Atletik', foot_contact: 'Kontakte Nou',
-      foot_copy: '© 2025 Inivèsite Massachusetts Boston. Paj konsèp — <a href="https://www.umb.edu" target="_blank">vizite umb.edu pou sit ofisyèl la</a>'
+      foot_copy: '© 2025 Inivèsite Massachusetts Boston. Paj konsèp — <a href="https://www.umb.edu" target="_blank">vizite umb.edu pou sit ofisyèl la</a>',
+      game_title: '🎣 Lapèch nan Pò', game_tagline: 'Voye liy · Kenbe pwason · Siviv chak vag', game_start: 'Voye Liy!', game_win: 'Mèt Pechè!', game_again: 'Peche Ankò', game_apply: 'Aplike nan UMB →'
     },
     pt: {
       hero_kicker: 'A Principal Universidade Pública de Pesquisa do Porto de Boston',
@@ -6530,7 +6534,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'Acadêmico', foot_all_programs: 'Todos os Programas', foot_grad_school: 'Pós-Graduação', foot_research: 'Pesquisa', foot_library: 'Biblioteca Healey',
       foot_admissions: 'Admissões', foot_undergrad: 'Admissões Graduação', foot_grad_adm: 'Admissões Pós-Graduação', foot_finaid: 'Ajuda Financeira', foot_visit: 'Visitar o Campus',
       foot_campus: 'Campus', foot_student_life: 'Vida Estudantil', foot_housing: 'Moradia', foot_athletics: 'Esportes', foot_contact: 'Fale Conosco',
-      foot_copy: '© 2025 Universidade de Massachusetts Boston. Página conceito — <a href="https://www.umb.edu" target="_blank">visite umb.edu para o site oficial</a>'
+      foot_copy: '© 2025 Universidade de Massachusetts Boston. Página conceito — <a href="https://www.umb.edu" target="_blank">visite umb.edu para o site oficial</a>',
+      game_title: '🎣 Pesca no Porto', game_tagline: 'Lance a linha · Pegue peixes · Sobreviva cada onda', game_start: 'Lançar!', game_win: 'Mestre Pescador!', game_again: 'Pescar de Novo', game_apply: 'Candidate-se à UMB →'
     },
     ar: {
       hero_kicker: 'الجامعة البحثية العامة الرائدة في ميناء بوسطن',
@@ -6593,7 +6598,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'الأكاديميات', foot_all_programs: 'جميع البرامج', foot_grad_school: 'الدراسات العليا', foot_research: 'البحث', foot_library: 'مكتبة هيلي',
       foot_admissions: 'القبول', foot_undergrad: 'قبول البكالوريوس', foot_grad_adm: 'قبول الدراسات العليا', foot_finaid: 'المساعدة المالية', foot_visit: 'زيارة الحرم',
       foot_campus: 'الحرم الجامعي', foot_student_life: 'الحياة الطلابية', foot_housing: 'السكن', foot_athletics: 'الرياضة', foot_contact: 'اتصل بنا',
-      foot_copy: '© 2025 جامعة ماساتشوستس بوسطن. صفحة مفهومية — <a href="https://www.umb.edu" target="_blank">زُر umb.edu للموقع الرسمي</a>'
+      foot_copy: '© 2025 جامعة ماساتشوستس بوسطن. صفحة مفهومية — <a href="https://www.umb.edu" target="_blank">زُر umb.edu للموقع الرسمي</a>',
+      game_title: '🎣 صيد في الميناء', game_tagline: 'ألقِ الخيط · اصطد السمك · انجُ كل موجة', game_start: 'ألقِ الخيط!', game_win: 'صياد ماهر!', game_again: 'اصطد مجدداً', game_apply: 'تقدم لـ UMB →'
     },
     fr: {
       hero_kicker: 'La Première Université Publique de Recherche du Port de Boston',
@@ -6656,7 +6662,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'Académique', foot_all_programs: 'Tous les Programmes', foot_grad_school: 'École Supérieure', foot_research: 'Recherche', foot_library: 'Bibliothèque Healey',
       foot_admissions: 'Admissions', foot_undergrad: 'Admissions Licence', foot_grad_adm: 'Admissions Master', foot_finaid: 'Aide Financière', foot_visit: 'Visiter le Campus',
       foot_campus: 'Campus', foot_student_life: 'Vie Étudiante', foot_housing: 'Logement', foot_athletics: 'Sports', foot_contact: 'Nous Contacter',
-      foot_copy: '© 2025 Université du Massachusetts Boston. Page concept — <a href="https://www.umb.edu" target="_blank">visitez umb.edu pour le site officiel</a>'
+      foot_copy: '© 2025 Université du Massachusetts Boston. Page concept — <a href="https://www.umb.edu" target="_blank">visitez umb.edu pour le site officiel</a>',
+      game_title: '🎣 Pêche au Port', game_tagline: 'Lancez la ligne · Attrapez des poissons · Survivez chaque vague', game_start: 'Lancez!', game_win: 'Maître Pêcheur!', game_again: 'Pêcher Encore', game_apply: 'Postulez à UMB →'
     },
     hi: {
       hero_kicker: 'बोस्टन हार्बर का प्रमुख सार्वजनिक शोध विश्वविद्यालय',
@@ -6719,7 +6726,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'शैक्षणिक', foot_all_programs: 'सभी कार्यक्रम', foot_grad_school: 'स्नातकोत्तर स्कूल', foot_research: 'अनुसंधान', foot_library: 'Healey पुस्तकालय',
       foot_admissions: 'प्रवेश', foot_undergrad: 'स्नातक प्रवेश', foot_grad_adm: 'स्नातकोत्तर प्रवेश', foot_finaid: 'वित्तीय सहायता', foot_visit: 'कैंपस देखें',
       foot_campus: 'कैंपस', foot_student_life: 'छात्र जीवन', foot_housing: 'आवास', foot_athletics: 'खेल', foot_contact: 'संपर्क करें',
-      foot_copy: '© 2025 मैसाचुसेट्स विश्वविद्यालय बोस्टन। कॉन्सेप्ट पेज — <a href="https://www.umb.edu" target="_blank">आधिकारिक साइट के लिए umb.edu पर जाएं</a>'
+      foot_copy: '© 2025 मैसाचुसेट्स विश्वविद्यालय बोस्टन। कॉन्सेप्ट पेज — <a href="https://www.umb.edu" target="_blank">आधिकारिक साइट के लिए umb.edu पर जाएं</a>',
+      game_title: '🎣 हार्बर मछली पकड़ना', game_tagline: 'लाइन डालो · मछली पकड़ो · हर लहर पार करो', game_start: 'शुरू करो!', game_win: 'मास्टर मछुआरा!', game_again: 'फिर से पकड़ो', game_apply: 'UMB में आवेदन करें →'
     },
     bn: {
       hero_kicker: 'বোস্টন হারবারের প্রধান পাবলিক গবেষণা বিশ্ববিদ্যালয়',
@@ -6782,7 +6790,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'একাডেমিক', foot_all_programs: 'সকল প্রোগ্রাম', foot_grad_school: 'স্নাতকোত্তর স্কুল', foot_research: 'গবেষণা', foot_library: 'Healey লাইব্রেরি',
       foot_admissions: 'ভর্তি', foot_undergrad: 'স্নাতক ভর্তি', foot_grad_adm: 'স্নাতকোত্তর ভর্তি', foot_finaid: 'আর্থিক সহায়তা', foot_visit: 'ক্যাম্পাস দেখুন',
       foot_campus: 'ক্যাম্পাস', foot_student_life: 'ছাত্রজীবন', foot_housing: 'আবাসন', foot_athletics: 'খেলাধুলা', foot_contact: 'যোগাযোগ',
-      foot_copy: '© ২০২৫ ম্যাসাচুসেটস বিশ্ববিদ্যালয় বোস্টন। কনসেপ্ট পেজ — <a href="https://www.umb.edu" target="_blank">অফিসিয়াল সাইটের জন্য umb.edu দেখুন</a>'
+      foot_copy: '© ২০২৫ ম্যাসাচুসেটস বিশ্ববিদ্যালয় বোস্টন। কনসেপ্ট পেজ — <a href="https://www.umb.edu" target="_blank">অফিসিয়াল সাইটের জন্য umb.edu দেখুন</a>',
+      game_title: '🎣 হারবার মাছ ধরা', game_tagline: 'লাইন ফেলো · মাছ ধরো · প্রতিটি তরঙ্গ পার করো', game_start: 'শুরু করো!', game_win: 'মাস্টার জেলে!', game_again: 'আবার ধরো', game_apply: 'UMB-তে আবেদন করো →'
     },
     de: {
       hero_kicker: 'Bostons führende öffentliche Forschungsuniversität am Hafen',
@@ -6845,7 +6854,8 @@ window.addEventListener('resize', function() {
       foot_academics: 'Akademisch', foot_all_programs: 'Alle Programme', foot_grad_school: 'Graduiertenschule', foot_research: 'Forschung', foot_library: 'Healey-Bibliothek',
       foot_admissions: 'Zulassung', foot_undergrad: 'Bachelor-Zulassung', foot_grad_adm: 'Master-Zulassung', foot_finaid: 'Finanzhilfe', foot_visit: 'Campus besuchen',
       foot_campus: 'Campus', foot_student_life: 'Studentenleben', foot_housing: 'Wohnheim', foot_athletics: 'Sport', foot_contact: 'Kontakt',
-      foot_copy: '© 2025 Universität von Massachusetts Boston. Konzeptseite — <a href="https://www.umb.edu" target="_blank">besuchen Sie umb.edu für die offizielle Seite</a>'
+      foot_copy: '© 2025 Universität von Massachusetts Boston. Konzeptseite — <a href="https://www.umb.edu" target="_blank">besuchen Sie umb.edu für die offizielle Seite</a>',
+      game_title: '🎣 Hafenfischen', game_tagline: 'Angel auswerfen · Fische fangen · Jede Welle überstehen', game_start: 'Los geht\'s!', game_win: 'Meisterangler!', game_again: 'Nochmal Angeln', game_apply: 'Bei UMB bewerben →'
     }
   };
 

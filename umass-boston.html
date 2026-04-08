@@ -4819,6 +4819,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var b = findBuilding(building);
       if(!b) return;
       var lp = BLP()[b.name] || [b.lng, b.lat, 15];
+      // Numbered point marker
       var ent = V().entities.add({
         position: Cesium.Cartesian3.fromDegrees(lp[0], lp[1], (lp[2]||15)+5),
         point: {
@@ -4841,18 +4842,87 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         }
       });
       _byd.entities.push(ent);
+      // Glowing ground ellipse around building
+      var glow = V().entities.add({
+        position: Cesium.Cartesian3.fromDegrees(b.lng, b.lat, 0),
+        ellipse: {
+          semiMinorAxis: 35,
+          semiMajorAxis: 35,
+          material: Cesium.Color.fromCssColorString('#00d4b8').withAlpha(0.12),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString('#00d4b8').withAlpha(0.5),
+          outlineWidth: 2,
+          height: 1
+        }
+      });
+      _byd.entities.push(glow);
+    }
+
+    var _routeCache = {};
+
+    function fetchRoute(b1, b2){
+      var key = b1.lat+','+b1.lng+'|'+b2.lat+','+b2.lng;
+      if(_routeCache[key]) return Promise.resolve(_routeCache[key].points);
+      return fetch('/api/walking-route?origin='+b1.lat+','+b1.lng+'&destination='+b2.lat+','+b2.lng)
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if(data.points && data.points.length > 1){
+            _routeCache[key] = {points: data.points, duration: data.duration || ''};
+            return data.points;
+          }
+          return null;
+        })
+        .catch(function(){ return null; });
+    }
+
+    function prefetchRoutes(stops){
+      for(var i=0; i<stops.length-1; i++){
+        var b1=findBuilding(stops[i].building), b2=findBuilding(stops[i+1].building);
+        if(b1 && b2) fetchRoute(b1, b2);
+      }
     }
 
     function drawPath(from,to){
       var b1=findBuilding(from), b2=findBuilding(to);
       if(!b1||!b2) return;
+      var key = b1.lat+','+b1.lng+'|'+b2.lat+','+b2.lng;
+
+      if(_routeCache[key] && _routeCache[key].points){
+        drawRoutePoints(_routeCache[key].points);
+      } else {
+        fetchRoute(b1, b2).then(function(pts){
+          if(pts) drawRoutePoints(pts);
+          else drawFallbackCurve(b1, b2);
+        });
+      }
+    }
+
+    function drawRoutePoints(pts){
+      var arr = [];
+      for(var i=0;i<pts.length;i++){
+        arr.push(pts[i].lng, pts[i].lat, 3);
+      }
+      var positions = Cesium.Cartesian3.fromDegreesArrayHeights(arr);
+      var ent = V().entities.add({
+        polyline:{
+          positions:positions,
+          width:5,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            glowPower:0.25,
+            color:Cesium.Color.fromCssColorString('#00d4b8').withAlpha(0.8)
+          }),
+          clampToGround:false
+        }
+      });
+      _byd.pathEntities.push(ent);
+    }
+
+    function drawFallbackCurve(b1, b2){
       var midLat=(b1.lat+b2.lat)/2, midLng=(b1.lng+b2.lng)/2;
       var dx=b2.lng-b1.lng, dy=b2.lat-b1.lat;
       var perpLat=midLat+dx*0.12, perpLng=midLng-dy*0.12;
       var positions=Cesium.Cartesian3.fromDegreesArrayHeights([
-        b1.lng, b1.lat, 4,
-        perpLng, perpLat, 8,
-        b2.lng, b2.lat, 4
+        b1.lng, b1.lat, 4, perpLng, perpLat, 8, b2.lng, b2.lat, 4
       ]);
       var ent=V().entities.add({
         polyline:{
@@ -5047,8 +5117,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       _byd.currentStopIdx = -1;
 
       if(typeof closeBuildingPanel === 'function') closeBuildingPanel();
-      // closeBuildingPanel handles clearing highlight
       if(window.cancelDroneTour) window.cancelDroneTour();
+
+      // Pre-fetch all walking routes for this schedule
+      prefetchRoutes(_byd.stops);
 
       buildTimeline(name);
       document.getElementById('byd-timeline').classList.add('vis');

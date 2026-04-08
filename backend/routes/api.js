@@ -240,6 +240,63 @@ router.get('/maps-key', (req, res) => {
   res.json({ key });
 });
 
+// ── GET /api/walking-route ──────────────────────
+// Returns walking route waypoints between two campus coordinates
+// Uses Google Directions API, caches results to minimize API calls
+const walkingRouteCache = new Map();
+
+router.get('/walking-route', async (req, res) => {
+  const { origin, destination } = req.query;
+  if (!origin || !destination) {
+    return res.status(400).json({ error: 'origin and destination required (lat,lng)' });
+  }
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return res.status(500).json({ error: 'Maps key not configured' });
+
+  const cacheKey = `${origin}|${destination}`;
+  if (walkingRouteCache.has(cacheKey)) {
+    return res.json(walkingRouteCache.get(cacheKey));
+  }
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=walking&key=${key}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (data.status !== 'OK' || !data.routes || !data.routes.length) {
+      return res.json({ points: [], duration: '' });
+    }
+
+    const route = data.routes[0];
+    const encoded = route.overview_polyline.points;
+    const points = decodePolyline(encoded);
+    const duration = route.legs[0] ? route.legs[0].duration.text : '';
+
+    const result = { points, duration };
+    walkingRouteCache.set(cacheKey, result);
+    res.json(result);
+  } catch (e) {
+    console.error('Walking route error:', e.message);
+    res.json({ points: [], duration: '' });
+  }
+});
+
+// Decode Google's encoded polyline format
+function decodePolyline(encoded) {
+  const points = [];
+  let index = 0, lat = 0, lng = 0;
+  while (index < encoded.length) {
+    let b, shift = 0, result = 0;
+    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+    shift = 0; result = 0;
+    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return points;
+}
+
 // ── GET /api/stats ──────────────────────────────
 // Simple analytics endpoint (admin use)
 router.get('/stats', async (req, res) => {

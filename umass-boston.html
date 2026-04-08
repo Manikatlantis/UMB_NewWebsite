@@ -4858,12 +4858,33 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       _byd.entities.push(glow);
     }
 
+    // Sidewalk-level entrance coordinates (not building centers)
+    var ENTRANCE = {
+      'Campus Center':               {lat:42.3128, lng:-71.0382},
+      'Integrated Sciences Complex': {lat:42.3135, lng:-71.0401},
+      'Healey Library':              {lat:42.3131, lng:-71.0393},
+      'University Hall':             {lat:42.3130, lng:-71.0368},
+      'McCormack Hall':              {lat:42.3126, lng:-71.0400},
+      'Wheatley Hall':               {lat:42.3122, lng:-71.0385},
+      'Quinn Administration':        {lat:42.3143, lng:-71.0393},
+      'Clark Athletic Center':       {lat:42.3148, lng:-71.0400},
+      'West Garage':                 {lat:42.3149, lng:-71.0410},
+      'West Residence Hall':         {lat:42.3162, lng:-71.0402},
+      'East Residence Hall':         {lat:42.3158, lng:-71.0392},
+      'JFK Presidential Library':    {lat:42.3158, lng:-71.0373}
+    };
+
+    function getEntrance(b){
+      return ENTRANCE[b.name] || {lat:b.lat, lng:b.lng};
+    }
+
     var _routeCache = {};
 
     function fetchRoute(b1, b2){
-      var key = b1.lat+','+b1.lng+'|'+b2.lat+','+b2.lng;
+      var e1 = getEntrance(b1), e2 = getEntrance(b2);
+      var key = e1.lat+','+e1.lng+'|'+e2.lat+','+e2.lng;
       if(_routeCache[key]) return Promise.resolve(_routeCache[key].points);
-      return fetch('/api/walking-route?origin='+b1.lat+','+b1.lng+'&destination='+b2.lat+','+b2.lng)
+      return fetch('/api/walking-route?origin='+e1.lat+','+e1.lng+'&destination='+e2.lat+','+e2.lng)
         .then(function(r){ return r.json(); })
         .then(function(data){
           if(data.points && data.points.length > 1){
@@ -4885,7 +4906,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     function drawPath(from,to){
       var b1=findBuilding(from), b2=findBuilding(to);
       if(!b1||!b2) return;
-      var key = b1.lat+','+b1.lng+'|'+b2.lat+','+b2.lng;
+      var e1=getEntrance(b1), e2=getEntrance(b2);
+      var key = e1.lat+','+e1.lng+'|'+e2.lat+','+e2.lng;
 
       if(_routeCache[key] && _routeCache[key].points){
         drawRoutePoints(_routeCache[key].points);
@@ -4900,7 +4922,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     function drawRoutePoints(pts){
       var arr = [];
       for(var i=0;i<pts.length;i++){
-        arr.push(pts[i].lng, pts[i].lat, 3);
+        arr.push(pts[i].lng, pts[i].lat, 25);
       }
       var positions = Cesium.Cartesian3.fromDegreesArrayHeights(arr);
       var ent = V().entities.add({
@@ -4922,7 +4944,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var dx=b2.lng-b1.lng, dy=b2.lat-b1.lat;
       var perpLat=midLat+dx*0.12, perpLng=midLng-dy*0.12;
       var positions=Cesium.Cartesian3.fromDegreesArrayHeights([
-        b1.lng, b1.lat, 4, perpLng, perpLat, 8, b2.lng, b2.lat, 4
+        b1.lng, b1.lat, 25, perpLng, perpLat, 35, b2.lng, b2.lat, 25
       ]);
       var ent=V().entities.add({
         polyline:{

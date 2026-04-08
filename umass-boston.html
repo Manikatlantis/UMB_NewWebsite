@@ -573,6 +573,70 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .bot-info h3{font-size:14px;}
   .bot-input input{padding:14px 16px;font-size:14px;}
 }
+
+/* ── Build Your Day ─────────────────────── */
+.byd-major-overlay{position:fixed;inset:0;z-index:1003;background:rgba(0,10,22,0.95);backdrop-filter:blur(20px);display:none;align-items:center;justify-content:center;flex-direction:column;animation:fup .5s;}
+.byd-major-overlay.open{display:flex;}
+.byd-major-title{font-family:'Unbounded',sans-serif;font-size:clamp(22px,4vw,36px);color:var(--teal);margin-bottom:8px;text-align:center;}
+.byd-major-sub{font-family:'Space Mono',monospace;font-size:12px;color:rgba(238,243,248,0.5);letter-spacing:1px;margin-bottom:32px;text-align:center;}
+.byd-major-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:880px;padding:0 24px;}
+.byd-major-card{background:rgba(0,16,32,0.85);border:1px solid rgba(0,212,184,0.12);padding:28px 18px;cursor:pointer;transition:all .3s;border-radius:6px;text-align:center;}
+.byd-major-card:hover{border-color:var(--teal);background:rgba(0,212,184,0.06);transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,212,184,0.12);}
+.byd-mc-icon{font-size:36px;margin-bottom:10px;}
+.byd-mc-name{font-family:'Unbounded',sans-serif;font-size:13px;color:#eef3f8;margin-bottom:6px;}
+.byd-mc-desc{font-family:'Space Mono',monospace;font-size:9px;color:rgba(238,243,248,0.4);letter-spacing:.5px;line-height:1.4;}
+.byd-major-close{position:absolute;top:24px;right:32px;background:none;border:1px solid rgba(238,243,248,0.2);color:rgba(238,243,248,0.6);font-size:14px;padding:8px 18px;border-radius:4px;cursor:pointer;font-family:'Space Mono',monospace;letter-spacing:1px;transition:all .3s;}
+.byd-major-close:hover{border-color:var(--teal);color:var(--teal);}
+
+.byd-timeline{position:absolute;top:80px;left:24px;z-index:22;width:250px;max-height:calc(100vh - 160px);overflow-y:auto;background:rgba(0,16,32,0.88);border:1px solid rgba(0,212,184,0.18);border-radius:8px;backdrop-filter:blur(12px);padding:16px 0;opacity:0;transform:translateX(-110%);pointer-events:none;transition:all .5s cubic-bezier(.22,1,.36,1);}
+.byd-timeline.vis{opacity:1;transform:translateX(0);pointer-events:all;}
+.byd-tl-header{padding:0 16px 12px;border-bottom:1px solid rgba(0,212,184,0.1);}
+.byd-tl-major{font-family:'Unbounded',sans-serif;font-size:13px;color:var(--teal);}
+.byd-tl-date{font-family:'Space Mono',monospace;font-size:9px;color:rgba(238,243,248,0.35);letter-spacing:1px;margin-top:4px;}
+.byd-tl-stops{padding:12px 12px 0 20px;}
+.byd-stop{position:relative;border-left:2px solid rgba(0,212,184,0.12);padding:8px 0 8px 16px;cursor:pointer;transition:all .3s;}
+.byd-stop::before{content:'';position:absolute;left:-5px;top:12px;width:8px;height:8px;border-radius:50%;background:rgba(0,212,184,0.2);border:2px solid rgba(0,212,184,0.3);transition:all .3s;}
+.byd-stop.active{border-left-color:var(--teal);}
+.byd-stop.active::before{background:var(--teal);border-color:#fff;box-shadow:0 0 10px rgba(0,212,184,0.6);}
+.byd-stop.completed{border-left-color:rgba(0,212,184,0.35);opacity:.55;}
+.byd-stop.completed::before{background:rgba(0,212,184,0.5);border-color:rgba(0,212,184,0.4);}
+.byd-stop:hover{background:rgba(0,212,184,0.04);border-radius:0 4px 4px 0;}
+.byd-stop-time{font-family:'Space Mono',monospace;font-size:9px;color:rgba(238,243,248,0.35);letter-spacing:.5px;}
+.byd-stop-name{font-family:'Unbounded',sans-serif;font-size:11px;color:#eef3f8;margin:2px 0;}
+.byd-stop-building{font-family:'Space Mono',monospace;font-size:9px;color:rgba(238,243,248,0.4);}
+.byd-walk-label{font-family:'Space Mono',monospace;font-size:8px;color:rgba(0,212,184,0.4);padding:4px 0 4px 16px;border-left:2px dashed rgba(0,212,184,0.08);}
+.byd-tl-footer{display:flex;gap:8px;padding:12px 16px 0;border-top:1px solid rgba(0,212,184,0.1);margin-top:8px;}
+.byd-tl-footer button{flex:1;padding:8px;background:rgba(0,212,184,0.08);border:1px solid rgba(0,212,184,0.2);color:var(--teal);font-family:'Space Mono',monospace;font-size:10px;border-radius:4px;cursor:pointer;transition:all .3s;letter-spacing:.5px;}
+.byd-tl-footer button:hover{background:rgba(0,212,184,0.15);border-color:var(--teal);}
+
+.byd-info-card{position:absolute;bottom:24px;right:24px;z-index:23;width:310px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,212,184,0.2);border-radius:8px;backdrop-filter:blur(12px);padding:20px;opacity:0;transform:translateY(20px);pointer-events:none;transition:all .4s;}
+.byd-info-card.vis{opacity:1;transform:translateY(0);pointer-events:all;}
+.byd-ic-top{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.byd-ic-icon{font-size:28px;}
+.byd-ic-time{font-family:'Space Mono',monospace;font-size:10px;color:rgba(238,243,248,0.4);letter-spacing:1px;}
+.byd-ic-activity{font-family:'Unbounded',sans-serif;font-size:15px;color:#eef3f8;margin-bottom:4px;}
+.byd-ic-building{font-family:'Space Mono',monospace;font-size:11px;color:var(--teal);margin-bottom:8px;}
+.byd-ic-detail{font-family:'Space Mono',monospace;font-size:9px;color:rgba(238,243,248,0.45);line-height:1.5;letter-spacing:.3px;}
+.byd-ic-type{display:inline-block;margin-top:10px;padding:3px 10px;background:rgba(0,212,184,0.1);border:1px solid rgba(0,212,184,0.2);border-radius:12px;font-family:'Space Mono',monospace;font-size:8px;color:var(--teal);letter-spacing:1.5px;}
+
+.byd-controls{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:22;display:none;gap:6px;background:rgba(0,16,32,0.88);border:1px solid rgba(0,212,184,0.18);border-radius:24px;backdrop-filter:blur(12px);padding:6px 10px;}
+.byd-ctrl-btn{width:38px;height:38px;background:none;border:1px solid rgba(0,212,184,0.15);color:rgba(238,243,248,0.7);font-size:16px;border-radius:50%;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;}
+.byd-ctrl-btn:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,212,184,0.08);}
+
+#hero:not(.explore-mode) .byd-timeline,
+#hero:not(.explore-mode) .byd-info-card,
+#hero:not(.explore-mode) .byd-controls{display:none !important;}
+@media(max-width:768px){
+  .byd-major-grid{grid-template-columns:repeat(2,1fr);gap:10px;max-width:400px;}
+  .byd-major-card{padding:20px 14px;}
+  .byd-timeline{width:200px;top:70px;left:12px;}
+  .byd-info-card{width:85vw;max-width:320px;right:12px;bottom:80px;}
+  .byd-controls{bottom:16px;}
+}
+@media(max-width:480px){
+  .byd-timeline{width:170px;font-size:90%;}
+  .byd-info-card{right:8px;left:8px;width:auto;bottom:70px;}
+}
 </style>
 </head>
 <body>
@@ -633,6 +697,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <button class="btn-3d" id="btn-explore3d" onclick="enter3DMode()" data-i18n="explore_3d">Explore Campus 3D &rarr;</button>
     <button class="btn-3d btn-shuttle" id="btn-shuttle" onclick="enterShuttleMode()" data-i18n="shuttle_tracker">Live Shuttle Tracker &rarr;</button>
     <button class="btn-3d btn-tour" id="btn-tour" onclick="startCampusTour()" data-i18n="campus_tour">Campus Tour &rarr;</button>
+    <button class="btn-3d" id="btn-byd" onclick="startBuildYourDay()" style="border-color:rgba(0,255,200,0.4);color:#00ffc8;">Build Your Day &#x2728;</button>
   </div>
   <!-- Mobile gesture hint -->
   <div id="touch-hint" style="display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);z-index:25;padding:12px 24px;background:rgba(0,16,32,0.9);border:1px solid rgba(0,212,184,0.3);border-radius:8px;backdrop-filter:blur(10px);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:rgba(238,243,248,0.8);text-align:center;line-height:1.8;white-space:nowrap;transition:opacity 0.5s;">
@@ -656,6 +721,33 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="shuttle-hud" id="shuttle-hud"><div class="pulse"></div><span id="shuttle-hud-text">Tracking shuttles...</span></div>
   <div class="weather-hud" id="weather-hud"><span class="weather-icon" id="weather-icon"></span><span class="weather-temp" id="weather-temp"></span><span class="weather-cond" id="weather-cond"></span><span class="weather-live">LIVE</span></div>
   <canvas id="weather-canvas"></canvas>
+
+  <!-- Build Your Day -->
+  <div class="byd-timeline" id="byd-timeline">
+    <div class="byd-tl-header">
+      <div class="byd-tl-major" id="byd-tl-major"></div>
+      <div class="byd-tl-date">A Typical Monday</div>
+    </div>
+    <div class="byd-tl-stops" id="byd-tl-stops"></div>
+    <div class="byd-tl-footer">
+      <button onclick="window.bydReplay()">&#x21bb; Replay</button>
+      <button onclick="window.bydExit()">&#x2715; Exit</button>
+    </div>
+  </div>
+  <div class="byd-info-card" id="byd-info-card">
+    <div class="byd-ic-top"><span class="byd-ic-icon" id="byd-ic-icon"></span><span class="byd-ic-time" id="byd-ic-time"></span></div>
+    <div class="byd-ic-activity" id="byd-ic-activity"></div>
+    <div class="byd-ic-building" id="byd-ic-building"></div>
+    <div class="byd-ic-detail" id="byd-ic-detail"></div>
+    <div class="byd-ic-type" id="byd-ic-type"></div>
+  </div>
+  <div class="byd-controls" id="byd-controls">
+    <button class="byd-ctrl-btn" onclick="window.bydPrev()">&#x23EE;</button>
+    <button class="byd-ctrl-btn" id="byd-playpause" onclick="window.bydTogglePlay()">&#x23F8;</button>
+    <button class="byd-ctrl-btn" onclick="window.bydNext()">&#x23ED;</button>
+    <button class="byd-ctrl-btn" onclick="window.bydExit()">&#x2715;</button>
+  </div>
+
   <!-- Beacon Mascot -->
   <div id="beacon-mascot">
     <div class="beacon-bubble" id="beacon-bubble">
@@ -758,6 +850,14 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   <div class="lb-wrap" id="lb-content">
     <div class="lb-msg">No photo yet — check back soon!</div>
   </div>
+</div>
+
+<!-- ─── BUILD YOUR DAY — Major Selector ─── -->
+<div class="byd-major-overlay" id="byd-major-overlay">
+  <div class="byd-major-title">Choose Your Major</div>
+  <div class="byd-major-sub">See what a day looks like on campus</div>
+  <div class="byd-major-grid" id="byd-major-grid"></div>
+  <button class="byd-major-close" onclick="document.getElementById('byd-major-overlay').classList.remove('open')">&times; Close</button>
 </div>
 
 <!-- ─── TICKER ─── -->
@@ -2255,6 +2355,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
     // Dark base color so the globe horizon blends with the site theme
     viewer.scene.globe.baseColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);
+    window._cesiumViewer = viewer;
 
     const CAMPUS_CENTER = Cesium.Cartesian3.fromDegrees(-71.0390, 42.3133, 10);
 
@@ -2495,6 +2596,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       'West Residence Hall':         [-71.0397, 42.3164, 10],
       'East Residence Hall':         [-71.0386, 42.3163, 3]
     };
+    window._buildingLabelPos = BUILDING_LABEL_POS;
 
     function selectBuilding(building){
       if(highlightEntity) viewer.entities.remove(highlightEntity);
@@ -4601,6 +4703,411 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       };
     })();
   }
+
+  // ── Build Your Day ──
+  (function(){
+    function V(){ return window._cesiumViewer; }
+    function BLP(){ return window._buildingLabelPos || {}; }
+    var BYD_MAJORS = [
+      {name:'Computer Science', icon:'\uD83D\uDCBB', desc:'Algorithms, AI, and software engineering'},
+      {name:'Biology', icon:'\uD83E\uDDEC', desc:'From cells to ecosystems \u2014 life sciences'},
+      {name:'Nursing', icon:'\uD83C\uDFE5', desc:'Hands-on clinical training and care'},
+      {name:'Business', icon:'\uD83D\uDCBC', desc:'Management, finance, and entrepreneurship'},
+      {name:'Psychology', icon:'\uD83E\uDDE0', desc:'Understanding the human mind'},
+      {name:'Marine Science', icon:'\uD83C\uDF0A', desc:'Harbor-side ocean research'},
+      {name:'Education', icon:'\uD83D\uDCDA', desc:'Shaping the next generation of learners'}
+    ];
+    var BYD_ICONS = {};
+    BYD_MAJORS.forEach(function(m){ BYD_ICONS[m.name] = m.icon; });
+
+    var BYD_SCHEDULES = {
+      'Computer Science': [
+        {time:'8:00 AM', activity:'Morning Coffee', building:'Campus Center', detail:'Dunkin\u2019 on the upper level \u2014 fuel for the day', icon:'\u2615', type:'break'},
+        {time:'8:30 AM', activity:'Data Structures', building:'McCormack Hall', detail:'3rd Floor \u2014 whiteboard sessions with Prof. Chen', icon:'\uD83D\uDCBB', type:'class'},
+        {time:'10:00 AM', activity:'Linear Algebra', building:'University Hall', detail:'Room 2-065 \u2014 the one with the harbor view', icon:'\uD83D\uDD22', type:'class'},
+        {time:'11:30 AM', activity:'Physics Lab', building:'Integrated Sciences Complex', detail:'2nd floor optics lab \u2014 lasers and lenses', icon:'\uD83D\uDD2C', type:'lab'},
+        {time:'1:00 PM', activity:'Lunch Break', building:'Campus Center', detail:'Grab a burrito bowl at the food court', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'2:00 PM', activity:'Study Session', building:'Healey Library', detail:'6th floor quiet zone \u2014 harbor views help you focus', icon:'\uD83D\uDCDA', type:'study'},
+        {time:'5:00 PM', activity:'Head Home', building:'West Garage', detail:'Quick walk across campus to the residence halls', icon:'\uD83C\uDFE0', type:'home'}
+      ],
+      'Biology': [
+        {time:'7:30 AM', activity:'Breakfast', building:'Campus Center', detail:'Early fuel before a packed lab day', icon:'\uD83E\uDD50', type:'meal'},
+        {time:'8:00 AM', activity:'Cell Biology Lab', building:'Integrated Sciences Complex', detail:'3rd floor wet lab \u2014 microscopes and pipettes', icon:'\uD83E\uDDEC', type:'lab'},
+        {time:'10:00 AM', activity:'Organic Chemistry', building:'University Hall', detail:'The infamous Orgo lecture \u2014 bring your A-game', icon:'\u2697\uFE0F', type:'class'},
+        {time:'12:00 PM', activity:'Lunch', building:'Campus Center', detail:'Meet your study group at the dining hall', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'1:00 PM', activity:'Library Research', building:'Healey Library', detail:'Literature review for your research paper', icon:'\uD83D\uDCD6', type:'study'},
+        {time:'3:00 PM', activity:'Gym Session', building:'Clark Athletic Center', detail:'De-stress at the fitness center between classes', icon:'\uD83C\uDFCB\uFE0F', type:'gym'},
+        {time:'5:30 PM', activity:'Back to Dorms', building:'East Residence Hall', detail:'Unwind with suitemates and harbor sunset', icon:'\uD83C\uDFE0', type:'home'}
+      ],
+      'Nursing': [
+        {time:'7:00 AM', activity:'Clinical Prep', building:'Wheatley Hall', detail:'Review patient charts before hospital rotation', icon:'\uD83D\uDCCB', type:'class'},
+        {time:'8:00 AM', activity:'Anatomy & Physiology', building:'Integrated Sciences Complex', detail:'Cadaver lab on the 4th floor \u2014 intense but fascinating', icon:'\uD83E\uDDB4', type:'lab'},
+        {time:'10:30 AM', activity:'Coffee Break', building:'Campus Center', detail:'Recharge at the caf\u00e9 between rotations', icon:'\u2615', type:'break'},
+        {time:'11:00 AM', activity:'Pharmacology', building:'Wheatley Hall', detail:'Drug interactions and dosage calculations', icon:'\uD83D\uDC8A', type:'class'},
+        {time:'1:00 PM', activity:'Lunch', building:'Campus Center', detail:'Quick meal \u2014 afternoon sim lab starts soon', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'2:00 PM', activity:'Simulation Lab', building:'Wheatley Hall', detail:'Practice IVs and assessments on mannequins', icon:'\uD83C\uDFE5', type:'lab'},
+        {time:'4:30 PM', activity:'Head Home', building:'West Garage', detail:'Long day \u2014 but one step closer to your RN', icon:'\uD83C\uDFE0', type:'home'}
+      ],
+      'Business': [
+        {time:'8:00 AM', activity:'Morning Coffee', building:'Campus Center', detail:'Networking starts early \u2014 bump into classmates', icon:'\u2615', type:'break'},
+        {time:'8:30 AM', activity:'Financial Accounting', building:'McCormack Hall', detail:'5th Floor \u2014 College of Management home base', icon:'\uD83D\uDCBC', type:'class'},
+        {time:'10:00 AM', activity:'Microeconomics', building:'University Hall', detail:'Supply, demand, and a lot of graphs', icon:'\uD83D\uDCC8', type:'class'},
+        {time:'12:00 PM', activity:'Lunch Meeting', building:'Campus Center', detail:'Entrepreneurship club weekly planning', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'1:30 PM', activity:'Marketing Strategy', building:'McCormack Hall', detail:'Case study presentations today', icon:'\uD83D\uDCCA', type:'class'},
+        {time:'3:30 PM', activity:'Gym', building:'Clark Athletic Center', detail:'Pickup basketball with the finance crew', icon:'\uD83C\uDFC0', type:'gym'},
+        {time:'5:00 PM', activity:'Library Study', building:'Healey Library', detail:'Group project prep \u2014 presentation tomorrow', icon:'\uD83D\uDCDA', type:'study'}
+      ],
+      'Psychology': [
+        {time:'8:30 AM', activity:'Intro to Psychology', building:'Integrated Sciences Complex', detail:'300-seat lecture hall \u2014 the big one', icon:'\uD83E\uDDE0', type:'class'},
+        {time:'10:00 AM', activity:'Statistics for Psych', building:'McCormack Hall', detail:'SPSS and data crunching \u2014 surprisingly fun', icon:'\uD83D\uDD22', type:'class'},
+        {time:'12:00 PM', activity:'Lunch', building:'Campus Center', detail:'People-watching from the terrace', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'1:00 PM', activity:'Research Methods', building:'Integrated Sciences Complex', detail:'Designing your first experiment', icon:'\uD83D\uDD2C', type:'lab'},
+        {time:'3:00 PM', activity:'Counseling Workshop', building:'Wheatley Hall', detail:'Role-play sessions with classmates', icon:'\uD83D\uDCAC', type:'class'},
+        {time:'4:30 PM', activity:'Library Research', building:'Healey Library', detail:'APA-format papers don\u2019t write themselves', icon:'\uD83D\uDCDA', type:'study'},
+        {time:'6:00 PM', activity:'Dinner & Home', building:'East Residence Hall', detail:'Dining commons \u2014 7 stations to choose from', icon:'\uD83C\uDFE0', type:'home'}
+      ],
+      'Marine Science': [
+        {time:'7:30 AM', activity:'Field Sampling', building:'Campus Center', detail:'Meet at the harborwalk \u2014 water samples today', icon:'\uD83E\uDDEA', type:'lab'},
+        {time:'9:30 AM', activity:'Marine Biology', building:'Integrated Sciences Complex', detail:'Phytoplankton under the fluorescence scope', icon:'\uD83C\uDF0A', type:'class'},
+        {time:'11:00 AM', activity:'Oceanography', building:'University Hall', detail:'Current systems and climate models', icon:'\uD83C\uDF0D', type:'class'},
+        {time:'12:30 PM', activity:'Lunch', building:'Campus Center', detail:'Fish tacos \u2014 ironic but delicious', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'1:30 PM', activity:'GIS Lab', building:'Healey Library', detail:'Mapping harbor pollution with ArcGIS', icon:'\uD83D\uDDFA\uFE0F', type:'lab'},
+        {time:'3:30 PM', activity:'Faculty Meeting', building:'Quinn Administration', detail:'Discuss summer Nantucket Field Station trip', icon:'\uD83D\uDCDD', type:'class'},
+        {time:'5:00 PM', activity:'Harborwalk Home', building:'East Residence Hall', detail:'Scenic walk along Dorchester Bay', icon:'\uD83C\uDFE0', type:'home'}
+      ],
+      'Education': [
+        {time:'8:00 AM', activity:'Child Development', building:'Wheatley Hall', detail:'Piaget, Vygotsky, and classroom applications', icon:'\uD83D\uDCDA', type:'class'},
+        {time:'9:30 AM', activity:'Teaching Methods', building:'McCormack Hall', detail:'Lesson planning workshop \u2014 bring your laptop', icon:'\uD83C\uDFEB', type:'class'},
+        {time:'11:00 AM', activity:'Education Policy', building:'Wheatley Hall', detail:'Debating equity in public school funding', icon:'\uD83D\uDCDC', type:'class'},
+        {time:'12:30 PM', activity:'Lunch', building:'Campus Center', detail:'Grab a seat by the windows \u2014 harbor view', icon:'\uD83C\uDF7D\uFE0F', type:'meal'},
+        {time:'1:30 PM', activity:'Field Observation', building:'Quinn Administration', detail:'Prep paperwork for your school placement', icon:'\uD83D\uDCCB', type:'class'},
+        {time:'3:00 PM', activity:'Wellness Break', building:'Clark Athletic Center', detail:'Yoga class \u2014 teacher self-care matters', icon:'\uD83E\uDDD8', type:'gym'},
+        {time:'4:30 PM', activity:'Study & Home', building:'Healey Library', detail:'Grade mock assignments before heading out', icon:'\uD83C\uDFE0', type:'study'}
+      ]
+    };
+
+    var _byd = {
+      active: false,
+      playing: false,
+      currentMajor: null,
+      currentStopIdx: -1,
+      stops: [],
+      entities: [],
+      pathEntities: [],
+      flyTimeout: null
+    };
+
+    function findBuilding(name){
+      var n = name.toLowerCase();
+      for(var i=0;i<CAMPUS_BUILDINGS.length;i++){
+        if(CAMPUS_BUILDINGS[i].name.toLowerCase() === n) return CAMPUS_BUILDINGS[i];
+      }
+      for(var i=0;i<CAMPUS_BUILDINGS.length;i++){
+        if(CAMPUS_BUILDINGS[i].name.toLowerCase().indexOf(n) !== -1) return CAMPUS_BUILDINGS[i];
+      }
+      return null;
+    }
+
+    function walkMinutes(b1,b2){
+      var R=6371000, dLat=(b2.lat-b1.lat)*Math.PI/180, dLng=(b2.lng-b1.lng)*Math.PI/180;
+      var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(b1.lat*Math.PI/180)*Math.cos(b2.lat*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+      var d=2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+      return Math.max(1,Math.round(d/83.33));
+    }
+
+    function addMarker(building,num){
+      var b = findBuilding(building);
+      if(!b) return;
+      var lp = BLP()[b.name] || [b.lng, b.lat, 15];
+      var ent = V().entities.add({
+        position: Cesium.Cartesian3.fromDegrees(lp[0], lp[1], (lp[2]||15)+5),
+        point: {
+          pixelSize: 22,
+          color: Cesium.Color.fromCssColorString('#00d4b8'),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          scaleByDistance: new Cesium.NearFarScalar(50,1.3,800,0.7)
+        },
+        label: {
+          text: String(num),
+          font: 'bold 12px sans-serif',
+          fillColor: Cesium.Color.WHITE,
+          style: Cesium.LabelStyle.FILL,
+          verticalOrigin: Cesium.VerticalOrigin.CENTER,
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          pixelOffset: new Cesium.Cartesian2(0,0)
+        }
+      });
+      _byd.entities.push(ent);
+    }
+
+    function drawPath(from,to){
+      var b1=findBuilding(from), b2=findBuilding(to);
+      if(!b1||!b2) return;
+      var midLat=(b1.lat+b2.lat)/2, midLng=(b1.lng+b2.lng)/2;
+      var dx=b2.lng-b1.lng, dy=b2.lat-b1.lat;
+      var perpLat=midLat+dx*0.12, perpLng=midLng-dy*0.12;
+      var positions=Cesium.Cartesian3.fromDegreesArrayHeights([
+        b1.lng, b1.lat, 4,
+        perpLng, perpLat, 8,
+        b2.lng, b2.lat, 4
+      ]);
+      var ent=V().entities.add({
+        polyline:{
+          positions:positions,
+          width:5,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            glowPower:0.25,
+            color:Cesium.Color.fromCssColorString('#00d4b8').withAlpha(0.8)
+          }),
+          clampToGround:false
+        }
+      });
+      _byd.pathEntities.push(ent);
+    }
+
+    function showInfoCard(stop){
+      document.getElementById('byd-ic-icon').textContent = stop.icon;
+      document.getElementById('byd-ic-time').textContent = stop.time;
+      document.getElementById('byd-ic-activity').textContent = stop.activity;
+      document.getElementById('byd-ic-building').textContent = stop.building;
+      document.getElementById('byd-ic-detail').textContent = stop.detail;
+      document.getElementById('byd-ic-type').textContent = stop.type.toUpperCase();
+      document.getElementById('byd-info-card').classList.add('vis');
+    }
+    function hideInfoCard(){
+      document.getElementById('byd-info-card').classList.remove('vis');
+    }
+
+    function updateTimeline(idx){
+      var stops = document.querySelectorAll('.byd-stop');
+      stops.forEach(function(el,i){
+        el.classList.remove('active','completed');
+        if(i===idx) el.classList.add('active');
+        else if(i<idx) el.classList.add('completed');
+      });
+      var active = document.querySelector('.byd-stop.active');
+      if(active) active.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+
+    function buildTimeline(major){
+      var stops = BYD_SCHEDULES[major];
+      var container = document.getElementById('byd-tl-stops');
+      container.innerHTML = '';
+      document.getElementById('byd-tl-major').textContent = (BYD_ICONS[major]||'') + ' ' + major;
+
+      stops.forEach(function(stop,i){
+        var div = document.createElement('div');
+        div.className = 'byd-stop';
+        div.setAttribute('data-idx',i);
+        div.innerHTML = '<div class="byd-stop-time">'+stop.time+'</div>'+
+          '<div class="byd-stop-name">'+stop.icon+' '+stop.activity+'</div>'+
+          '<div class="byd-stop-building">'+stop.building+'</div>';
+        div.onclick = function(){ jumpTo(i); };
+        container.appendChild(div);
+
+        if(i < stops.length-1){
+          var b1=findBuilding(stop.building), b2=findBuilding(stops[i+1].building);
+          if(b1 && b2){
+            var mins = walkMinutes(b1,b2);
+            var wk = document.createElement('div');
+            wk.className = 'byd-walk-label';
+            wk.textContent = '\uD83D\uDEB6 ~'+mins+' min walk';
+            container.appendChild(wk);
+          }
+        }
+      });
+    }
+
+    function playStop(idx){
+      if(!_byd.active || idx >= _byd.stops.length) return;
+      _byd.currentStopIdx = idx;
+      var stop = _byd.stops[idx];
+      updateTimeline(idx);
+      hideInfoCard();
+
+      if(idx > 0){
+        drawPath(_byd.stops[idx-1].building, stop.building);
+      }
+
+      droneFlyTo(stop.building, function(){
+        addMarker(stop.building, idx+1);
+        showInfoCard(stop);
+
+        if(_byd.playing){
+          _byd.flyTimeout = setTimeout(function(){
+            hideInfoCard();
+            if(idx+1 < _byd.stops.length){
+              playStop(idx+1);
+            } else {
+              bydFinish();
+            }
+          }, 4000);
+        }
+      });
+    }
+
+    function bydFinish(){
+      _byd.playing = false;
+      document.getElementById('byd-playpause').innerHTML = '&#x21bb;';
+      V().camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(-71.0390, 42.3140, 450),
+        orientation:{
+          heading:Cesium.Math.toRadians(0),
+          pitch:Cesium.Math.toRadians(-70),
+          roll:0
+        },
+        duration:2.5
+      });
+    }
+
+    function jumpTo(idx){
+      if(!_byd.active) return;
+      _byd.playing = false;
+      clearTimeout(_byd.flyTimeout);
+      document.getElementById('byd-playpause').innerHTML = '\u25B6\uFE0F';
+      playStop(idx);
+    }
+
+    window.bydTogglePlay = function(){
+      if(!_byd.active) return;
+      _byd.playing = !_byd.playing;
+      document.getElementById('byd-playpause').innerHTML = _byd.playing ? '&#x23F8;' : '\u25B6\uFE0F';
+      if(_byd.playing){
+        if(_byd.currentStopIdx+1 < _byd.stops.length){
+          hideInfoCard();
+          _byd.flyTimeout = setTimeout(function(){
+            playStop(_byd.currentStopIdx+1);
+          }, 1500);
+        } else {
+          window.bydReplay();
+        }
+      } else {
+        clearTimeout(_byd.flyTimeout);
+      }
+    };
+
+    window.bydNext = function(){
+      if(!_byd.active) return;
+      clearTimeout(_byd.flyTimeout);
+      var next = Math.min(_byd.currentStopIdx+1, _byd.stops.length-1);
+      _byd.playing = false;
+      document.getElementById('byd-playpause').innerHTML = '\u25B6\uFE0F';
+      playStop(next);
+    };
+
+    window.bydPrev = function(){
+      if(!_byd.active) return;
+      clearTimeout(_byd.flyTimeout);
+      var prev = Math.max(_byd.currentStopIdx-1, 0);
+      _byd.playing = false;
+      document.getElementById('byd-playpause').innerHTML = '\u25B6\uFE0F';
+      playStop(prev);
+    };
+
+    window.bydReplay = function(){
+      _byd.entities.forEach(function(e){ V().entities.remove(e); });
+      _byd.pathEntities.forEach(function(e){ V().entities.remove(e); });
+      _byd.entities = [];
+      _byd.pathEntities = [];
+      _byd.playing = true;
+      _byd.currentStopIdx = -1;
+      document.getElementById('byd-playpause').innerHTML = '&#x23F8;';
+      hideInfoCard();
+      V().camera.flyTo({
+        destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3140,350),
+        orientation:{heading:Cesium.Math.toRadians(0),pitch:Cesium.Math.toRadians(-60),roll:0},
+        duration:1.5,
+        complete:function(){ setTimeout(function(){ playStop(0); },800); }
+      });
+    };
+
+    window.bydExit = function(){
+      _byd.active = false;
+      _byd.playing = false;
+      clearTimeout(_byd.flyTimeout);
+      _byd.entities.forEach(function(e){ try{V().entities.remove(e);}catch(x){} });
+      _byd.pathEntities.forEach(function(e){ try{V().entities.remove(e);}catch(x){} });
+      _byd.entities = [];
+      _byd.pathEntities = [];
+      document.getElementById('byd-timeline').classList.remove('vis');
+      document.getElementById('byd-info-card').classList.remove('vis');
+      document.getElementById('byd-controls').style.display = 'none';
+      document.getElementById('byd-major-overlay').classList.remove('open');
+    };
+
+    function selectMajor(name){
+      document.getElementById('byd-major-overlay').classList.remove('open');
+      _byd.active = true;
+      _byd.playing = true;
+      _byd.currentMajor = name;
+      _byd.stops = BYD_SCHEDULES[name];
+      _byd.currentStopIdx = -1;
+
+      if(typeof closeBuildingPanel === 'function') closeBuildingPanel();
+      // closeBuildingPanel handles clearing highlight
+      if(window.cancelDroneTour) window.cancelDroneTour();
+
+      buildTimeline(name);
+      document.getElementById('byd-timeline').classList.add('vis');
+      document.getElementById('byd-controls').style.display = 'flex';
+      document.getElementById('byd-playpause').innerHTML = '&#x23F8;';
+
+      V().camera.flyTo({
+        destination:Cesium.Cartesian3.fromDegrees(-71.0390,42.3140,350),
+        orientation:{
+          heading:Cesium.Math.toRadians(0),
+          pitch:Cesium.Math.toRadians(-60),
+          roll:0
+        },
+        duration:2.0,
+        complete:function(){
+          setTimeout(function(){ playStop(0); },1000);
+        }
+      });
+    }
+
+    window.startBuildYourDay = function(){
+      var isExploring = document.getElementById('hero').classList.contains('explore-mode');
+      if(!isExploring){
+        var heroEl = document.getElementById('hero');
+        window.scrollTo({top:heroEl.offsetTop, behavior:'smooth'});
+        setTimeout(function(){
+          enter3DMode();
+          setTimeout(function(){
+            document.getElementById('byd-major-overlay').classList.add('open');
+          },1500);
+        },400);
+      } else {
+        if(_byd.active) window.bydExit();
+        document.getElementById('byd-major-overlay').classList.add('open');
+      }
+    };
+
+    // Populate major grid
+    var gridEl = document.getElementById('byd-major-grid');
+    if(gridEl){
+      BYD_MAJORS.forEach(function(m){
+        var card = document.createElement('div');
+        card.className = 'byd-major-card';
+        card.innerHTML = '<div class="byd-mc-icon">'+m.icon+'</div>'+
+          '<div class="byd-mc-name">'+m.name+'</div>'+
+          '<div class="byd-mc-desc">'+m.desc+'</div>';
+        card.onclick = function(){ selectMajor(m.name); };
+        gridEl.appendChild(card);
+      });
+    }
+
+    // Monkey-patch exit3DMode to clean up BYD
+    var _origExitBYD = window.exit3DMode;
+    window.exit3DMode = function(){
+      if(_byd.active) window.bydExit();
+      document.getElementById('byd-major-overlay').classList.remove('open');
+      _origExitBYD();
+    };
+  })();
 
   // Fetch the Google Maps API key (already used for 2D map) and init Cesium
   fetch('/api/maps-key')

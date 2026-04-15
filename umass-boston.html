@@ -4949,59 +4949,114 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       _byd.pathEntities.push(ent);
     }
 
-    // Animate camera smoothly along route waypoints
+    // Animate camera smoothly along route using continuous interpolation
     function flyAlongRoute(pts, callback){
       if(!pts || pts.length < 2){ if(callback) callback(); return; }
       var viewer = V();
-      // Sample points evenly — use every Nth point for smooth travel
-      var sampled = [pts[0]];
-      var step = Math.max(1, Math.floor(pts.length / 12));
-      for(var i = step; i < pts.length - 1; i += step){
-        sampled.push(pts[i]);
+      var camAlt = 45;     // lower altitude for immersive feel
+      var camPitch = -30;  // look-down angle
+      var camBack = 0.0005; // offset behind current point
+
+      // Build cumulative distances for even-speed interpolation
+      var dists = [0];
+      for(var i = 1; i < pts.length; i++){
+        var dLat = (pts[i].lat - pts[i-1].lat) * 111320;
+        var dLng = (pts[i].lng - pts[i-1].lng) * 111320 * Math.cos(pts[i].lat * Math.PI / 180);
+        dists.push(dists[i-1] + Math.sqrt(dLat*dLat + dLng*dLng));
       }
-      sampled.push(pts[pts.length - 1]);
+      var totalDist = dists[dists.length - 1];
+      if(totalDist < 1){ if(callback) callback(); return; }
 
-      var idx = 0;
-      var camAlt = 80;   // camera altitude above ground
-      var camBack = 0.0008; // how far behind the point the camera sits (in degrees)
+      // Duration: ~1 second per 80m of walking distance, min 3s max 10s
+      var duration = Math.max(3, Math.min(10, totalDist / 80));
+      var startTime = null;
+      var prevHeading = null;
+      var _removeListener = null;
 
-      function flyNext(){
-        if(!_byd.active){ if(callback) callback(); return; }
-        if(idx >= sampled.length){ if(callback) callback(); return; }
-        var pt = sampled[idx];
-        // Look ahead to next point for heading
-        var next = sampled[Math.min(idx + 1, sampled.length - 1)];
-        var dLng = next.lng - pt.lng;
-        var dLat = next.lat - pt.lat;
-        var heading = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
-
-        // Position camera slightly behind current point along the heading
-        var offsetLat = pt.lat - Math.cos(heading * Math.PI / 180) * camBack;
-        var offsetLng = pt.lng - Math.sin(heading * Math.PI / 180) * camBack;
-
-        var duration = idx === 0 ? 1.8 : 0.9;
-        // Last point gets a bit longer to settle
-        if(idx === sampled.length - 1) duration = 1.2;
-
-        viewer.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(offsetLng, offsetLat, camAlt),
-          orientation:{
-            heading: Cesium.Math.toRadians(heading),
-            pitch: Cesium.Math.toRadians(-35),
-            roll: 0
-          },
-          duration: duration,
-          complete: function(){
-            idx++;
-            flyNext();
-          },
-          cancel: function(){
-            if(callback) callback();
+      // Interpolate point at distance d along the polyline
+      function interpAtDist(d){
+        d = Math.max(0, Math.min(totalDist, d));
+        for(var i = 1; i < dists.length; i++){
+          if(dists[i] >= d){
+            var segLen = dists[i] - dists[i-1];
+            var t = segLen > 0 ? (d - dists[i-1]) / segLen : 0;
+            return {
+              lat: pts[i-1].lat + (pts[i].lat - pts[i-1].lat) * t,
+              lng: pts[i-1].lng + (pts[i].lng - pts[i-1].lng) * t
+            };
           }
-        });
+        }
+        return pts[pts.length - 1];
       }
 
-      flyNext();
+      // Smooth heading to avoid jerky rotations
+      function smoothHeading(target, prev){
+        if(prev === null) return target;
+        var diff = target - prev;
+        // Normalize to -180..180
+        while(diff > 180) diff -= 360;
+        while(diff < -180) diff += 360;
+        return prev + diff * 0.15; // gentle blend
+      }
+
+      // First, fly to starting position to begin smoothly
+      var startPt = pts[0];
+      var lookPt = pts[Math.min(3, pts.length - 1)];
+      var initHeading = (Math.atan2(lookPt.lng - startPt.lng, lookPt.lat - startPt.lat) * 180 / Math.PI + 360) % 360;
+
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(startPt.lng, startPt.lat, camAlt),
+        orientation:{
+          heading: Cesium.Math.toRadians(initHeading),
+          pitch: Cesium.Math.toRadians(camPitch),
+          roll: 0
+        },
+        duration: 1.2,
+        complete: function(){
+          prevHeading = initHeading;
+          // Start continuous animation on postRender
+          _removeListener = viewer.scene.postRender.addEventListener(function(){
+            if(!_byd.active){
+              viewer.scene.postRender.removeEventListener(_removeListener);
+              if(callback) callback();
+              return;
+            }
+            if(!startTime) startTime = Date.now();
+            var elapsed = (Date.now() - startTime) / 1000;
+            var t = Math.min(1, elapsed / duration);
+            // Ease in-out for smooth start/stop
+            var eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+
+            var d = eased * totalDist;
+            var pos = interpAtDist(d);
+            // Look ahead a bit for heading
+            var ahead = interpAtDist(Math.min(totalDist, d + 30));
+            var rawHeading = (Math.atan2(ahead.lng - pos.lng, ahead.lat - pos.lat) * 180 / Math.PI + 360) % 360;
+            prevHeading = smoothHeading(rawHeading, prevHeading);
+
+            // Offset camera slightly behind
+            var offLat = pos.lat - Math.cos(prevHeading * Math.PI / 180) * camBack;
+            var offLng = pos.lng - Math.sin(prevHeading * Math.PI / 180) * camBack;
+
+            viewer.camera.setView({
+              destination: Cesium.Cartesian3.fromDegrees(offLng, offLat, camAlt),
+              orientation:{
+                heading: Cesium.Math.toRadians(prevHeading),
+                pitch: Cesium.Math.toRadians(camPitch),
+                roll: 0
+              }
+            });
+
+            if(t >= 1){
+              viewer.scene.postRender.removeEventListener(_removeListener);
+              if(callback) callback();
+            }
+          });
+        },
+        cancel: function(){
+          if(callback) callback();
+        }
+      });
     }
 
     function drawFallbackCurve(b1, b2){

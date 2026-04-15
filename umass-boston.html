@@ -4999,33 +4999,35 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         return prev + diff * 0.1; // very gentle blend
       }
 
+      var removeOnTick = null; // Cesium returns a removal function
+
+      function stopTick(){
+        if(removeOnTick){ removeOnTick(); removeOnTick = null; }
+      }
+
       function onTick(){
-        if(done) return;
-        if(!_byd.active){ done = true; if(callback) callback(); return; }
+        if(done){ stopTick(); return; }
+        if(!_byd.active){ done = true; stopTick(); if(callback) callback(); return; }
         // Pause support: freeze elapsed time when not playing
         if(!_byd.playing){
           if(pausedAt === null && startTime) pausedAt = (Date.now() - startTime) / 1000;
           return;
         }
         if(pausedAt !== null){
-          // Resuming — shift startTime so elapsed picks up where we left off
           startTime = Date.now() - pausedAt * 1000;
           pausedAt = null;
         }
         if(!startTime) startTime = Date.now();
         var elapsed = (Date.now() - startTime) / 1000;
         var t = Math.min(1, elapsed / duration);
-        // Ease in-out for smooth start/stop
         var eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
 
         var d = eased * totalDist;
         var pos = interpAtDist(d);
-        // Look ahead for heading
         var ahead = interpAtDist(Math.min(totalDist, d + 30));
         var rawHeading = (Math.atan2(ahead.lng - pos.lng, ahead.lat - pos.lat) * 180 / Math.PI + 360) % 360;
         prevHeading = smoothHeading(rawHeading, prevHeading);
 
-        // Offset camera slightly behind
         var offLat = pos.lat - Math.cos(prevHeading * Math.PI / 180) * camBack;
         var offLng = pos.lng - Math.sin(prevHeading * Math.PI / 180) * camBack;
 
@@ -5040,6 +5042,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 
         if(t >= 1){
           done = true;
+          stopTick();
           if(callback) callback();
         }
       }
@@ -5059,7 +5062,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         },
         duration: 1.5,
         complete: function(){
-          viewer.scene.postRender.addEventListener(onTick);
+          removeOnTick = viewer.scene.postRender.addEventListener(onTick);
         },
         cancel: function(){
           if(callback) callback();

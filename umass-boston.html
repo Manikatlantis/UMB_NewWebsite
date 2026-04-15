@@ -2348,10 +2348,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       navigationHelpButton:false,
       navigationInstructionsInitiallyVisible:false,
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      baseLayer: false,  // skip default imagery — prevents 401 with empty Ion token
     });
-
-    // Remove default imagery — photorealistic tiles replace it
-    viewer.imageryLayers.removeAll();
 
     // Dark base color so the globe horizon blends with the site theme
     viewer.scene.globe.baseColor = new Cesium.Color(0.02, 0.05, 0.12, 1.0);

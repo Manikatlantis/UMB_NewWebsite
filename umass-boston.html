@@ -193,110 +193,72 @@ nav.scrolled{padding:12px 52px;background:rgba(0,10,22,0.97);border-bottom:1px s
 .bus-label{position:absolute;pointer-events:none;z-index:15;transform:translate(-50%,-100%);white-space:nowrap;padding:3px 8px;background:rgba(0,16,48,0.92);border:1px solid rgba(245,166,35,0.5);border-radius:3px;font-family:'Space Mono',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.5);}
 
 /* ── HERO LOADING SCREEN ── */
-#hero-loader{position:absolute;inset:0;z-index:30;background:var(--deep);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity 0.8s ease, visibility 0.8s;overflow:hidden;}
+#hero-loader{position:absolute;inset:0;z-index:30;background:#000810;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity 0.8s ease, visibility 0.8s;overflow:hidden;}
 #hero-loader.done{opacity:0;visibility:hidden;pointer-events:none;}
-/* Animated gradient aurora background */
-#hero-loader::before{
-  content:"";position:absolute;inset:-50%;
-  background:radial-gradient(ellipse at 30% 50%,rgba(0,200,212,0.08) 0%,transparent 60%),
-    radial-gradient(ellipse at 70% 60%,rgba(28,110,164,0.08) 0%,transparent 60%),
-    radial-gradient(ellipse at 50% 40%,rgba(0,56,101,0.1) 0%,transparent 50%);
-  animation:loader-aurora 8s ease-in-out infinite alternate;
-}
-@keyframes loader-aurora{
-  0%{transform:translate(-5%,-5%) rotate(0deg) scale(1);}
-  100%{transform:translate(5%,5%) rotate(15deg) scale(1.1);}
-}
-/* Floating particles */
-.loader-particles{position:absolute;inset:0;overflow:hidden;}
-.loader-dot{
-  position:absolute;width:3px;height:3px;border-radius:50%;
-  background:var(--teal);opacity:0;
-  animation:loader-float 6s ease-in-out infinite;
-}
-.loader-dot:nth-child(1){left:15%;top:80%;animation-delay:0s;animation-duration:5s;}
-.loader-dot:nth-child(2){left:35%;top:85%;animation-delay:0.8s;animation-duration:6.5s;}
-.loader-dot:nth-child(3){left:55%;top:78%;animation-delay:1.6s;animation-duration:5.5s;}
-.loader-dot:nth-child(4){left:70%;top:82%;animation-delay:2.4s;animation-duration:7s;}
-.loader-dot:nth-child(5){left:85%;top:76%;animation-delay:3.2s;animation-duration:6s;}
-.loader-dot:nth-child(6){left:25%;top:88%;animation-delay:4s;animation-duration:5.8s;}
-.loader-dot:nth-child(7){left:60%;top:90%;animation-delay:1.2s;animation-duration:6.2s;}
-.loader-dot:nth-child(8){left:45%;top:74%;animation-delay:2.8s;animation-duration:7.5s;}
-@keyframes loader-float{
-  0%{transform:translateY(0) scale(1);opacity:0;}
-  10%{opacity:0.6;}
-  50%{opacity:0.3;transform:translateY(-40vh) scale(0.5);}
-  100%{transform:translateY(-80vh) scale(0);opacity:0;}
-}
-/* Harbor waves at bottom */
-.loader-waves{position:absolute;bottom:0;left:0;right:0;height:60px;overflow:hidden;opacity:0;animation:fup 1s 0.3s forwards;}
-.loader-wave{position:absolute;bottom:0;left:-50%;width:200%;height:40px;
-  background:repeating-linear-gradient(90deg,transparent 0,transparent 40%,rgba(0,200,212,0.06) 50%,transparent 60%,transparent 100%);
-  border-radius:40% 40% 0 0;animation:loader-wave-move 4s ease-in-out infinite;
-}
-.loader-wave:nth-child(2){height:30px;opacity:0.5;animation-duration:5s;animation-delay:-1s;bottom:5px;}
-.loader-wave:nth-child(3){height:20px;opacity:0.3;animation-duration:6s;animation-delay:-2s;bottom:8px;}
-@keyframes loader-wave-move{0%,100%{transform:translateX(0);}50%{transform:translateX(5%);}}
-/* Logo */
-.loader-logo{width:160px;opacity:0;animation:fup 0.8s 0.3s forwards;position:relative;z-index:1;}
-.loader-logo img{width:100%;filter:brightness(0) invert(1);opacity:0.9;}
-/* Hourglass with glow */
-.loader-hg-wrap{position:relative;z-index:1;opacity:0;animation:fup 0.8s 0.5s forwards;}
-.loader-hg-wrap::after{
-  content:"";position:absolute;inset:-20px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,200,212,0.15) 0%,transparent 70%);
+#loader-canvas{position:absolute;inset:0;z-index:0;}
+.loader-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:20px;}
+/* Logo with beacon glow */
+.loader-logo{width:180px;position:relative;z-index:1;opacity:0;animation:fup 0.6s 0.2s forwards;}
+.loader-logo img{width:100%;filter:brightness(0) invert(1);opacity:0.95;filter:brightness(0) invert(1) drop-shadow(0 0 30px rgba(0,200,212,0.4));}
+/* Hourglass with intense glow ring */
+.loader-hg-wrap{position:relative;z-index:1;opacity:0;animation:fup 0.6s 0.4s forwards;padding:30px;}
+.loader-hg-wrap::before{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,200,212,0.25) 0%,rgba(28,110,164,0.1) 40%,transparent 70%);
   animation:loader-glow-pulse 2s ease-in-out infinite;
 }
-@keyframes loader-glow-pulse{0%,100%{opacity:0.5;transform:scale(0.9);}50%{opacity:1;transform:scale(1.1);}}
+.loader-hg-wrap::after{
+  content:"";position:absolute;inset:5px;border-radius:50%;
+  border:1px solid rgba(0,200,212,0.15);
+  animation:loader-ring-spin 6s linear infinite;
+}
+@keyframes loader-ring-spin{to{transform:rotate(360deg);}}
+@keyframes loader-glow-pulse{0%,100%{opacity:0.6;transform:scale(0.95);}50%{opacity:1;transform:scale(1.05);}}
 .loader-hourglass{
-  --c1:var(--teal);
-  --c2:var(--umb-blue-light);
-  width:40px;height:80px;position:relative;z-index:1;
+  --c1:var(--teal);--c2:var(--umb-blue-light);
+  width:44px;height:88px;position:relative;z-index:1;
   border-top:4px solid var(--c1);border-bottom:4px solid var(--c1);
   background:linear-gradient(90deg,var(--c1) 2px,var(--c2) 0 5px,var(--c1) 0) 50%/7px 8px no-repeat;
-  display:grid;overflow:hidden;
-  animation:hg-flip 2s infinite linear;
+  display:grid;overflow:hidden;animation:hg-flip 2s infinite linear;
 }
 .loader-hourglass::before,.loader-hourglass::after{
   content:"";grid-area:1/1;width:75%;height:calc(50% - 4px);margin:0 auto;
-  border:2px solid var(--c1);border-top:0;box-sizing:content-box;
-  border-radius:0 0 40% 40%;
+  border:2px solid var(--c1);border-top:0;box-sizing:content-box;border-radius:0 0 40% 40%;
   -webkit-mask:linear-gradient(#000 0 0) bottom/4px 2px no-repeat,linear-gradient(#000 0 0);
   -webkit-mask-composite:destination-out;mask-composite:exclude;
   background:linear-gradient(var(--d,0deg),var(--c2) 50%,#0000 0) bottom/100% 205%,
     linear-gradient(var(--c2) 0 0) center/0 100%;
-  background-repeat:no-repeat;
-  animation:hg-fill 2s infinite linear;
+  background-repeat:no-repeat;animation:hg-fill 2s infinite linear;
 }
-.loader-hourglass::after{
-  transform-origin:50% calc(100% + 2px);transform:scaleY(-1);
-  --s:3px;--d:180deg;
-}
+.loader-hourglass::after{transform-origin:50% calc(100% + 2px);transform:scaleY(-1);--s:3px;--d:180deg;}
 @keyframes hg-flip{80%{transform:rotate(0)}100%{transform:rotate(0.5turn)}}
 @keyframes hg-fill{10%,70%{background-size:100% 205%,var(--s,0) 100%}70%,100%{background-position:top,center}}
-/* Cycling facts */
-.loader-fact{
-  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;
-  color:rgba(0,200,212,0.7);text-align:center;max-width:320px;line-height:1.5;
-  position:relative;z-index:1;height:18px;overflow:hidden;
-  opacity:0;animation:fup 0.8s 0.6s forwards;
+/* Cycling text */
+.loader-tagline{
+  font-family:'Playfair Display',serif;font-size:18px;font-style:italic;font-weight:400;
+  color:rgba(255,255,255,0.7);text-align:center;letter-spacing:1px;
+  position:relative;z-index:1;height:24px;overflow:hidden;
+  opacity:0;animation:fup 0.6s 0.6s forwards;
 }
-.loader-fact span{
-  display:block;
-  animation:loader-fact-cycle 12s ease-in-out infinite;
+.loader-tagline-inner{display:block;animation:loader-tagline-cycle 10s ease-in-out infinite;}
+@keyframes loader-tagline-cycle{
+  0%,22%{transform:translateY(0);opacity:1;}
+  25%{opacity:0;transform:translateY(-5px);}
+  28%,47%{transform:translateY(-24px);opacity:1;}
+  50%{opacity:0;transform:translateY(-29px);}
+  53%,72%{transform:translateY(-48px);opacity:1;}
+  75%{opacity:0;transform:translateY(-53px);}
+  78%,97%{transform:translateY(-72px);opacity:1;}
+  100%{opacity:0;transform:translateY(-77px);}
 }
-@keyframes loader-fact-cycle{
-  0%,20%{transform:translateY(0);opacity:1;}
-  24%,26%{opacity:0;}
-  26%,50%{transform:translateY(-18px);opacity:1;}
-  54%,56%{opacity:0;}
-  56%,80%{transform:translateY(-36px);opacity:1;}
-  84%,86%{opacity:0;}
-  86%,100%{transform:translateY(-54px);opacity:1;}
+/* Status text */
+.loader-text{
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:5px;text-transform:uppercase;
+  color:var(--teal);position:relative;z-index:1;
+  opacity:0;animation:fup 0.6s 0.8s forwards;
 }
-.loader-text{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--teal);opacity:0;animation:fup 0.8s 0.7s forwards;position:relative;z-index:1;}
 /* Progress bar with shimmer */
-.loader-bar{width:220px;height:3px;background:rgba(0,212,184,0.08);border-radius:2px;overflow:hidden;opacity:0;animation:fup 0.8s 0.9s forwards;position:relative;z-index:1;}
+.loader-bar{width:260px;height:2px;background:rgba(0,212,184,0.1);border-radius:2px;overflow:hidden;position:relative;z-index:1;opacity:0;animation:fup 0.6s 1s forwards;}
 .loader-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--teal),var(--umb-blue-light));border-radius:2px;transition:width 0.3s ease-out;position:relative;}
 .loader-fill::after{
   content:"";position:absolute;inset:0;
@@ -807,18 +769,138 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   </div>
   <!-- Loading screen -->
   <div id="hero-loader">
-    <div class="loader-particles">
-      <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
-      <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
-      <div class="loader-dot"></div><div class="loader-dot"></div>
+    <canvas id="loader-canvas"></canvas>
+    <div class="loader-center">
+      <div class="loader-logo"><img src="Umass-Boston-Logo-01.png" alt="UMass Boston"></div>
+      <div class="loader-hg-wrap"><div class="loader-hourglass"></div></div>
+      <div class="loader-tagline"><span class="loader-tagline-inner">Where brilliance meets the tides<br>Boston's waterfront research university<br>120 acres on Columbia Point<br>A beacon of opportunity since 1964</span></div>
+      <div class="loader-text">Loading 3D Campus</div>
+      <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
     </div>
-    <div class="loader-waves"><div class="loader-wave"></div><div class="loader-wave"></div><div class="loader-wave"></div></div>
-    <div class="loader-logo"><img src="Umass-Boston-Logo-01.png" alt="UMass Boston"></div>
-    <div class="loader-hg-wrap"><div class="loader-hourglass"></div></div>
-    <div class="loader-fact"><span>Boston's only public research university on the waterfront<br>12 buildings across 120 acres on Columbia Point<br>Home to 16,000+ students from 150+ countries<br>Founded in 1964 as a beacon of opportunity</span></div>
-    <div class="loader-text">Loading 3D Campus</div>
-    <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
   </div>
+  <script>
+  // ── Loader: Interactive particle constellation network ──
+  (function(){
+    var c = document.getElementById('loader-canvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W, H, particles = [], mouse = {x:-999,y:-999};
+    var PARTICLE_COUNT = 80, CONNECT_DIST = 140, MOUSE_DIST = 180;
+
+    function resize(){
+      W = c.width = c.offsetWidth;
+      H = c.height = c.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Particle class
+    function Particle(){
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.vx = (Math.random() - 0.5) * 0.6;
+      this.vy = (Math.random() - 0.5) * 0.6;
+      this.r = Math.random() * 2 + 1;
+      this.baseAlpha = Math.random() * 0.5 + 0.2;
+      this.alpha = this.baseAlpha;
+      // Teal to blue color range
+      var t = Math.random();
+      this.color = t < 0.5
+        ? '0,' + Math.floor(180 + t*40) + ',' + Math.floor(200 + t*20)
+        : Math.floor(28 + t*20) + ',' + Math.floor(100 + t*30) + ',' + Math.floor(160 + t*20);
+    }
+    Particle.prototype.update = function(){
+      this.x += this.vx;
+      this.y += this.vy;
+      if(this.x < 0 || this.x > W) this.vx *= -1;
+      if(this.y < 0 || this.y > H) this.vy *= -1;
+      // Mouse attraction
+      var dx = mouse.x - this.x, dy = mouse.y - this.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < MOUSE_DIST){
+        var force = (MOUSE_DIST - dist) / MOUSE_DIST * 0.02;
+        this.vx += dx * force;
+        this.vy += dy * force;
+        this.alpha = Math.min(1, this.baseAlpha + (MOUSE_DIST - dist) / MOUSE_DIST * 0.6);
+      } else {
+        this.alpha += (this.baseAlpha - this.alpha) * 0.05;
+      }
+      // Damping
+      this.vx *= 0.99;
+      this.vy *= 0.99;
+    };
+    Particle.prototype.draw = function(){
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + this.color + ',' + this.alpha + ')';
+      ctx.fill();
+    };
+
+    for(var i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+    // Mouse tracking on the loader
+    var loader = document.getElementById('hero-loader');
+    loader.addEventListener('mousemove', function(e){
+      var r = c.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+    });
+    loader.addEventListener('mouseleave', function(){ mouse.x = -999; mouse.y = -999; });
+
+    var rafId;
+    function animate(){
+      if(!document.getElementById('hero-loader') || document.getElementById('hero-loader').classList.contains('done')){
+        cancelAnimationFrame(rafId);
+        return;
+      }
+      ctx.clearRect(0, 0, W, H);
+
+      // Draw connections
+      for(var i = 0; i < particles.length; i++){
+        particles[i].update();
+        for(var j = i + 1; j < particles.length; j++){
+          var dx = particles[i].x - particles[j].x;
+          var dy = particles[i].y - particles[j].y;
+          var dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < CONNECT_DIST){
+            var alpha = (1 - dist / CONNECT_DIST) * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = 'rgba(0,200,212,' + alpha + ')';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+        // Mouse connections
+        var mdx = mouse.x - particles[i].x, mdy = mouse.y - particles[i].y;
+        var mDist = Math.sqrt(mdx*mdx + mdy*mdy);
+        if(mDist < MOUSE_DIST){
+          var mAlpha = (1 - mDist / MOUSE_DIST) * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.strokeStyle = 'rgba(0,200,212,' + mAlpha + ')';
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+      }
+      // Draw particles on top
+      for(var i = 0; i < particles.length; i++) particles[i].draw();
+
+      // Central glow
+      var grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.4);
+      grd.addColorStop(0, 'rgba(0,200,212,0.03)');
+      grd.addColorStop(0.5, 'rgba(28,110,164,0.015)');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, W, H);
+
+      rafId = requestAnimationFrame(animate);
+    }
+    animate();
+  })();
+  </script>
   <div id="night-overlay"></div>
   <button class="btn-exit3d" id="btn-exit3d" onclick="exit3DMode()">&larr; Back</button>
   <button class="btn-nightmode" id="btn-nightmode" onclick="toggleNightMode()">Night Mode</button>

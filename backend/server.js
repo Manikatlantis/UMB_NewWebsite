@@ -32,6 +32,14 @@ app.use(cors({
     : true  // if no ALLOWED_ORIGIN set, allow all (dev mode)
 }));
 
+// ── Block sensitive file access ──────────────────
+app.use((req, res, next) => {
+  if (/\/\.git|\/\.env|\/\.DS_Store/i.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(morgan('dev'));
 

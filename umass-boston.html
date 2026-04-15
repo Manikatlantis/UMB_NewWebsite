@@ -4926,7 +4926,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       }
     }
 
+    // Store last drawn route points for camera follow
+    var _lastRoutePoints = null;
+
     function drawRoutePoints(pts){
+      _lastRoutePoints = pts;
       var positions = [];
       for(var i=0;i<pts.length;i++){
         positions.push(Cesium.Cartesian3.fromDegrees(pts[i].lng, pts[i].lat));
@@ -4943,6 +4947,61 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         }
       });
       _byd.pathEntities.push(ent);
+    }
+
+    // Animate camera smoothly along route waypoints
+    function flyAlongRoute(pts, callback){
+      if(!pts || pts.length < 2){ if(callback) callback(); return; }
+      var viewer = V();
+      // Sample points evenly — use every Nth point for smooth travel
+      var sampled = [pts[0]];
+      var step = Math.max(1, Math.floor(pts.length / 12));
+      for(var i = step; i < pts.length - 1; i += step){
+        sampled.push(pts[i]);
+      }
+      sampled.push(pts[pts.length - 1]);
+
+      var idx = 0;
+      var camAlt = 80;   // camera altitude above ground
+      var camBack = 0.0008; // how far behind the point the camera sits (in degrees)
+
+      function flyNext(){
+        if(!_byd.active){ if(callback) callback(); return; }
+        if(idx >= sampled.length){ if(callback) callback(); return; }
+        var pt = sampled[idx];
+        // Look ahead to next point for heading
+        var next = sampled[Math.min(idx + 1, sampled.length - 1)];
+        var dLng = next.lng - pt.lng;
+        var dLat = next.lat - pt.lat;
+        var heading = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+
+        // Position camera slightly behind current point along the heading
+        var offsetLat = pt.lat - Math.cos(heading * Math.PI / 180) * camBack;
+        var offsetLng = pt.lng - Math.sin(heading * Math.PI / 180) * camBack;
+
+        var duration = idx === 0 ? 1.8 : 0.9;
+        // Last point gets a bit longer to settle
+        if(idx === sampled.length - 1) duration = 1.2;
+
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(offsetLng, offsetLat, camAlt),
+          orientation:{
+            heading: Cesium.Math.toRadians(heading),
+            pitch: Cesium.Math.toRadians(-35),
+            roll: 0
+          },
+          duration: duration,
+          complete: function(){
+            idx++;
+            flyNext();
+          },
+          cancel: function(){
+            if(callback) callback();
+          }
+        });
+      }
+
+      flyNext();
     }
 
     function drawFallbackCurve(b1, b2){
@@ -5027,12 +5086,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var stop = _byd.stops[idx];
       updateTimeline(idx);
       hideInfoCard();
+      _lastRoutePoints = null;
 
-      if(idx > 0){
-        drawPath(_byd.stops[idx-1].building, stop.building);
-      }
-
-      droneFlyTo(stop.building, function(){
+      function onArrival(){
         addMarker(stop.building, idx+1);
         showInfoCard(stop);
 
@@ -5046,7 +5102,41 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             }
           }, 4000);
         }
-      });
+      }
+
+      if(idx > 0){
+        // Draw path and follow it with the camera
+        var prevBuilding = _byd.stops[idx-1].building;
+        var b1 = findBuilding(prevBuilding), b2 = findBuilding(stop.building);
+        if(b1 && b2){
+          var e1 = getEntrance(b1), e2 = getEntrance(b2);
+          var key = e1.lat+','+e1.lng+'|'+e2.lat+','+e2.lng;
+          if(_routeCache[key] && _routeCache[key].points){
+            drawRoutePoints(_routeCache[key].points);
+            flyAlongRoute(_routeCache[key].points, function(){
+              // Final fly to building viewpoint for nice arrival
+              droneFlyTo(stop.building, onArrival);
+            });
+          } else {
+            fetchRoute(b1, b2).then(function(pts){
+              if(pts && pts.length > 1){
+                drawRoutePoints(pts);
+                flyAlongRoute(pts, function(){
+                  droneFlyTo(stop.building, onArrival);
+                });
+              } else {
+                drawFallbackCurve(b1, b2);
+                droneFlyTo(stop.building, onArrival);
+              }
+            });
+          }
+        } else {
+          droneFlyTo(stop.building, onArrival);
+        }
+      } else {
+        // First stop — fly directly
+        droneFlyTo(stop.building, onArrival);
+      }
     }
 
     function bydFinish(){

@@ -822,18 +822,30 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
         this.vx += dx * force;
         this.vy += dy * force;
         this.alpha = Math.min(1, this.baseAlpha + (MOUSE_DIST - dist) / MOUSE_DIST * 0.6);
+        // Shift color toward warm (gold/crimson) when near mouse
+        var prox = (MOUSE_DIST - dist) / MOUSE_DIST;
+        this.activeColor = Math.floor(200 + prox*55) + ',' + Math.floor(160*prox + 80*(1-prox)) + ',' + Math.floor(50*prox);
       } else {
         this.alpha += (this.baseAlpha - this.alpha) * 0.05;
+        this.activeColor = null;
       }
       // Damping
       this.vx *= 0.99;
       this.vy *= 0.99;
     };
     Particle.prototype.draw = function(){
+      var col = this.activeColor || this.color;
+      var r = this.activeColor ? this.r * 1.5 : this.r;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + this.color + ',' + this.alpha + ')';
+      ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + col + ',' + this.alpha + ')';
       ctx.fill();
+      if(this.activeColor){
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(' + col + ',0.06)';
+        ctx.fill();
+      }
     };
 
     for(var i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
@@ -872,16 +884,17 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
             ctx.stroke();
           }
         }
-        // Mouse connections
+        // Mouse connections — warm colored
         var mdx = mouse.x - particles[i].x, mdy = mouse.y - particles[i].y;
         var mDist = Math.sqrt(mdx*mdx + mdy*mdy);
         if(mDist < MOUSE_DIST){
-          var mAlpha = (1 - mDist / MOUSE_DIST) * 0.4;
+          var mAlpha = (1 - mDist / MOUSE_DIST) * 0.5;
+          var mProx = (MOUSE_DIST - mDist) / MOUSE_DIST;
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(mouse.x, mouse.y);
-          ctx.strokeStyle = 'rgba(0,200,212,' + mAlpha + ')';
-          ctx.lineWidth = 0.8;
+          ctx.strokeStyle = 'rgba(' + Math.floor(220+mProx*35) + ',' + Math.floor(140*mProx+80*(1-mProx)) + ',' + Math.floor(40*mProx) + ',' + mAlpha + ')';
+          ctx.lineWidth = 0.8 + mProx * 0.5;
           ctx.stroke();
         }
       }

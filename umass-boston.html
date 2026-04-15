@@ -2381,16 +2381,25 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Load Google Photorealistic 3D Tiles — high quality within the 2mi radius
     try{
       const tileset=await Cesium.createGooglePhotorealistic3DTileset();
-      tileset.maximumScreenSpaceError = 8;          // balanced quality vs performance
-      tileset.maximumMemoryUsage = 512;             // 512MB GPU cache
+      tileset.maximumScreenSpaceError = 16;          // start coarse, refine progressively
+      tileset.maximumMemoryUsage = 256;             // 256MB GPU cache — lighter on most GPUs
       tileset.dynamicScreenSpaceError = true;       // reduce quality for distant tiles
-      tileset.dynamicScreenSpaceErrorDensity = 0.0004; // ~1mi radius of full quality
-      tileset.dynamicScreenSpaceErrorFactor = 24;   // aggressively lower quality beyond radius
+      tileset.dynamicScreenSpaceErrorDensity = 0.0003;
+      tileset.dynamicScreenSpaceErrorFactor = 32;   // aggressively lower quality beyond radius
       tileset.dynamicScreenSpaceErrorHeightFalloff = 0.5;
       tileset.cullRequestsWhileMoving = true;
-      tileset.cullRequestsWhileMovingMultiplier = 120;
+      tileset.cullRequestsWhileMovingMultiplier = 60;
       tileset.preloadWhenHidden = false;
       tileset.preferLeaves = true;
+      tileset.foveatedScreenSpaceError = true;       // prioritize center-of-screen tiles
+      tileset.foveatedConeSize = 0.1;
+      tileset.foveatedMinimumScreenSpaceErrorRelaxation = 0.0;
+      // Refine to high quality once initial load is done
+      var _refineTimer = setTimeout(function(){
+        tileset.maximumScreenSpaceError = 8;
+        tileset.maximumMemoryUsage = 512;
+        tileset.cullRequestsWhileMovingMultiplier = 120;
+      }, 8000);
       viewer.scene.primitives.add(tileset);
 
       // ── Loading screen — wait until no pending tile requests ──

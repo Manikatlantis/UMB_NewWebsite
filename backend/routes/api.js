@@ -250,8 +250,8 @@ router.get('/walking-route', async (req, res) => {
   if (!origin || !destination) {
     return res.status(400).json({ error: 'origin and destination required (lat,lng)' });
   }
-  const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (!key) return res.status(500).json({ error: 'Maps key not configured' });
+  const key = process.env.GOOGLE_DIRECTIONS_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return res.status(500).json({ error: 'Directions API key not configured' });
 
   const cacheKey = `${origin}|${destination}`;
   if (walkingRouteCache.has(cacheKey)) {

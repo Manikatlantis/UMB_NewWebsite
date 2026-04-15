@@ -4967,11 +4967,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var totalDist = dists[dists.length - 1];
       if(totalDist < 1){ if(callback) callback(); return; }
 
-      // Duration: ~1 second per 80m of walking distance, min 3s max 10s
-      var duration = Math.max(3, Math.min(10, totalDist / 80));
+      // Duration: ~1 second per 40m of walking distance, min 5s max 15s
+      var duration = Math.max(5, Math.min(15, totalDist / 40));
       var startTime = null;
       var prevHeading = null;
-      var _removeListener = null;
+      var done = false;
 
       // Interpolate point at distance d along the polyline
       function interpAtDist(d){
@@ -4993,16 +4993,51 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       function smoothHeading(target, prev){
         if(prev === null) return target;
         var diff = target - prev;
-        // Normalize to -180..180
         while(diff > 180) diff -= 360;
         while(diff < -180) diff += 360;
-        return prev + diff * 0.15; // gentle blend
+        return prev + diff * 0.1; // very gentle blend
       }
 
-      // First, fly to starting position to begin smoothly
+      function onTick(){
+        if(done) return;
+        if(!_byd.active){ done = true; if(callback) callback(); return; }
+        if(!startTime) startTime = Date.now();
+        var elapsed = (Date.now() - startTime) / 1000;
+        var t = Math.min(1, elapsed / duration);
+        // Ease in-out for smooth start/stop
+        var eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+
+        var d = eased * totalDist;
+        var pos = interpAtDist(d);
+        // Look ahead for heading
+        var ahead = interpAtDist(Math.min(totalDist, d + 30));
+        var rawHeading = (Math.atan2(ahead.lng - pos.lng, ahead.lat - pos.lat) * 180 / Math.PI + 360) % 360;
+        prevHeading = smoothHeading(rawHeading, prevHeading);
+
+        // Offset camera slightly behind
+        var offLat = pos.lat - Math.cos(prevHeading * Math.PI / 180) * camBack;
+        var offLng = pos.lng - Math.sin(prevHeading * Math.PI / 180) * camBack;
+
+        viewer.camera.setView({
+          destination: Cesium.Cartesian3.fromDegrees(offLng, offLat, camAlt),
+          orientation:{
+            heading: Cesium.Math.toRadians(prevHeading),
+            pitch: Cesium.Math.toRadians(camPitch),
+            roll: 0
+          }
+        });
+
+        if(t >= 1){
+          done = true;
+          if(callback) callback();
+        }
+      }
+
+      // First, fly to starting position smoothly
       var startPt = pts[0];
       var lookPt = pts[Math.min(3, pts.length - 1)];
       var initHeading = (Math.atan2(lookPt.lng - startPt.lng, lookPt.lat - startPt.lat) * 180 / Math.PI + 360) % 360;
+      prevHeading = initHeading;
 
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(startPt.lng, startPt.lat, camAlt),
@@ -5011,47 +5046,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
           pitch: Cesium.Math.toRadians(camPitch),
           roll: 0
         },
-        duration: 1.2,
+        duration: 1.5,
         complete: function(){
-          prevHeading = initHeading;
-          // Start continuous animation on postRender
-          _removeListener = viewer.scene.postRender.addEventListener(function(){
-            if(!_byd.active){
-              viewer.scene.postRender.removeEventListener(_removeListener);
-              if(callback) callback();
-              return;
-            }
-            if(!startTime) startTime = Date.now();
-            var elapsed = (Date.now() - startTime) / 1000;
-            var t = Math.min(1, elapsed / duration);
-            // Ease in-out for smooth start/stop
-            var eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-
-            var d = eased * totalDist;
-            var pos = interpAtDist(d);
-            // Look ahead a bit for heading
-            var ahead = interpAtDist(Math.min(totalDist, d + 30));
-            var rawHeading = (Math.atan2(ahead.lng - pos.lng, ahead.lat - pos.lat) * 180 / Math.PI + 360) % 360;
-            prevHeading = smoothHeading(rawHeading, prevHeading);
-
-            // Offset camera slightly behind
-            var offLat = pos.lat - Math.cos(prevHeading * Math.PI / 180) * camBack;
-            var offLng = pos.lng - Math.sin(prevHeading * Math.PI / 180) * camBack;
-
-            viewer.camera.setView({
-              destination: Cesium.Cartesian3.fromDegrees(offLng, offLat, camAlt),
-              orientation:{
-                heading: Cesium.Math.toRadians(prevHeading),
-                pitch: Cesium.Math.toRadians(camPitch),
-                roll: 0
-              }
-            });
-
-            if(t >= 1){
-              viewer.scene.postRender.removeEventListener(_removeListener);
-              if(callback) callback();
-            }
-          });
+          viewer.scene.postRender.addEventListener(onTick);
         },
         cancel: function(){
           if(callback) callback();

@@ -4972,6 +4972,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var startTime = null;
       var prevHeading = null;
       var done = false;
+      var pausedAt = null; // elapsed time when paused
 
       // Interpolate point at distance d along the polyline
       function interpAtDist(d){
@@ -5001,6 +5002,16 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       function onTick(){
         if(done) return;
         if(!_byd.active){ done = true; if(callback) callback(); return; }
+        // Pause support: freeze elapsed time when not playing
+        if(!_byd.playing){
+          if(pausedAt === null && startTime) pausedAt = (Date.now() - startTime) / 1000;
+          return;
+        }
+        if(pausedAt !== null){
+          // Resuming — shift startTime so elapsed picks up where we left off
+          startTime = Date.now() - pausedAt * 1000;
+          pausedAt = null;
+        }
         if(!startTime) startTime = Date.now();
         var elapsed = (Date.now() - startTime) / 1000;
         var t = Math.min(1, elapsed / duration);

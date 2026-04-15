@@ -4927,11 +4927,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }
 
     function drawRoutePoints(pts){
-      var arr = [];
+      var positions = [];
       for(var i=0;i<pts.length;i++){
-        arr.push(pts[i].lng, pts[i].lat, 25);
+        positions.push(Cesium.Cartesian3.fromDegrees(pts[i].lng, pts[i].lat));
       }
-      var positions = Cesium.Cartesian3.fromDegreesArrayHeights(arr);
       var ent = V().entities.add({
         polyline:{
           positions:positions,
@@ -4940,7 +4939,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             glowPower:0.25,
             color:Cesium.Color.fromCssColorString('#00d4b8').withAlpha(0.8)
           }),
-          clampToGround:false
+          clampToGround:true
         }
       });
       _byd.pathEntities.push(ent);
@@ -4950,9 +4949,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var midLat=(b1.lat+b2.lat)/2, midLng=(b1.lng+b2.lng)/2;
       var dx=b2.lng-b1.lng, dy=b2.lat-b1.lat;
       var perpLat=midLat+dx*0.12, perpLng=midLng-dy*0.12;
-      var positions=Cesium.Cartesian3.fromDegreesArrayHeights([
-        b1.lng, b1.lat, 25, perpLng, perpLat, 35, b2.lng, b2.lat, 25
-      ]);
+      var positions=[
+        Cesium.Cartesian3.fromDegrees(b1.lng, b1.lat),
+        Cesium.Cartesian3.fromDegrees(perpLng, perpLat),
+        Cesium.Cartesian3.fromDegrees(b2.lng, b2.lat)
+      ];
       var ent=V().entities.add({
         polyline:{
           positions:positions,
@@ -4961,7 +4962,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
             glowPower:0.25,
             color:Cesium.Color.fromCssColorString('#00d4b8').withAlpha(0.8)
           }),
-          clampToGround:false
+          clampToGround:true
         }
       });
       _byd.pathEntities.push(ent);

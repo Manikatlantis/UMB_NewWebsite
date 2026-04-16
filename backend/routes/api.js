@@ -236,9 +236,8 @@ router.post('/chat', async (req, res) => {
 // Returns the Google Maps API key — only to same-origin requests
 router.get('/maps-key', (req, res) => {
   const allowed = (process.env.ALLOWED_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
-  const origin = req.get('origin') || '';
-  const referer = req.get('referer') || '';
-  if (allowed.length > 0 && !allowed.some(o => origin === o || referer.startsWith(o))) {
+  const origin = req.get('origin');
+  if (allowed.length > 0 && origin && !allowed.includes(origin)) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   const key = process.env.GOOGLE_MAPS_API_KEY;

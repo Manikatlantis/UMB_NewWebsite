@@ -2783,9 +2783,14 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }
 
     function findNearestBuilding(lat, lng){
+      // Use BUILDING_LABEL_POS (hand-picked, accurate) instead of
+      // CAMPUS_BUILDINGS lat/lng (some entries are off by 100s of meters).
       let best=null, minD=Infinity;
       for(const b of CAMPUS_BUILDINGS){
-        const d=Math.hypot(b.lat-lat, b.lng-lng);
+        const lp = BUILDING_LABEL_POS[b.name];
+        const bLng = lp ? lp[0] : b.lng;
+        const bLat = lp ? lp[1] : b.lat;
+        const d=Math.hypot(bLat-lat, bLng-lng);
         if(d<minD){ minD=d; best=b; }
       }
       return minD < 0.002 ? best : null; // ~200m radius threshold

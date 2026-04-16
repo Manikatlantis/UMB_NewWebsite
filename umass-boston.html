@@ -5256,6 +5256,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var initHeading = (Math.atan2(lookPt.lng - startPt.lng, lookPt.lat - startPt.lat) * 180 / Math.PI + 360) % 360;
       prevHeading = initHeading;
 
+      var flightDone = false;
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(startPt.lng, startPt.lat, camAlt),
         orientation:{
@@ -5265,10 +5266,11 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         },
         duration: 1.5,
         complete: function(){
+          flightDone = true;
           removeOnTick = viewer.scene.postRender.addEventListener(onTick);
         },
         cancel: function(){
-          if(callback) callback();
+          if(!flightDone && !done && callback) callback();
         }
       });
     }

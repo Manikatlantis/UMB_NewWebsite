@@ -233,8 +233,14 @@ router.post('/chat', async (req, res) => {
 });
 
 // ── GET /api/maps-key ───────────────────────────
-// Returns the Google Maps API key from env so it never appears in static HTML
+// Returns the Google Maps API key — only to same-origin requests
 router.get('/maps-key', (req, res) => {
+  const allowed = (process.env.ALLOWED_ORIGIN || '').split(',').map(s => s.trim()).filter(Boolean);
+  const origin = req.get('origin') || '';
+  const referer = req.get('referer') || '';
+  if (allowed.length > 0 && !allowed.some(o => origin === o || referer.startsWith(o))) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) return res.status(500).json({ error: 'Maps key not configured' });
   res.json({ key });
@@ -297,22 +303,7 @@ function decodePolyline(encoded) {
   return points;
 }
 
-// ── GET /api/stats ──────────────────────────────
-// Simple analytics endpoint (admin use)
-router.get('/stats', async (req, res) => {
-  try {
-    const [totalVisits, sectionBreakdown] = await Promise.all([
-      Visit.countDocuments(),
-      Visit.aggregate([
-        { $group: { _id: '$section', count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ]),
-    ]);
-    res.json({ totalVisits, sectionBreakdown });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// /api/stats moved to admin router (requires JWT auth)
 
 // ── GET /api/building-photos ─────────────────────
 // Fetch all approved photos, optionally filtered by building
@@ -411,7 +402,7 @@ router.post('/building-photos', (req, res) => {
       const photo = await BuildingPhoto.create({
         building: escapeHtml(building), face: Number(face), floor: Number(floor || 0), col: Number(col || 0),
         photoUrl, caption: escapeHtml(caption) || '', season: escapeHtml(season) || '',
-        uploadedBy: escapeHtml(uploadedBy) || 'Anonymous', status: 'approved'
+        uploadedBy: escapeHtml(uploadedBy) || 'Anonymous', status: 'pending'
       });
       res.status(201).json({ photo });
     } catch (e) {

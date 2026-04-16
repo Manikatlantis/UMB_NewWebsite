@@ -1339,6 +1339,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
 
 <!-- ═══════════════════ SCRIPTS ═══════════════════ -->
 <script>
+function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 // ────────────────────────────────────────────────
 // BEACON CURSOR — sonar / harbor-pulse style
 // ────────────────────────────────────────────────
@@ -2338,7 +2340,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       .then(res=>{
         if(res.photos&&res.photos.length>0){
           const p=res.photos[0];
-          content.innerHTML=`<img src="${p.photoUrl}" alt="${data.building} window photo"><div class="lb-info"><div class="lb-building">${data.building}</div>${p.caption?'<div class="lb-caption">'+p.caption+'</div>':''}</div>`;
+          content.innerHTML=`<img src="${escHtml(p.photoUrl)}" alt="${escHtml(data.building)} window photo"><div class="lb-info"><div class="lb-building">${escHtml(data.building)}</div>${p.caption?'<div class="lb-caption">'+escHtml(p.caption)+'</div>':''}</div>`;
         }
       })
       .catch(()=>{});
@@ -2504,8 +2506,8 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         slot.addEventListener('click',function(){
           var lb=document.getElementById('photo-lightbox');
           var lbContent=document.getElementById('lb-content');
-          lbContent.innerHTML='<img src="'+url+'" alt="'+data.name+'">'
-            +'<div class="lb-info"><div class="lb-building">'+data.name+'</div></div>';
+          lbContent.innerHTML='<img src="'+escHtml(url)+'" alt="'+escHtml(data.name)+'">'
+            +'<div class="lb-info"><div class="lb-building">'+escHtml(data.name)+'</div></div>';
           lb.classList.add('open');
         });
         grid.appendChild(slot);
@@ -6562,7 +6564,7 @@ async function sendMsg(){
   if(!text)return;
   // Cancel any active drone tour
   if(window.cancelDroneTour) window.cancelDroneTour();
-  addMsg('user',text);
+  addMsg('user',escHtml(text));
   history.push({role:'user',content:text});
   chatIn.value='';
   typingEl.style.display='flex';
@@ -6711,14 +6713,14 @@ chatIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
         }
         var locHtml = '';
         if(ev.buildingMatch){
-          locHtml = '<div class="event-loc"><span class="pin">📍</span> '+ev.buildingMatch.name+'</div>';
-          locHtml += '<button class="event-fly" onclick="if(window.droneFlyTo)window.droneFlyTo(\''+ev.buildingMatch.name+'\')">FLY THERE →</button>';
+          locHtml = '<div class="event-loc"><span class="pin">📍</span> '+escHtml(ev.buildingMatch.name)+'</div>';
+          locHtml += '<button class="event-fly" onclick="if(window.droneFlyTo)window.droneFlyTo(\''+escHtml(ev.buildingMatch.name).replace(/'/g,'\\&#39;')+'\')">FLY THERE →</button>';
         } else if(ev.location){
-          locHtml = '<div class="event-loc"><span class="pin">📍</span> '+ev.location+'</div>';
+          locHtml = '<div class="event-loc"><span class="pin">📍</span> '+escHtml(ev.location)+'</div>';
         }
         card.innerHTML = '<div class="event-date">'+dateStr+'</div>'
-          + '<div class="event-title">'+ev.title+'</div>'
-          + '<div class="event-desc">'+ev.description+'</div>'
+          + '<div class="event-title">'+escHtml(ev.title)+'</div>'
+          + '<div class="event-desc">'+escHtml(ev.description)+'</div>'
           + locHtml;
         grid.appendChild(card);
       });
@@ -6747,18 +6749,18 @@ function loadGallery(){
       data.photos.forEach(function(p){
         var item = document.createElement('div');
         item.className = 'gallery-item';
-        item.innerHTML = '<img src="'+p.photoUrl+'" alt="'+p.building+'" loading="lazy">'
-          + '<div class="gi-overlay"><div class="gi-building">'+p.building+(p.season?' · '+p.season:'')+'</div>'
-          + (p.caption ? '<div class="gi-caption">'+p.caption+'</div>' : '')+'</div>';
+        item.innerHTML = '<img src="'+escHtml(p.photoUrl)+'" alt="'+escHtml(p.building)+'" loading="lazy">'
+          + '<div class="gi-overlay"><div class="gi-building">'+escHtml(p.building)+(p.season?' · '+escHtml(p.season):'')+'</div>'
+          + (p.caption ? '<div class="gi-caption">'+escHtml(p.caption)+'</div>' : '')+'</div>';
         item.addEventListener('click', function(){
           var lb = document.getElementById('photo-lightbox');
           var viewNames = {0:'Front',1:'Back',2:'Left Side',3:'Right Side',4:'Inside'};
           var viewLabel = viewNames[p.face] || '';
-          var seasonHtml = p.season ? '<span class="lb-season">'+p.season+'</span>' : '';
-          var captionHtml = p.caption ? '<div class="lb-caption">'+p.caption+'</div>' : '';
-          var metaHtml = '<div class="lb-meta">'+(viewLabel?viewLabel+' view':'')+(p.uploadedBy&&p.uploadedBy!=='Anonymous'?' · Photo by '+p.uploadedBy:'')+'</div>';
-          document.getElementById('lb-content').innerHTML = '<img src="'+p.photoUrl+'" alt="'+p.building+'">'
-            + '<div class="lb-info"><div class="lb-building">'+p.building+seasonHtml+'</div>'+captionHtml+metaHtml+'</div>';
+          var seasonHtml = p.season ? '<span class="lb-season">'+escHtml(p.season)+'</span>' : '';
+          var captionHtml = p.caption ? '<div class="lb-caption">'+escHtml(p.caption)+'</div>' : '';
+          var metaHtml = '<div class="lb-meta">'+(viewLabel?viewLabel+' view':'')+(p.uploadedBy&&p.uploadedBy!=='Anonymous'?' · Photo by '+escHtml(p.uploadedBy):'')+'</div>';
+          document.getElementById('lb-content').innerHTML = '<img src="'+escHtml(p.photoUrl)+'" alt="'+escHtml(p.building)+'">'
+            + '<div class="lb-info"><div class="lb-building">'+escHtml(p.building)+seasonHtml+'</div>'+captionHtml+metaHtml+'</div>';
           lb.classList.add('open');
         });
         grid.appendChild(item);

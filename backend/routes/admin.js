@@ -7,6 +7,7 @@ const QRCode     = require('qrcode');
 const fs         = require('fs');
 const path       = require('path');
 const BuildingPhoto = require('../models/BuildingPhoto');
+const Visit         = require('../models/Visit');
 
 // ── Config ──
 const JWT_SECRET    = process.env.ADMIN_JWT_SECRET || 'change-me-in-production-' + require('crypto').randomBytes(16).toString('hex');
@@ -222,6 +223,22 @@ router.delete('/photos/:id', requireAuth, async (req, res) => {
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ── GET /admin/api/stats ──
+router.get('/stats', requireAuth, async (req, res) => {
+  try {
+    const [totalVisits, sectionBreakdown] = await Promise.all([
+      Visit.countDocuments(),
+      Visit.aggregate([
+        { $group: { _id: '$section', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+    ]);
+    res.json({ totalVisits, sectionBreakdown });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

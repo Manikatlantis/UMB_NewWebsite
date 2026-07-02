@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction B — Open Water / Night Crossing · UMass Boston Prototype</title>
+
+<!--
+  DIRECTION B PROTOTYPE — "Open Water / Night Crossing"
+  Standalone. Touches nothing in umass-boston.html.
+  Stack matches the production plan: GSAP 3.13 (ScrollTrigger + SplitText, all free) + Lenis.
+  The hero's animated night-harbor canvas is a STAND-IN for the live Cesium flyover layer.
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+/* ── Direction B tokens ─────────────────────────────────────── */
+:root{
+  --sea-dusk:#08182B;          /* journey start  */
+  --sea-mid:#041020;           /* mid crossing   */
+  --sea-night:#000A14;         /* arrival        */
+  --accent:#00E5C7;            /* Bioluminescent Teal — the ONE accent */
+  --accent-08:rgba(0,229,199,0.08);
+  --accent-16:rgba(0,229,199,0.16);
+  --accent-32:rgba(0,229,199,0.32);
+  --ice:#CFE8FF;               /* Moon Ice — secondary text */
+  --ice-60:rgba(207,232,255,0.60);
+  --ice-38:rgba(207,232,255,0.38);
+  --gold:#FFB347;              /* Beacon Gold — lighthouse + live telemetry ONLY */
+  --gold-dim:rgba(255,179,71,0.14);
+  --glass:rgba(4,16,32,0.72);
+  --text:#EAF4FB;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:auto;}
+html.lenis, html.lenis body{height:auto;}
+.lenis.lenis-smooth{scroll-behavior:auto!important;}
+
+body{
+  background:var(--sea-dusk);           /* scrubbed to --sea-night over the journey */
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:17px;
+  line-height:1.7;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+::selection{background:var(--accent-32);color:#fff;}
+
+/* ── Film grain ─────────────────────────────────────────────── */
+.grain{
+  position:fixed;inset:-50%;z-index:60;pointer-events:none;opacity:0.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 7s steps(9) infinite;
+}
+@keyframes grain{
+  0%,100%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-3%)}
+  60%{transform:translate(-2%,-2%)} 80%{transform:translate(3%,3%)}
+}
+
+/* ── Top bar ────────────────────────────────────────────────── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 32px;
+}
+.wordmark{font-family:'Unbounded',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.14em;color:var(--text);text-transform:uppercase;}
+.wordmark em{font-style:normal;color:var(--accent);}
+.proto-chip{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--ice-60);border:1px solid var(--accent-16);border-radius:999px;padding:7px 14px;
+  background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+
+/* ── Lighthouse progress sigil (fixed, right edge) ──────────── */
+.sigil{
+  position:fixed;right:26px;top:50%;transform:translateY(-50%);z-index:50;
+  display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;
+}
+.sigil svg{display:block;}
+.sigil .pct{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.14em;color:var(--ice-38);
+  writing-mode:vertical-rl;
+}
+
+/* ── Telemetry (mono chips) ─────────────────────────────────── */
+.telemetry{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;}
+.live-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);
+  margin-right:9px;vertical-align:1px;box-shadow:0 0 12px rgba(255,179,71,0.8);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+/* ── HERO ───────────────────────────────────────────────────── */
+#hero{position:relative;height:100vh;overflow:hidden;}
+#sea-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.vignette{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 72% 58% at 50% 46%, transparent 30%, rgba(2,10,20,0.55) 72%, rgba(1,6,12,0.92) 100%);
+}
+.hero-copy{
+  position:absolute;inset:0;z-index:5;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:0 24px;will-change:transform,opacity,filter;
+}
+.hero-kicker{color:var(--accent);margin-bottom:30px;}
+.hero-h1{
+  font-family:'Unbounded',sans-serif;font-weight:900;
+  font-size:clamp(42px,7.4vw,110px);line-height:1.04;letter-spacing:-0.02em;
+  text-transform:uppercase;color:var(--text);
+}
+.hero-h1 .dot{color:var(--accent);}
+.hero-sub{
+  max-width:560px;margin:34px auto 0;color:var(--ice-60);font-size:17px;font-weight:400;
+}
+.cta-row{display:flex;align-items:center;gap:14px;margin-top:44px;flex-wrap:wrap;justify-content:center;}
+.cta-primary{
+  font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;letter-spacing:0.02em;
+  color:#00241F;background:var(--accent);border:none;border-radius:999px;padding:16px 34px;cursor:pointer;
+  box-shadow:0 8px 44px rgba(0,229,199,0.28), inset 0 1px 0 rgba(255,255,255,0.35);
+  transition:transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s;
+}
+.cta-primary:hover{transform:translateY(-3px);box-shadow:0 14px 60px rgba(0,229,199,0.42), inset 0 1px 0 rgba(255,255,255,0.35);}
+.modes-dock{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.mode-pill{
+  font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
+  color:var(--ice-60);background:var(--glass);border:1px solid var(--accent-16);border-radius:999px;
+  padding:12px 18px;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  transition:color 0.3s,border-color 0.3s,transform 0.3s;
+}
+.mode-pill:hover{color:var(--accent);border-color:var(--accent-32);transform:translateY(-2px);}
+
+.feed-chip{
+  position:absolute;top:86px;left:32px;z-index:6;
+  display:flex;align-items:center;
+  color:var(--ice-60);background:var(--glass);border:1px solid var(--accent-16);border-radius:999px;
+  padding:9px 16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.feed-chip small{margin-left:10px;color:var(--ice-38);letter-spacing:0.1em;}
+
+.scroll-hint{
+  position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:6;
+  color:var(--ice-38);display:flex;flex-direction:column;align-items:center;gap:10px;
+  transition:opacity 0.4s ease;
+}
+.scroll-hint.gone{opacity:0!important;}
+.scroll-hint .line{width:1px;height:44px;background:linear-gradient(to bottom,var(--accent-32),transparent);overflow:hidden;position:relative;}
+.scroll-hint .line::after{
+  content:'';position:absolute;left:0;top:-40%;width:1px;height:40%;background:var(--accent);
+  animation:drip 2.2s cubic-bezier(0.4,0,0.2,1) infinite;
+}
+@keyframes drip{to{top:110%;}}
+
+/* ── Beacon sweep (section-boundary light beam) ─────────────── */
+.sweep-zone{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.sweep{
+  position:absolute;top:-30%;bottom:-30%;left:0;width:36vw;
+  background:linear-gradient(90deg,transparent,var(--gold-dim) 42%,rgba(255,179,71,0.30) 50%,var(--gold-dim) 58%,transparent);
+  transform:translateX(-140%) skewX(-16deg);will-change:transform;
+}
+
+/* ── TICKER / INSTRUMENT STRIP ──────────────────────────────── */
+#ticker{position:relative;padding:130px 0 96px;}
+.stats-grid{
+  max-width:1180px;margin:0 auto;padding:0 40px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
+  background:var(--accent-08);border:1px solid var(--accent-16);
+}
+.stat{
+  background:var(--glass);padding:40px 30px 34px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.stat .num{
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:clamp(32px,3.6vw,52px);
+  letter-spacing:-0.02em;color:var(--text);font-variant-numeric:tabular-nums;
+}
+.stat .num em{font-style:normal;color:var(--accent);}
+.stat .lbl{margin-top:12px;color:var(--ice-38);}
+.marquee-band{
+  margin-top:70px;border-top:1px solid var(--accent-16);border-bottom:1px solid var(--accent-16);
+  overflow:hidden;padding:18px 0;white-space:nowrap;
+}
+.marquee-track{display:inline-block;will-change:transform;}
+.marquee-track span{
+  font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.26em;text-transform:uppercase;
+  color:var(--ice-38);margin:0 34px;
+}
+.marquee-track span b{font-weight:400;color:var(--gold);}
+
+/* ── ABOUT — pinned crossing scene ──────────────────────────── */
+#about{position:relative;}
+.about-stage{
+  position:relative;height:100vh;overflow:hidden;
+  display:grid;grid-template-columns:1.15fr 1fr;align-items:center;
+}
+#skyline-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0.9;}
+.about-veil{position:absolute;inset:0;background:linear-gradient(90deg,transparent 34%,rgba(2,9,17,0.82) 66%);}
+.stanza-col{grid-column:2;position:relative;z-index:5;padding:0 9vw 0 3vw;}
+.stanza{position:absolute;top:50%;transform:translateY(-50%);max-width:440px;opacity:0;}
+.stanza .telemetry{color:var(--accent);margin-bottom:20px;display:block;}
+.stanza h2{
+  font-family:'Unbounded',sans-serif;font-weight:700;font-size:clamp(32px,2.8vw,42px);
+  line-height:1.14;letter-spacing:-0.02em;margin-bottom:20px;
+}
+.stanza p{color:var(--ice-60);font-size:16px;}
+.rail{
+  position:absolute;left:calc(50% + 8px);top:50%;transform:translateY(-50%);z-index:6;
+  width:1px;height:220px;background:var(--accent-16);
+}
+.rail .fill{position:absolute;top:0;left:0;width:100%;height:0%;background:var(--accent);box-shadow:0 0 14px var(--accent-32);}
+
+/* ── FINALE — arrival at the beacon ─────────────────────────── */
+#finale{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:140px 24px 100px;overflow:hidden;}
+.beacon-figure{position:relative;width:150px;height:150px;margin-bottom:44px;}
+.beacon-figure .halo{
+  position:absolute;inset:-46px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,179,71,0.16),transparent 65%);
+  animation:pulse 4s ease-in-out infinite;
+}
+.beacon-beam-wrap{position:absolute;inset:0;animation:beamspin 9s linear infinite;}
+.beacon-beam-wrap .beam{
+  position:absolute;left:50%;top:50%;width:340px;height:74px;transform:translate(0,-50%);transform-origin:left center;
+  background:conic-gradient(from -8deg at 0% 50%,transparent 0deg,rgba(255,179,71,0.20) 8deg,transparent 16deg);
+}
+@keyframes beamspin{to{transform:rotate(360deg);}}
+.finale-h2{
+  font-family:'Unbounded',sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(34px,4.6vw,68px);letter-spacing:-0.02em;line-height:1.08;max-width:900px;
+}
+.finale-h2 .dot{color:var(--accent);}
+.finale-sub{max-width:520px;margin:26px auto 0;color:var(--ice-60);}
+.cta-ghost{
+  font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--ice-60);background:transparent;border:1px solid var(--accent-16);border-radius:999px;
+  padding:15px 28px;cursor:pointer;transition:color 0.3s,border-color 0.3s;
+}
+.cta-ghost:hover{color:var(--accent);border-color:var(--accent-32);}
+.horizon{
+  position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent-32) 30%,var(--gold) 50%,var(--accent-32) 70%,transparent);
+}
+.endnote{position:absolute;bottom:26px;color:var(--ice-38);}
+
+/* ── SplitText line masks get overflow clipping from the plugin; fallback ─ */
+.hero-h1 div{will-change:transform;}
+
+/* ── Mobile ─────────────────────────────────────────────────── */
+@media (max-width:1023px){
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .about-stage{grid-template-columns:1fr;height:auto;min-height:0;display:block;padding:110px 0;}
+  #skyline-canvas{position:absolute;opacity:0.35;}
+  .stanza-col{padding:0 28px;}
+  .stanza{position:relative;top:auto;transform:none;opacity:1;margin:0 auto 72px;}
+  .rail{display:none;}
+  .sigil{display:none;}
+  .feed-chip small{display:none;}
+}
+@media (max-width:600px){
+  .stats-grid{grid-template-columns:1fr 1fr;padding:0;margin:0 20px;}
+  .topbar{padding:16px 20px;}
+}
+
+/* ── Reduced motion: journey rendered as stills ─────────────── */
+@media (prefers-reduced-motion: reduce){
+  .grain,.live-dot,.scroll-hint .line::after,.beacon-beam-wrap,.beacon-figure .halo{animation:none!important;}
+  .stanza{position:relative;top:auto;transform:none;opacity:1;margin-bottom:72px;}
+  .about-stage{height:auto;display:block;padding:110px 0;}
+  .rail{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="wordmark">UMass <em>Boston</em></div>
+  <div class="proto-chip">Direction B · Prototype 01</div>
+</header>
+
+<!-- Lighthouse progress sigil — beam angle = scroll progress -->
+<div class="sigil" aria-hidden="true">
+  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+    <circle cx="22" cy="22" r="20" stroke="rgba(0,229,199,0.32)" stroke-width="1"/>
+    <g id="sigil-beam" style="transform-origin:22px 22px;">
+      <path d="M22 22 L36 14 L36 30 Z" fill="rgba(255,179,71,0.55)"/>
+    </g>
+    <circle cx="22" cy="22" r="3" fill="#FFB347"/>
+  </svg>
+  <div class="pct" id="sigil-pct">0% CROSSED</div>
+</div>
+
+<main>
+
+  <!-- ═══ HERO — Beat 1: rise from the water · Beat 2: the crossing begins ═══ -->
+  <section id="hero">
+    <canvas id="sea-canvas"></canvas>
+    <div class="vignette" id="vignette"></div>
+
+    <div class="feed-chip telemetry">
+      <span class="live-dot"></span>3D CAMPUS FEED
+      <small>· simulated — live Cesium flyover in production</small>
+    </div>
+
+    <div class="hero-copy" id="hero-copy">
+      <p class="hero-kicker telemetry">UMass Boston · Columbia Point · 42.3131°N 71.0387°W</p>
+      <h1 class="hero-h1" id="hero-h1">Harbor of<br>Knowledge<span class="dot">.</span></h1>
+      <p class="hero-sub" id="hero-sub">The only public research university in Boston — 16,000 students
+        learning at the water's edge. Scroll to make the crossing.</p>
+      <div class="cta-row" id="hero-ctas">
+        <button class="cta-primary">Enter the Campus</button>
+        <div class="modes-dock">
+          <button class="mode-pill" title="Wired to enter3DMode() in production">3D</button>
+          <button class="mode-pill" title="Wired to enterShuttleMode() in production">Shuttle</button>
+          <button class="mode-pill" title="Wired to startCampusTour() in production">Tour</button>
+          <button class="mode-pill" title="Wired to startBuildYourDay() in production">Build Your Day</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-hint" id="scroll-hint">
+      <span class="telemetry">Begin the crossing</span>
+      <span class="line"></span>
+    </div>
+  </section>
+
+  <!-- ═══ INSTRUMENT STRIP — count-up telemetry + velocity marquee ═══ -->
+  <section id="ticker">
+    <div class="sweep-zone"><div class="sweep"></div></div>
+    <div class="stats-grid">
+      <div class="stat"><div class="num"><span data-count="16000">0</span><em>+</em></div><div class="lbl telemetry">Students aboard</div></div>
+      <div class="stat"><div class="num"><span data-count="200">0</span><em>+</em></div><div class="lbl telemetry">Academic programs</div></div>
+      <div class="stat"><div class="num"><span data-count="8">0</span></div><div class="lbl telemetry">Colleges &amp; schools</div></div>
+      <div class="stat"><div class="num"><span data-count="100">0</span><em>ac</em></div><div class="lbl telemetry">On the harbor</div></div>
+    </div>
+    <div class="marquee-band">
+      <div class="marquee-track" id="marquee-track"></div>
+    </div>
+  </section>
+
+  <!-- ═══ ABOUT — pinned crossing scene: skyline holds, stanzas scrub through ═══ -->
+  <section id="about">
+    <div class="sweep-zone"><div class="sweep"></div></div>
+    <div class="about-stage" id="about-stage">
+      <canvas id="skyline-canvas"></canvas>
+      <div class="about-veil"></div>
+      <div class="rail" id="rail"><div class="fill" id="rail-fill"></div></div>
+      <div class="stanza-col">
+        <div class="stanza">
+          <span class="telemetry">Log 01 — Departure</span>
+          <h2>A campus you sail&nbsp;to.</h2>
+          <p>UMass Boston sits on the Columbia Point peninsula, ringed by Boston Harbor
+             on three sides. The T, the shuttle, the Harborwalk — every route in
+             ends at the water.</p>
+        </div>
+        <div class="stanza">
+          <span class="telemetry">Log 02 — Open water</span>
+          <h2>The city is the laboratory.</h2>
+          <p>Marine scientists sample the harbor outside their window. Nursing students
+             train at Boston's hospitals. The Integrated Sciences Complex — LEED Gold,
+             2015 — runs research from genomics to water quality.</p>
+        </div>
+        <div class="stanza">
+          <span class="telemetry">Log 03 — Landfall</span>
+          <h2>Guided by the beacon.</h2>
+          <p>The beacon is the mascot, the identity — and now your guide. Harbor,
+             the AI campus guide, flies a live 3D camera to any building you ask
+             about, narrating as it goes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FINALE — arrival at the beacon ═══ -->
+  <section id="finale">
+    <div class="sweep-zone"><div class="sweep"></div></div>
+    <div class="beacon-figure" aria-hidden="true">
+      <div class="halo"></div>
+      <div class="beacon-beam-wrap"><div class="beam"></div></div>
+      <svg width="150" height="150" viewBox="0 0 150 150" fill="none" style="position:relative;">
+        <path d="M62 118 L66 58 L84 58 L88 118 Z" fill="#0A1826" stroke="rgba(0,229,199,0.32)" stroke-width="1"/>
+        <rect x="66" y="44" width="18" height="14" fill="#0A1826" stroke="rgba(0,229,199,0.32)" stroke-width="1"/>
+        <circle cx="75" cy="51" r="4.5" fill="#FFB347"/>
+        <path d="M52 118 L98 118" stroke="rgba(0,229,199,0.32)" stroke-width="1"/>
+        <path d="M40 126 Q75 118 110 126" stroke="rgba(0,229,199,0.32)" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+    <h2 class="finale-h2" id="finale-h2">You've made the crossing<span class="dot">.</span></h2>
+    <p class="finale-sub">Ask Harbor anything — buildings, programs, where to eat at midnight.
+       It flies the camera; you just ask.</p>
+    <div class="cta-row">
+      <button class="cta-primary">Ask Harbor</button>
+      <button class="cta-ghost">Explore the 3D Campus</button>
+    </div>
+    <div class="horizon"></div>
+    <div class="endnote telemetry">End of crossing · Direction B prototype · GSAP ScrollTrigger + SplitText + Lenis</div>
+  </section>
+
+</main>
+
+<!-- Pinned versions — same stack the production build will self-host -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   NIGHT-HARBOR CANVAS — stand-in for the Cesium photorealistic feed.
+   Draw budget: gated by visibility, transform-cheap, DPR capped at 2.
+   ════════════════════════════════════════════════════════════════ */
+(function(){
+  var cv = document.getElementById('sea-canvas');
+  var ctx = cv.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 0, H = 0, t = 0, running = false, rafId = null;
+  var scrollDrift = 0;            // set by hero timeline for beat-2 parallax
+  window.__setSeaDrift = function(v){ scrollDrift = v; };
+
+  function resize(){
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize(); window.addEventListener('resize', resize);
+
+  // Deterministic pseudo-random star field
+  var stars = [];
+  for (var i = 0; i < 130; i++){
+    stars.push({ x: (Math.sin(i * 127.1) * 0.5 + 0.5), y: (Math.sin(i * 311.7) * 0.5 + 0.5) * 0.5, r: 0.5 + (Math.sin(i * 73.3) * 0.5 + 0.5) * 0.9, ph: i * 0.7 });
+  }
+  var buoys = [ {x:0.22, ph:0}, {x:0.55, ph:2.1}, {x:0.74, ph:4.4} ];
+
+  function draw(){
+    t += 0.006;
+    var horizon = H * (0.60 - scrollDrift * 0.05);
+    var moonX = W * 0.70, moonY = H * (0.16 - scrollDrift * 0.04);
+
+    // Sky
+    var sky = ctx.createLinearGradient(0, 0, 0, horizon);
+    sky.addColorStop(0, '#020911'); sky.addColorStop(0.65, '#04101F'); sky.addColorStop(1, '#08182B');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, horizon + 1);
+
+    // Stars
+    for (var i = 0; i < stars.length; i++){
+      var s = stars[i];
+      ctx.globalAlpha = 0.25 + (Math.sin(t * 1.6 + s.ph) * 0.5 + 0.5) * 0.4;
+      ctx.fillStyle = '#CFE8FF';
+      ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Moon + glow
+    var mg = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 90);
+    mg.addColorStop(0, 'rgba(207,232,255,0.30)'); mg.addColorStop(1, 'transparent');
+    ctx.fillStyle = mg; ctx.fillRect(moonX - 90, moonY - 90, 180, 180);
+    ctx.fillStyle = 'rgba(230,244,255,0.95)';
+    ctx.beginPath(); ctx.arc(moonX, moonY, 11, 0, Math.PI * 2); ctx.fill();
+
+    // Distant skyline strip on the horizon (city across the water)
+    ctx.fillStyle = '#04101C';
+    for (var b = 0; b < 18; b++){
+      var bx = ((b / 18) + Math.sin(b * 91.7) * 0.012) * W;
+      var bw = W * (0.018 + (Math.sin(b * 47.3) * 0.5 + 0.5) * 0.02);
+      var bh = 8 + (Math.sin(b * 13.7) * 0.5 + 0.5) * 26;
+      ctx.fillRect(bx, horizon - bh, bw, bh);
+    }
+    // A few lit windows
+    ctx.fillStyle = 'rgba(255,200,96,0.5)';
+    for (var wnd = 0; wnd < 14; wnd++){
+      if (Math.sin(t * 0.7 + wnd * 3.1) > -0.2){
+        var wx = (Math.sin(wnd * 57.7) * 0.5 + 0.5) * W;
+        var wy = horizon - 6 - (Math.sin(wnd * 91.3) * 0.5 + 0.5) * 20;
+        ctx.fillRect(wx, wy, 1.6, 1.6);
+      }
+    }
+
+    // ── Lighthouse — right of frame, rotating gold beam ──
+    var lhX = W * 0.865, lhTop = horizon - 46;
+    ctx.fillStyle = '#08141F';
+    ctx.beginPath();
+    ctx.moveTo(lhX - 7, horizon); ctx.lineTo(lhX - 4.5, lhTop); ctx.lineTo(lhX + 4.5, lhTop); ctx.lineTo(lhX + 7, horizon);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,199,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#FFB347';
+    ctx.beginPath(); ctx.arc(lhX, lhTop - 4, 3.2, 0, Math.PI * 2); ctx.fill();
+    // Beam (two opposed wedges, slow sweep)
+    var ang = t * 0.55;
+    ctx.save();
+    ctx.translate(lhX, lhTop - 4);
+    for (var side = 0; side < 2; side++){
+      ctx.save();
+      ctx.rotate(ang + side * Math.PI);
+      var beam = ctx.createLinearGradient(0, 0, W * 0.42, 0);
+      beam.addColorStop(0, 'rgba(255,179,71,0.34)'); beam.addColorStop(1, 'transparent');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(W * 0.42, -W * 0.052); ctx.lineTo(W * 0.42, W * 0.052);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // ── Water ──
+    var wg = ctx.createLinearGradient(0, horizon, 0, H);
+    wg.addColorStop(0, '#03101E'); wg.addColorStop(1, '#01070E');
+    ctx.fillStyle = wg; ctx.fillRect(0, horizon, W, H - horizon);
+
+    // Moonpath specular shimmer
+    for (var row = 0; row < 26; row++){
+      var ry = horizon + 8 + row * ((H - horizon) / 28);
+      var spread = 14 + row * 3.2;
+      var flick = Math.sin(t * 2.4 + row * 1.7);
+      if (flick > -0.35){
+        ctx.globalAlpha = (0.20 - row * 0.006) * (0.6 + flick * 0.4);
+        ctx.fillStyle = '#CFE8FF';
+        var segW = 8 + (Math.sin(t + row * 3.3) * 0.5 + 0.5) * spread;
+        ctx.fillRect(moonX - segW / 2 + Math.sin(t * 1.2 + row) * spread * 0.5, ry, segW, 1.1);
+      }
+    }
+    // Gold shimmer under the lighthouse beam
+    for (var gr = 0; gr < 12; gr++){
+      var gy = horizon + 10 + gr * 7;
+      ctx.globalAlpha = 0.10 - gr * 0.007;
+      ctx.fillStyle = '#FFB347';
+      ctx.fillRect(lhX - 10 + Math.sin(t * 1.8 + gr) * 8, gy, 16, 1);
+    }
+    ctx.globalAlpha = 1;
+
+    // Bioluminescent wave lines
+    for (var wv = 0; wv < 5; wv++){
+      ctx.strokeStyle = 'rgba(0,229,199,' + (0.13 - wv * 0.022) + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var x = 0; x <= W; x += 3){
+        var y = horizon + 14 + wv * 13
+              + Math.sin(x / 34 + t * 1.5 + wv * 2) * (3 + scrollDrift * 3)
+              + Math.sin(x / 90 + t * 0.8) * 5;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Buoys — gold blink, bobbing
+    for (var bu = 0; bu < buoys.length; bu++){
+      var B = buoys[bu];
+      var by = horizon + 26 + bu * 16 + Math.sin(t * 1.4 + B.ph) * 3;
+      var bx2 = B.x * W + Math.sin(t * 0.3 + B.ph) * 12;
+      var blink = Math.sin(t * 2.6 + B.ph) > 0.5;
+      ctx.fillStyle = blink ? '#FFB347' : 'rgba(255,179,71,0.25)';
+      ctx.beginPath(); ctx.arc(bx2, by, 2, 0, Math.PI * 2); ctx.fill();
+      if (blink){
+        ctx.globalAlpha = 0.25;
+        ctx.beginPath(); ctx.arc(bx2, by, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    if (running) rafId = requestAnimationFrame(draw);
+  }
+
+  function start(){ if (running) return; running = true; rafId = requestAnimationFrame(draw); }
+  function stop(){ running = false; if (rafId){ cancelAnimationFrame(rafId); rafId = null; } }
+  window.__sea = { start: start, stop: stop, drawOnce: function(){ resize(); draw(); } };
+
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
+  if ('IntersectionObserver' in window){
+    new IntersectionObserver(function(en){ en[0].isIntersecting ? start() : stop(); }).observe(cv);
+  } else start();
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   SKYLINE CANVAS — the about scene's held shot (city across water)
+   ════════════════════════════════════════════════════════════════ */
+(function(){
+  var cv = document.getElementById('skyline-canvas');
+  var ctx = cv.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 0, H = 0, t = 0, running = false, rafId = null;
+  function resize(){ W = cv.clientWidth; H = cv.clientHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+  resize(); window.addEventListener('resize', resize);
+
+  var blds = [];
+  for (var i = 0; i < 15; i++){
+    blds.push({ x: 0.02 + i * 0.066, w: 0.028 + (Math.sin(i*47.9)*0.5+0.5)*0.03, h: 0.28 + (Math.sin(i*13.3)*0.5+0.5)*0.5, seed: i * 7.7 });
+  }
+  function draw(){
+    t += 0.007;
+    var horizon = H * 0.66;
+    ctx.clearRect(0, 0, W, H);
+    // Buildings
+    for (var i = 0; i < blds.length; i++){
+      var b = blds[i], bx = b.x * W, bw = b.w * W, bh = b.h * horizon, by = horizon - bh;
+      ctx.fillStyle = '#050F1A';
+      ctx.fillRect(bx, by, bw, bh);
+      // windows
+      var cols = 3, rows = Math.floor(bh / 26);
+      for (var r = 0; r < rows; r++){
+        for (var c = 0; c < cols; c++){
+          var lit = Math.sin(t * 0.9 + b.seed + r * 2.1 + c * 3.7) > 0.15;
+          ctx.fillStyle = lit ? 'rgba(255,200,96,0.55)' : 'rgba(0,40,80,0.30)';
+          ctx.fillRect(bx + 4 + c * (bw / cols), by + 8 + r * 24, Math.max(2, bw / cols - 7), 5);
+        }
+      }
+    }
+    // Water + waves
+    var wg = ctx.createLinearGradient(0, horizon, 0, H);
+    wg.addColorStop(0, '#02101E'); wg.addColorStop(1, '#01060C');
+    ctx.fillStyle = wg; ctx.fillRect(0, horizon, W, H - horizon);
+    for (var wv = 0; wv < 4; wv++){
+      ctx.strokeStyle = 'rgba(0,229,199,' + (0.11 - wv * 0.02) + ')';
+      ctx.lineWidth = 1; ctx.beginPath();
+      for (var x = 0; x <= W; x += 3){
+        var y = horizon + 12 + wv * 12 + Math.sin(x/30 + t*1.4 + wv*2) * 3 + Math.sin(x/80 + t*0.7) * 4;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    // Little ferry crossing right-to-left, forever
+    var fx = W * (1.1 - ((t * 0.016) % 1.3)), fy = horizon + 22 + Math.sin(t) * 2;
+    ctx.strokeStyle = 'rgba(207,232,255,0.55)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(fx - 10, fy + 4); ctx.lineTo(fx + 14, fy + 4); ctx.lineTo(fx + 5, fy); ctx.closePath(); ctx.stroke();
+    ctx.fillStyle = '#FFB347'; ctx.fillRect(fx + 1, fy - 4, 2, 2);
+
+    if (running) rafId = requestAnimationFrame(draw);
+  }
+  function start(){ if (running) return; running = true; rafId = requestAnimationFrame(draw); }
+  function stop(){ running = false; if (rafId){ cancelAnimationFrame(rafId); rafId = null; } }
+  window.__skyline = { drawOnce: function(){ resize(); draw(); } };
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
+  if ('IntersectionObserver' in window){
+    new IntersectionObserver(function(en){ en[0].isIntersecting ? start() : stop(); }).observe(cv);
+  } else start();
+})();
+
+/* ════════════════════════════════════════════════════════════════
+   SCROLL CHOREOGRAPHY — GSAP ScrollTrigger + SplitText + Lenis
+   ════════════════════════════════════════════════════════════════ */
+gsap.registerPlugin(ScrollTrigger, SplitText);
+
+// Marquee content (built once; duplicated for seamless wrap)
+(function(){
+  var items = [
+    '<b>●</b> Live shuttle tracking', 'Harbor AI guide', '3D campus flyover',
+    'Build your day', '12 buildings narrated', 'Night mode', '<b>●</b> Live harbor weather',
+    'Fish-the-harbor arcade', '11 languages'
+  ];
+  var html = items.map(function(s){ return '<span>' + s + '</span>'; }).join('');
+  document.getElementById('marquee-track').innerHTML = html + html;
+})();
+
+var mm = gsap.matchMedia();
+
+/* ── Full choreography: pointer desktops, motion OK ── */
+mm.add('(prefers-reduced-motion: no-preference)', function(){
+
+  // Lenis smooth scroll (native scroll mode — no transform wrappers)
+  var lenis = new Lenis({ lerp: 0.1 });
+  window.__lenis = lenis; // programmatic jumps MUST go through lenis.scrollTo() — native window.scrollTo fights the lerp
+  lenis.on('scroll', ScrollTrigger.update);
+  var rafFn = function(time){ lenis.raf(time * 1000); };
+  gsap.ticker.add(rafFn);
+  gsap.ticker.lagSmoothing(0);
+
+  // Cold-load hardening: fonts + pin spacers land late on a cold cache, so
+  // re-measure Lenis's scroll limit and every trigger once the page is truly loaded.
+  window.addEventListener('load', function(){
+    lenis.resize();
+    ScrollTrigger.refresh();
+  });
+
+  /* ── The color journey: dusk → deep night, page-wide ──
+     start/end as 0 → maxScroll (function-based) so pin spacers added by the
+     hero/about pins are included after ScrollTrigger.refresh(). */
+  /* refreshPriority -100: these span the whole page from 0, so they must be
+     measured AFTER the pins have added their spacers, or maxScroll comes up short. */
+  gsap.timeline({
+    scrollTrigger: { start: 0, end: function(){ return ScrollTrigger.maxScroll(window); }, scrub: 0.6, invalidateOnRefresh: true, refreshPriority: -100 }
+  })
+  .to('body', { backgroundColor: '#041020', ease: 'none' }, 0)
+  .to('body', { backgroundColor: '#000A14', ease: 'none' }, 0.5);
+
+  /* ── Lighthouse sigil: beam angle + % crossed ── */
+  var sigilBeam = document.getElementById('sigil-beam');
+  var sigilPct = document.getElementById('sigil-pct');
+  ScrollTrigger.create({
+    start: 0, end: function(){ return ScrollTrigger.maxScroll(window); }, invalidateOnRefresh: true, refreshPriority: -100,
+    onUpdate: function(self){
+      gsap.set(sigilBeam, { rotation: self.progress * 300 });
+      sigilPct.textContent = Math.round(self.progress * 100) + '% CROSSED';
+    }
+  });
+
+  /* ── HERO Beat 1 (load): headline rises out of the water ── */
+  var split = SplitText.create('#hero-h1', { type: 'lines', mask: 'lines' });
+  var intro = gsap.timeline({ delay: 0.25, defaults: { ease: 'power4.out' } });
+  intro
+    .from('.hero-kicker', { y: 18, autoAlpha: 0, duration: 0.9 })
+    .from(split.lines, { yPercent: 118, duration: 1.35, stagger: 0.16, ease: 'power3.out' }, '-=0.55')
+    .from('#hero-sub', { y: 26, autoAlpha: 0, duration: 1.0 }, '-=0.75')
+    .from('#hero-ctas', { y: 22, autoAlpha: 0, duration: 0.9 }, '-=0.7')
+    .from('.feed-chip', { y: -14, autoAlpha: 0, duration: 0.8 }, '-=0.9')
+    .from('#scroll-hint', { autoAlpha: 0, duration: 0.8 }, '-=0.4');
+
+  /* ── HERO Beat 2 (scroll): copy sinks, the feed becomes the scene ── */
+  var seaDrift = { v: 0 };
+  gsap.timeline({
+    scrollTrigger: { trigger: '#hero', start: 'top top', end: '+=110%', scrub: 0.6, pin: true }
+  })
+  .to('#hero-copy', { yPercent: 16, autoAlpha: 0, filter: 'blur(7px)', ease: 'power1.in' }, 0)
+  .to('#vignette', { opacity: 0.25, ease: 'none' }, 0)
+  .to('#sea-canvas', { scale: 1.06, ease: 'none' }, 0)
+  .to(seaDrift, { v: 1, ease: 'none', onUpdate: function(){ window.__setSeaDrift(seaDrift.v); } }, 0);
+
+  /* Scroll hint: hidden the moment the crossing begins (class + CSS transition —
+     deterministic, immune to tween-state races with the intro timeline). */
+  ScrollTrigger.create({
+    start: 40, end: 99999,
+    onEnter: function(){ document.getElementById('scroll-hint').classList.add('gone'); },
+    onLeaveBack: function(){ document.getElementById('scroll-hint').classList.remove('gone'); }
+  });
+
+  /* ── Beacon sweeps at every section boundary ── */
+  gsap.utils.toArray('.sweep').forEach(function(el){
+    var zone = el.parentElement.parentElement;
+    ScrollTrigger.create({
+      trigger: zone, start: 'top 78%',
+      onEnter: function(){ gsap.fromTo(el, { xPercent: -140 }, { xPercent: 480, duration: 1.5, ease: 'power2.inOut' }); },
+      onLeaveBack: function(){ gsap.set(el, { xPercent: -140 }); }
+    });
+  });
+
+  /* ── Instrument strip: count-up telemetry ── */
+  gsap.utils.toArray('[data-count]').forEach(function(el){
+    var target = parseInt(el.getAttribute('data-count'), 10);
+    var obj = { v: 0 };
+    ScrollTrigger.create({
+      trigger: el, start: 'top 88%', once: true,
+      onEnter: function(){
+        gsap.to(obj, {
+          v: target, duration: 1.8, ease: 'power2.out',
+          onUpdate: function(){ el.textContent = Math.round(obj.v).toLocaleString('en-US'); }
+        });
+      }
+    });
+  });
+  gsap.from('.stat', {
+    scrollTrigger: { trigger: '.stats-grid', start: 'top 85%' },
+    y: 34, autoAlpha: 0, duration: 0.9, stagger: 0.1, ease: 'power3.out'
+  });
+
+  /* ── Velocity-reactive marquee ── */
+  (function(){
+    var track = document.getElementById('marquee-track');
+    var x = 0, base = 0.55;
+    gsap.ticker.add(function(){
+      var vel = Math.min(Math.abs(lenis.velocity || 0), 60);
+      x -= base + vel * 0.06;
+      var half = track.scrollWidth / 2;
+      if (half > 0 && -x >= half) x += half;
+      gsap.set(track, { x: x });
+    });
+  })();
+
+  /* ── Marquee + stats sections also get a gentle rise ── */
+
+  /* ── FINALE entrance ── */
+  gsap.from('#finale > *:not(.sweep-zone):not(.horizon)', {
+    scrollTrigger: { trigger: '#finale', start: 'top 65%' },
+    y: 40, autoAlpha: 0, duration: 1.1, stagger: 0.12, ease: 'power3.out'
+  });
+
+  return function(){ gsap.ticker.remove(rafFn); lenis.destroy(); };
+});
+
+/* ── Pinned about scene: desktop-only (≥1024px) + motion OK ── */
+mm.add('(min-width:1024px) and (prefers-reduced-motion: no-preference)', function(){
+  var stanzas = gsap.utils.toArray('.stanza');
+  var SLOT = 1.2; // scroll-time per stanza; outgoing must fully clear before the next enters
+  var tl = gsap.timeline({
+    scrollTrigger: { trigger: '#about-stage', start: 'top top', end: '+=240%', scrub: 0.55, pin: true }
+  });
+  stanzas.forEach(function(st, i){
+    tl.fromTo(st, { autoAlpha: 0, y: 60 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out' }, i * SLOT);
+    if (i < stanzas.length - 1){
+      tl.to(st, { autoAlpha: 0, y: -60, duration: 0.35, ease: 'power2.in' }, i * SLOT + 0.75); // ends 1.10 < next at 1.20
+    }
+  });
+  tl.to('#rail-fill', { height: '100%', ease: 'none', duration: stanzas.length * SLOT }, 0);
+  return function(){};
+});
+
+/* ── Mobile (<1024px), motion OK: stanzas stack + simple fades ── */
+mm.add('(max-width:1023px) and (prefers-reduced-motion: no-preference)', function(){
+  gsap.utils.toArray('.stanza').forEach(function(st){
+    gsap.set(st, { position: 'relative', top: 'auto', transform: 'none', opacity: 1 });
+    gsap.from(st, {
+      scrollTrigger: { trigger: st, start: 'top 88%' },
+      y: 26, autoAlpha: 0, duration: 0.8, ease: 'power3.out'
+    });
+  });
+  return function(){};
+});
+
+/* ── Reduced motion: everything visible, canvases as stills ── */
+mm.add('(prefers-reduced-motion: reduce)', function(){
+  gsap.set('#hero-copy, .feed-chip, #scroll-hint, .stat, .stanza, #finale > *', { clearProps: 'all', autoAlpha: 1 });
+  document.querySelectorAll('[data-count]').forEach(function(el){
+    el.textContent = parseInt(el.getAttribute('data-count'), 10).toLocaleString('en-US');
+  });
+  if (window.__sea){ window.__sea.stop && window.__sea.stop(); window.__sea.drawOnce(); }
+  if (window.__skyline){ window.__skyline.drawOnce(); }
+  return function(){};
+});
+</script>
+</body>
+</html>

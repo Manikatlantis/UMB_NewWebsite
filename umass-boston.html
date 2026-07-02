@@ -9,6 +9,49 @@
 <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Widgets/widgets.css">
 <script src="https://cesium.com/downloads/cesiumjs/releases/1.122/Build/Cesium/Cesium.js"></script>
 <!-- Google Maps JavaScript API — replace YOUR_GOOGLE_MAPS_API_KEY with your real key -->
+<script>
+// ── Low-power device detection (runs before any render work) ──
+(function(){
+  var mode = 'auto';
+  try { mode = localStorage.getItem('umb.perfMode') || 'auto'; } catch(e){}
+  var low = false;
+  if (mode === 'low') low = true;
+  else if (mode === 'auto') {
+    var cores = navigator.hardwareConcurrency || 8;
+    var mem = navigator.deviceMemory || 8;
+    var mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || '');
+    var reducedMotion = false;
+    try { reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+    if (cores <= 4 || mem <= 4 || (mobile && cores <= 6) || reducedMotion) low = true;
+  }
+  window.__LOW_POWER = low;
+  window.__PERF_MODE = mode;
+  if (low) {
+    // Apply class immediately so first paint respects it
+    (document.documentElement || document.body).classList.add('low-power');
+  }
+
+  // ── Perf-mode toggle button: cycles auto → high → low → auto, persists, reloads ──
+  window.cyclePerfMode = function(){
+    var cur = 'auto';
+    try { cur = localStorage.getItem('umb.perfMode') || 'auto'; } catch(e){}
+    var next = cur === 'auto' ? 'high' : (cur === 'high' ? 'low' : 'auto');
+    try { localStorage.setItem('umb.perfMode', next); } catch(e){}
+    location.reload();
+  };
+
+  // Update the button label once the DOM exists
+  document.addEventListener('DOMContentLoaded', function(){
+    var btn = document.getElementById('perf-btn');
+    if (!btn) return;
+    var label = btn.querySelector('.perf-label');
+    var pretty = mode === 'high' ? 'High' : (mode === 'low' ? 'Low' : (low ? 'Auto·Low' : 'Auto'));
+    if (label) label.textContent = pretty;
+    btn.setAttribute('data-mode', mode === 'auto' ? (low ? 'low' : 'high') : mode);
+    btn.title = 'Performance: ' + pretty + ' (click to cycle)';
+  });
+})();
+</script>
 <style>
 :root{
   --navy:#001830;--deep:#000d1a;--beacon:#003865;
@@ -700,6 +743,46 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
   .byd-timeline{width:170px;font-size:90%;}
   .byd-info-card{right:8px;left:8px;width:auto;bottom:70px;}
 }
+
+/* ── Low-power device overrides ── */
+/* Blur is the most expensive GPU op — strip on low-power and keep the translucent background */
+.low-power nav.scrolled,
+.low-power .lang-menu,
+.low-power .btn-r,
+.low-power .btn-o,
+.low-power .btn-3d,
+.low-power .btn-exit3d,
+.low-power .btn-shuttle,
+.low-power .btn-tour,
+.low-power .shuttle-hud,
+.low-power #shuttle-panel,
+.low-power .shuttle-tip,
+.low-power .ride-hud,
+.low-power .btn-nightmode,
+.low-power .ride-cam-btn,
+.low-power .weather-hud,
+.low-power .beacon-bubble,
+.low-power .game-score,
+.low-power .game-lives,
+.low-power .game-overlay,
+.low-power .upload-modal{ backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+/* Pause beacon when off-screen or tab hidden */
+.low-power #beacon-mascot.paused svg,
+#beacon-mascot.paused svg,
+#beacon-mascot.paused .beacon-eyes,
+#beacon-mascot.paused .beacon-beam,
+#beacon-mascot.paused .beacon-lantern{ animation-play-state:paused; }
+/* Also fully stop beacon continuous animations on low-power when hidden (opacity:0) */
+.low-power #beacon-mascot:not(.vis) svg,
+.low-power #beacon-mascot:not(.vis) .beacon-eyes,
+.low-power #beacon-mascot:not(.vis) .beacon-beam,
+.low-power #beacon-mascot:not(.vis) .beacon-lantern{ animation:none !important; }
+/* Perf-mode toggle button */
+.perf-btn{background:none;border:1px solid rgba(238,243,248,0.15);color:rgba(238,243,248,0.7);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:7px 10px;margin-left:8px;cursor:pointer;transition:all 0.3s;border-radius:3px;text-transform:uppercase;}
+.perf-btn:hover{border-color:var(--teal);color:var(--teal);}
+.perf-btn .perf-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:middle;background:rgba(150,160,170,0.7);}
+.perf-btn[data-mode="high"] .perf-dot{background:#4ade80;}
+.perf-btn[data-mode="low"] .perf-dot{background:#f5a623;}
 </style>
 </head>
 <body>
@@ -722,6 +805,7 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     <li><a href="#harbor-game-section">⚓ <span data-i18n="nav_play">Play</span></a></li>
     <li><a href="#chatbot-section" data-i18n="nav_ask_harbor">Ask Harbor</a></li>
   </ul>
+  <button class="perf-btn" id="perf-btn" title="Toggle performance mode" onclick="cyclePerfMode()"><span class="perf-dot"></span><span class="perf-label">Auto</span></button>
   <div class="lang-wrap" id="lang-wrap">
     <button class="lang-btn" id="lang-btn" onclick="toggleLangMenu()">
       <span class="lang-flag">🌐</span>
@@ -785,7 +869,8 @@ footer{background:var(--deep);border-top:1px solid rgba(0,212,184,0.08);padding:
     if(!c) return;
     var ctx = c.getContext('2d');
     var W, H, particles = [], mouse = {x:-999,y:-999};
-    var PARTICLE_COUNT = 180, CONNECT_DIST = 120, MOUSE_DIST = 200;
+    var LP = !!window.__LOW_POWER;
+    var PARTICLE_COUNT = LP ? 60 : 180, CONNECT_DIST = LP ? 90 : 120, MOUSE_DIST = LP ? 140 : 200;
 
     function resize(){
       W = c.width = c.parentElement.offsetWidth || window.innerWidth;
@@ -1479,6 +1564,25 @@ window.addEventListener('scroll',()=>document.getElementById('navbar').classList
   var secTitles = document.querySelectorAll('.sec-title');
   var secTags = document.querySelectorAll('.sec-tag');
 
+  // ── Accessibility: honor prefers-reduced-motion (WCAG 2.3.3) ──
+  // The engine animates via inline opacity/transform on every scroll frame. If the
+  // user asked for reduced motion, skip it entirely — but first force every animated
+  // element into its final, fully-visible state so nothing is left stuck hidden
+  // (the .reveal / card / bullet classes start at opacity:0 in CSS).
+  var reduceMotion = false;
+  try { reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  if (reduceMotion) {
+    var showEls = reveals.map(function(r){ return r.el; })
+      .concat([].slice.call(progCards))
+      .concat([].slice.call(newsCards))
+      .concat([].slice.call(aboutBullets))
+      .concat([].slice.call(secTitles));
+    if (aboutBadge) showEls.push(aboutBadge);
+    showEls.forEach(function(el){ el.style.opacity = '1'; el.style.transform = 'none'; });
+    if (scrollHint) scrollHint.style.opacity = '';
+    return; // do not register the scroll handler
+  }
+
   var ticking = false;
 
   function onScroll(){
@@ -1492,10 +1596,16 @@ window.addEventListener('scroll',()=>document.getElementById('navbar').classList
       // ── Hero parallax — dramatic fade + drift + scale ──
       // Skip when in explore mode — CSS handles hiding
       if (heroContent && sy < wh * 1.5 && !document.getElementById('hero').classList.contains('explore-mode')) {
-        var hp = Math.min(1, sy / (wh * 0.4));
-        heroContent.style.opacity = lerp(1, 0, hp);
-        heroContent.style.transform = 'translateY(' + lerp(0, -160, hp) + 'px) scale(' + lerp(1, 0.8, hp) + ')';
-        if (scrollHint) scrollHint.style.opacity = lerp(1, 0, hp * 4);
+        if (heroContent.classList.contains('faded')) {
+          // Idle auto-fade owns opacity via CSS (and its :hover restore) — don't fight it inline.
+          heroContent.style.opacity = '';
+          heroContent.style.transform = '';
+        } else {
+          var hp = Math.min(1, sy / (wh * 0.4));
+          heroContent.style.opacity = lerp(1, 0, hp);
+          heroContent.style.transform = 'translateY(' + lerp(0, -160, hp) + 'px) scale(' + lerp(1, 0.8, hp) + ')';
+          if (scrollHint) scrollHint.style.opacity = lerp(1, 0, hp * 4);
+        }
       }
 
       // ── Reveal elements ──
@@ -2025,449 +2135,6 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
 }
 
 // ────────────────────────────────────────────────
-// HERO — Three.js 3D Low-Poly Campus (disabled — replaced by Cesium below)
-// ────────────────────────────────────────────────
-(function(){
-  return; // replaced by Cesium photorealistic 3D tiles
-  const canvas=document.getElementById('webgl-canvas');
-  if(!window.THREE){console.warn('Three.js not loaded');return;}
-
-  const BUILDINGS=CAMPUS_BUILDINGS;
-
-  // ── Renderer ──
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  renderer.setClearColor(0x000d1a);
-
-  // ── Scene ──
-  const scene=new THREE.Scene();
-  scene.fog=new THREE.FogExp2(0x000d1a,0.002);
-
-  // ── Camera ──
-  const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,0.1,2000);
-  camera.position.set(0,500,0); // start high (satellite)
-  camera.lookAt(0,0,0);
-
-  // ── Lights (subdued for background feel) ──
-  const ambient=new THREE.AmbientLight(0x223344,0.5);
-  scene.add(ambient);
-  const dirLight=new THREE.DirectionalLight(0x8899aa,0.5);
-  dirLight.position.set(40,80,30);
-  scene.add(dirLight);
-  const tealPoint=new THREE.PointLight(0x00c8d4,0.8,120);
-  tealPoint.position.set(0,15,0);
-  scene.add(tealPoint);
-  const tealPoint2=new THREE.PointLight(0x00c8d4,0.4,80);
-  tealPoint2.position.set(-15,10,10);
-  scene.add(tealPoint2);
-
-  // ── Ground peninsula ──
-  const peninsulaShape=new THREE.Shape();
-  // Real campus outline (simplified Columbia Point) — scaled 0.5x
-  const ptsRaw=[
-    [-50,-40],[-30,-50],[-5,-52],[20,-48],[38,-40],
-    [48,-25],[52,-5],[50,15],[42,30],[30,42],
-    [15,48],[0,50],[-18,46],[-32,38],[-42,25],
-    [-48,10],[-50,-10],[-50,-25]
-  ];
-  const S=0.5; // scale factor
-  const pts=ptsRaw.map(p=>[p[0]*S,p[1]*S]);
-  peninsulaShape.moveTo(pts[0][0],pts[0][1]);
-  for(let i=1;i<pts.length;i++) peninsulaShape.lineTo(pts[i][0],pts[i][1]);
-  peninsulaShape.closePath();
-
-  const extrudeSettings={depth:1,bevelEnabled:true,bevelThickness:0.3,bevelSize:0.3,bevelSegments:2};
-  const groundGeo=new THREE.ExtrudeGeometry(peninsulaShape,extrudeSettings);
-  const groundMat=new THREE.MeshStandardMaterial({color:0x0a1810,roughness:0.95,metalness:0.05});
-  const ground=new THREE.Mesh(groundGeo,groundMat);
-  ground.rotation.x=-Math.PI/2;
-  ground.position.y=-1;
-  scene.add(ground);
-
-  // ── Coastline glow ring ──
-  const coastPts=pts.map(p=>new THREE.Vector2(p[0],p[1]));
-  coastPts.push(coastPts[0].clone());
-  const coastCurve=new THREE.SplineCurve(coastPts);
-  const coastGeo=new THREE.BufferGeometry().setFromPoints(coastCurve.getPoints(100));
-  const coastMat=new THREE.LineBasicMaterial({color:0x00c8d4,transparent:true,opacity:0.25});
-  const coastLine=new THREE.Line(coastGeo,coastMat);
-  coastLine.rotation.x=-Math.PI/2;
-  coastLine.position.y=0.2;
-  scene.add(coastLine);
-
-  // ── Water plane ──
-  const waterGeo=new THREE.PlaneGeometry(600,600,60,60);
-  const waterMat=new THREE.MeshStandardMaterial({
-    color:0x010c18,roughness:0.8,metalness:0.2,transparent:true,opacity:0.95
-  });
-  const water=new THREE.Mesh(waterGeo,waterMat);
-  water.rotation.x=-Math.PI/2;
-  water.position.y=-2;
-  scene.add(water);
-
-  // ── Walkways (raised, wider, visible tan color) ──
-  const walkwayMat=new THREE.MeshStandardMaterial({color:0x9e9585,roughness:0.95,metalness:0.0});
-  const walkways=[
-    {x:0,z:-4.5,w:2,d:9},       // Campus Center → Quinn
-    {x:-4,z:1.5,w:8,d:1.8},     // McCormack → Campus Center
-    {x:4.5,z:-1,w:9,d:1.8},     // Campus Center → ISC
-    {x:3,z:-3,w:1.8,d:6},       // Wheatley → Campus Center
-    {x:-7,z:6.5,w:9,d:1.8},     // Clark → McCormack area
-  ];
-  walkways.forEach(wk=>{
-    const geo=new THREE.BoxGeometry(wk.w,0.25,wk.d);
-    const mesh=new THREE.Mesh(geo,walkwayMat);
-    mesh.position.set(wk.x,0.2,wk.z);
-    scene.add(mesh);
-  });
-
-  // ── Harborwalk (wider path along south coastline) ──
-  const hwMat=new THREE.MeshStandardMaterial({color:0xa89e8a,roughness:0.95,metalness:0.0});
-  const hwSegs=[
-    {x:0,z:-13,w:24,d:2.5},     // south edge
-    {x:17,z:-5,w:2.5,d:16},     // east edge
-  ];
-  hwSegs.forEach(s=>{
-    const geo=new THREE.BoxGeometry(s.w,0.25,s.d);
-    const mesh=new THREE.Mesh(geo,hwMat);
-    mesh.position.set(s.x,0.2,s.z);
-    scene.add(mesh);
-  });
-
-  // ── Trees ──
-  const treeTrunkMat=new THREE.MeshStandardMaterial({color:0x6b4226,roughness:0.9});
-  const treeCanopyMat=new THREE.MeshStandardMaterial({color:0x2d8a2d,roughness:0.7});
-  // Tree positions — placed in open spaces away from buildings
-  const treePositions=[
-    [-16,0,2],[-15,0,-4],[-17,0,10],  // west edge
-    [-5,0,-12],[-1,0,-14],[4,0,-14],   // south edge
-    [12,0,6],[15,0,2],[16,0,-1],       // east side
-    [-4,0,16],[-8,0,14],[2,0,14],      // north edge
-    [0,0,8],[-12,0,-2],[8,0,8],        // scattered open areas
-  ];
-  treePositions.forEach(tp=>{
-    const trunk=new THREE.Mesh(
-      new THREE.CylinderGeometry(0.2,0.3,1.6,6),treeTrunkMat
-    );
-    trunk.position.set(tp[0],0.8,tp[2]);
-    scene.add(trunk);
-    const canopy=new THREE.Mesh(
-      new THREE.ConeGeometry(1.2,2.4,7),treeCanopyMat
-    );
-    canopy.position.set(tp[0],2.8,tp[2]);
-    scene.add(canopy);
-  });
-
-  // ── Sky dome (hidden in hero mode, shown in explore mode) ──
-  const skyGeo=new THREE.SphereGeometry(500,32,16);
-  const skyMat=new THREE.MeshBasicMaterial({
-    color:0x000d1a,side:THREE.BackSide,fog:false
-  });
-  const skyDome=new THREE.Mesh(skyGeo,skyMat);
-  scene.add(skyDome);
-
-  // Target sky colors for explore mode
-  const SKY_DARK=new THREE.Color(0x000d1a);
-  const SKY_DAY=new THREE.Color(0x7db4e0); // soft realistic daytime sky
-
-  // ── Clouds (sprite-based, invisible until explore mode) ──
-  const clouds=[];
-  const cloudCanvas=document.createElement('canvas');
-  cloudCanvas.width=128;cloudCanvas.height=64;
-  const cctx=cloudCanvas.getContext('2d');
-  const cgrad=cctx.createRadialGradient(64,32,0,64,32,56);
-  cgrad.addColorStop(0,'rgba(255,255,255,0.7)');
-  cgrad.addColorStop(0.5,'rgba(255,255,255,0.3)');
-  cgrad.addColorStop(1,'rgba(255,255,255,0)');
-  cctx.fillStyle=cgrad;
-  cctx.fillRect(0,0,128,64);
-  const cloudTex=new THREE.CanvasTexture(cloudCanvas);
-
-  for(let i=0;i<18;i++){
-    const cMat=new THREE.SpriteMaterial({map:cloudTex,transparent:true,opacity:0,fog:false,depthWrite:false});
-    const sprite=new THREE.Sprite(cMat);
-    const angle=Math.random()*Math.PI*2;
-    const radius=40+Math.random()*150;
-    sprite.position.set(Math.cos(angle)*radius,35+Math.random()*30,Math.sin(angle)*radius);
-    sprite.scale.set(30+Math.random()*40,8+Math.random()*10,1);
-    sprite.userData={speed:0.3+Math.random()*0.5,baseX:sprite.position.x};
-    scene.add(sprite);
-    clouds.push(sprite);
-  }
-
-  // ── Sun light (for explore mode, starts dim) ──
-  const sunLight=new THREE.DirectionalLight(0xfff4e0,0);
-  sunLight.position.set(60,80,40);
-  scene.add(sunLight);
-
-  // ── Hemisphere light (sky/ground bounce, starts off) ──
-  const hemiLight=new THREE.HemisphereLight(0x9ec5e8,0x4a6b3a,0);
-  scene.add(hemiLight);
-
-  // ── Explore mode lighting targets ──
-  const HERO_LIGHT={ambient:0.5,dir:0.5,teal1:0.8,teal2:0.4,sun:0,hemi:0,fog:0.002,cloudAlpha:0,groundCol:new THREE.Color(0x0a1810),waterCol:new THREE.Color(0x010c18)};
-  const EXPLORE_LIGHT={ambient:0.8,dir:0.9,teal1:0.15,teal2:0.1,sun:1.2,hemi:0.5,fog:0.0008,cloudAlpha:1,groundCol:new THREE.Color(0x3a6830),waterCol:new THREE.Color(0x2a6080)};
-  let lightTarget=HERO_LIGHT;
-  let lightLerp=0; // 0=hero, 1=explore
-
-  // ── Buildings ──
-  const buildingMeshes=[];
-  const windowMeshes=[];
-  const buildingGroup=new THREE.Group();
-
-  // Set world positions for hero diorama (use x,z directly)
-  BUILDINGS.forEach(b=>{b._wx=b.x;b._wz=b.z;});
-  BUILDINGS.forEach((b,idx)=>buildStructure3D(b,idx,buildingGroup,buildingMeshes,windowMeshes,1));
-  scene.add(buildingGroup);
-
-  // ── OrbitControls ──
-  const controls=new THREE.OrbitControls(camera,renderer.domElement);
-  controls.enableDamping=true;
-  controls.dampingFactor=0.08;
-  controls.minDistance=30;
-  controls.maxDistance=250;
-  controls.minPolarAngle=0.3;
-  controls.maxPolarAngle=Math.PI/2.1;
-  controls.target.set(0,0,0);
-  controls.enabled=false; // disabled during intro
-
-  // ── Raycaster ──
-  const raycaster=new THREE.Raycaster();
-  const mouse=new THREE.Vector2();
-  const allClickable=[...buildingMeshes,...windowMeshes];
-
-  function onCanvasClick(e){
-    if(!exploreMode) return; // only interactive in explore mode
-    const rect=renderer.domElement.getBoundingClientRect();
-    mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
-    mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
-    raycaster.setFromCamera(mouse,camera);
-    const hits=raycaster.intersectObjects(allClickable,false);
-    if(hits.length>0){
-      const obj=hits[0].object;
-      if(obj.userData.type==='building'){
-        openBuildingPanel(obj.userData.data);
-      } else if(obj.userData.type==='window'){
-        openWindowPhoto(obj.userData);
-      }
-    } else {
-      closeBuildingPanel();
-    }
-  }
-  renderer.domElement.addEventListener('click',onCanvasClick);
-
-  // ── Panel functions (global) ──
-  window.closeBuildingPanel=function(){
-    document.getElementById('building-panel').classList.remove('open');
-  };
-  window.closeLightbox=function(){
-    document.getElementById('photo-lightbox').classList.remove('open');
-  };
-
-  // ── 3D Explore mode ──
-  let exploreMode=false;
-  let camTween=null; // {from, to, start, dur, onDone}
-  const HERO_CAM={x:25,y:55,z:35};
-  const EXPLORE_CAM={x:30,y:30,z:40};
-
-  function animateCamTo(target,dur,onDone){
-    camTween={
-      from:{x:camera.position.x,y:camera.position.y,z:camera.position.z},
-      to:target,
-      start:clock.getElapsedTime(),
-      dur:dur,
-      onDone:onDone||null
-    };
-  }
-
-  window.enter3DMode=function(){
-    if(exploreMode) return;
-    exploreMode=true;
-    lightTarget=EXPLORE_LIGHT;
-    document.getElementById('hero').classList.add('explore-mode');
-    document.getElementById('btn-exit3d').classList.add('vis');
-    controls.enabled=true;
-    controls.minDistance=15;
-    controls.maxDistance=120;
-    controls.maxPolarAngle=Math.PI/2.05;
-    animateCamTo(EXPLORE_CAM,1.2);
-  };
-
-  window.exit3DMode=function(){
-    if(!exploreMode) return;
-    exploreMode=false;
-    lightTarget=HERO_LIGHT;
-    closeBuildingPanel();
-    document.getElementById('hero').classList.remove('explore-mode');
-    document.getElementById('btn-exit3d').classList.remove('vis');
-    animateCamTo(HERO_CAM,1.2,function(){
-      controls.enabled=false;
-      controls.minDistance=30;
-      controls.maxDistance=250;
-    });
-  };
-
-  window.openBuildingPanel=function(data){
-    document.getElementById('bp-name').textContent=data.name;
-    document.getElementById('bp-desc').textContent=data.desc;
-    const link=document.getElementById('bp-link');
-    link.href=data.link;
-    // Photo grid placeholders
-    const grid=document.getElementById('bp-photo-grid');
-    grid.innerHTML='';
-    for(let i=0;i<6;i++){
-      const slot=document.createElement('div');
-      slot.className='bp-photo-slot';
-      slot.textContent='📷';
-      grid.appendChild(slot);
-    }
-    document.getElementById('building-panel').classList.add('open');
-  };
-
-  function openWindowPhoto(data){
-    const lb=document.getElementById('photo-lightbox');
-    const content=document.getElementById('lb-content');
-    content.innerHTML=`<div class="lb-msg">
-      Window photo for <strong style="color:var(--teal)">${data.building}</strong><br>
-      Face ${data.face+1}, Row ${data.row+1}, Col ${data.col+1}<br><br>
-      No photo uploaded yet — check back soon!
-    </div>`;
-    lb.classList.add('open');
-    // Try to fetch from API
-    fetch('/api/building-photos/'+encodeURIComponent(data.building)+'?face='+data.face+'&row='+data.row+'&col='+data.col)
-      .then(r=>r.json())
-      .then(res=>{
-        if(res.photos&&res.photos.length>0){
-          const p=res.photos[0];
-          content.innerHTML=`<img src="${escHtml(p.photoUrl)}" alt="${escHtml(data.building)} window photo"><div class="lb-info"><div class="lb-building">${escHtml(data.building)}</div>${p.caption?'<div class="lb-caption">'+escHtml(p.caption)+'</div>':''}</div>`;
-        }
-      })
-      .catch(()=>{});
-  }
-
-  // Close panel on Escape
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){
-      closeBuildingPanel();
-      closeLightbox();
-    }
-  });
-
-  // ── Intro animation state ──
-  const INTRO_DURATION=4; // seconds
-  let introStart=null;
-  let introComplete=false;
-  const CAM_START_Y=400;
-  const CAM_END={x:25,y:55,z:35};
-
-  function easeOutCubic(t){return 1-Math.pow(1-t,3);}
-
-  // ── Water wave animation ──
-  const waterPosAttr=water.geometry.getAttribute('position');
-  const waterOrigY=new Float32Array(waterPosAttr.count);
-  for(let i=0;i<waterPosAttr.count;i++) waterOrigY[i]=waterPosAttr.getY(i);
-
-  // ── Animate ──
-  const clock=new THREE.Clock();
-  function animate(){
-    requestAnimationFrame(animate);
-    const elapsed=clock.getElapsedTime();
-
-    // Intro camera animation
-    if(!introComplete){
-      if(!introStart) introStart=elapsed;
-      const prog=Math.min(1,(elapsed-introStart)/INTRO_DURATION);
-      const e=easeOutCubic(prog);
-      camera.position.set(
-        CAM_END.x*e,
-        CAM_START_Y+(CAM_END.y-CAM_START_Y)*e,
-        CAM_END.z*e
-      );
-      camera.lookAt(0,0,0);
-      if(prog>=1){
-        introComplete=true;
-        // Don't enable controls here — user must click "Explore 3D"
-      }
-    }
-
-    // Camera tween (enter/exit 3D mode)
-    if(camTween){
-      const p=Math.min(1,(elapsed-camTween.start)/camTween.dur);
-      const e=easeOutCubic(p);
-      camera.position.set(
-        camTween.from.x+(camTween.to.x-camTween.from.x)*e,
-        camTween.from.y+(camTween.to.y-camTween.from.y)*e,
-        camTween.from.z+(camTween.to.z-camTween.from.z)*e
-      );
-      if(p>=1){
-        if(camTween.onDone) camTween.onDone();
-        camTween=null;
-      }
-    }
-
-    // Water wave animation
-    for(let i=0;i<waterPosAttr.count;i++){
-      const x=waterPosAttr.getX(i);
-      const z=waterPosAttr.getZ(i);
-      const wave=Math.sin(x*0.08+elapsed*0.8)*0.5+Math.sin(z*0.06+elapsed*0.6)*0.4;
-      waterPosAttr.setY(i,waterOrigY[i]+wave);
-    }
-    waterPosAttr.needsUpdate=true;
-
-    // Subtle building glow pulse
-    buildingMeshes.forEach((m,i)=>{
-      const pulse=0.06+Math.sin(elapsed*1.2+i*0.9)*0.04;
-      m.material.emissiveIntensity=pulse;
-    });
-
-    // Teal light subtle movement
-    tealPoint.position.x=Math.sin(elapsed*0.3)*10;
-    tealPoint.position.z=Math.cos(elapsed*0.3)*10;
-
-    // ── Smooth lighting / sky / cloud transition ──
-    const targetLerp=exploreMode?1:0;
-    lightLerp+=(targetLerp-lightLerp)*0.03; // smooth ease
-
-    ambient.intensity=HERO_LIGHT.ambient+(EXPLORE_LIGHT.ambient-HERO_LIGHT.ambient)*lightLerp;
-    dirLight.intensity=HERO_LIGHT.dir+(EXPLORE_LIGHT.dir-HERO_LIGHT.dir)*lightLerp;
-    tealPoint.intensity=HERO_LIGHT.teal1+(EXPLORE_LIGHT.teal1-HERO_LIGHT.teal1)*lightLerp;
-    tealPoint2.intensity=HERO_LIGHT.teal2+(EXPLORE_LIGHT.teal2-HERO_LIGHT.teal2)*lightLerp;
-    sunLight.intensity=HERO_LIGHT.sun+(EXPLORE_LIGHT.sun-HERO_LIGHT.sun)*lightLerp;
-    hemiLight.intensity=HERO_LIGHT.hemi+(EXPLORE_LIGHT.hemi-HERO_LIGHT.hemi)*lightLerp;
-    scene.fog.density=HERO_LIGHT.fog+(EXPLORE_LIGHT.fog-HERO_LIGHT.fog)*lightLerp;
-
-    // Sky color transition
-    skyMat.color.copy(SKY_DARK).lerp(SKY_DAY,lightLerp);
-    // Ground color transition
-    groundMat.color.copy(HERO_LIGHT.groundCol).lerp(EXPLORE_LIGHT.groundCol,lightLerp);
-    // Water color transition
-    waterMat.color.copy(HERO_LIGHT.waterCol).lerp(EXPLORE_LIGHT.waterCol,lightLerp);
-    // Renderer clear color transition (subtle — sky dome handles most of it)
-    const clearCol=SKY_DARK.clone().lerp(SKY_DAY,lightLerp*0.15);
-    renderer.setClearColor(clearCol);
-
-    // Clouds fade + drift
-    const cAlpha=HERO_LIGHT.cloudAlpha+(EXPLORE_LIGHT.cloudAlpha-HERO_LIGHT.cloudAlpha)*lightLerp;
-    clouds.forEach(c=>{
-      c.material.opacity=cAlpha*0.5;
-      c.position.x=c.userData.baseX+Math.sin(elapsed*0.02*c.userData.speed)*20+elapsed*c.userData.speed*0.3;
-    });
-
-    controls.update();
-    renderer.render(scene,camera);
-  }
-  animate();
-
-  // ── Resize ──
-  window.addEventListener('resize',()=>{
-    camera.aspect=window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth,window.innerHeight);
-  });
-})();
-
-// ────────────────────────────────────────────────
 // HERO — Cesium Photorealistic 3D Campus
 // ────────────────────────────────────────────────
 (function(){
@@ -2582,8 +2249,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     // Load Google Photorealistic 3D Tiles — high quality within the 2mi radius
     try{
       const tileset=await Cesium.createGooglePhotorealistic3DTileset();
-      tileset.maximumScreenSpaceError = 16;          // start coarse, refine progressively
-      tileset.maximumMemoryUsage = 256;             // 256MB GPU cache — lighter on most GPUs
+      var __LP = !!window.__LOW_POWER;
+      tileset.maximumScreenSpaceError = __LP ? 20 : 16;     // higher = coarser, cheaper
+      tileset.maximumMemoryUsage = __LP ? 192 : 256;        // MB GPU cache
       tileset.dynamicScreenSpaceError = true;       // reduce quality for distant tiles
       tileset.dynamicScreenSpaceErrorDensity = 0.0003;
       tileset.dynamicScreenSpaceErrorFactor = 32;   // aggressively lower quality beyond radius
@@ -2595,10 +2263,12 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       tileset.foveatedScreenSpaceError = true;       // prioritize center-of-screen tiles
       tileset.foveatedConeSize = 0.1;
       tileset.foveatedMinimumScreenSpaceErrorRelaxation = 0.0;
+      // Render at lower resolution on low-power devices — cuts fragment shader cost ~45%
+      if (__LP) { try { viewer.resolutionScale = 0.75; } catch(e){} }
       // Refine to high quality once initial load is done
       var _refineTimer = setTimeout(function(){
-        tileset.maximumScreenSpaceError = 8;
-        tileset.maximumMemoryUsage = 512;
+        tileset.maximumScreenSpaceError = __LP ? 12 : 8;
+        tileset.maximumMemoryUsage = __LP ? 256 : 512;
         tileset.cullRequestsWhileMovingMultiplier = 120;
       }, 8000);
       viewer.scene.primitives.add(tileset);
@@ -2611,11 +2281,15 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var stableFrames = 0;
       tileset.tileLoad.addEventListener(function(){ tilesLoaded++; });
 
+      var _lastLoaderPct = -1;
       viewer.scene.postRender.addEventListener(function(){
         if (loaderDismissed) return;
-        // Show progress based on tiles loaded
-        var pct = Math.min(95, tilesLoaded * 0.8);
-        if (loaderFill) loaderFill.style.width = pct + '%';
+        // Show progress based on tiles loaded — only write DOM when the integer % actually changes
+        var pct = Math.min(95, Math.floor(tilesLoaded * 0.8));
+        if (loaderFill && pct !== _lastLoaderPct) {
+          loaderFill.style.width = pct + '%';
+          _lastLoaderPct = pct;
+        }
         // Check if tileset has finished loading all visible tiles
         var pending = tileset._statisticsLast ? tileset._statisticsLast.numberOfPendingRequests : -1;
         if (pending === 0 && tilesLoaded > 20) {
@@ -2840,18 +2514,27 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       openBuildingPanel(building);
     }
 
-    // Track HTML building label position each frame
+    // Track HTML building label position each frame — skip DOM writes when position hasn't moved
     var _heroEl = document.getElementById('hero');
+    var _lastLblX = -9999, _lastLblY = -9999, _lastLblVisible = null;
     viewer.scene.postRender.addEventListener(function(){
-      if(!_buildingLabelPos) return;
+      if(!_buildingLabelPos){
+        if (_lastLblVisible !== false) { _buildingLabelEl.style.display = 'none'; _lastLblVisible = false; }
+        return;
+      }
       var scr = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, _buildingLabelPos);
       if(scr){
         var heroRect = _heroEl.getBoundingClientRect();
-        _buildingLabelEl.style.left = (scr.x - heroRect.left) + 'px';
-        _buildingLabelEl.style.top = (scr.y - heroRect.top - 14) + 'px';
-        _buildingLabelEl.style.display = 'block';
+        var x = scr.x - heroRect.left;
+        var y = scr.y - heroRect.top - 14;
+        if (Math.abs(x - _lastLblX) > 0.5 || Math.abs(y - _lastLblY) > 0.5) {
+          _buildingLabelEl.style.left = x + 'px';
+          _buildingLabelEl.style.top  = y + 'px';
+          _lastLblX = x; _lastLblY = y;
+        }
+        if (_lastLblVisible !== true) { _buildingLabelEl.style.display = 'block'; _lastLblVisible = true; }
       } else {
-        _buildingLabelEl.style.display = 'none';
+        if (_lastLblVisible !== false) { _buildingLabelEl.style.display = 'none'; _lastLblVisible = false; }
       }
     });
 
@@ -4361,6 +4044,10 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
         updateWeatherHUD();
         applyWeatherEffects();
         initWeatherParticles();
+        // First entry: startWeather() called animateWeather() before this async fetch
+        // resolved, so the loop bailed on a null currentWeather. Re-arm it now that
+        // data exists (guarded so we never start a second parallel RAF chain).
+        if (exploreMode && !weatherAnimId) animateWeather();
       } catch(e) { console.warn('Weather fetch failed:', e); }
     }
 
@@ -4451,8 +4138,9 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     }
 
     function animateWeather() {
+      // Halt loop entirely when not in explore mode — prevents always-on RAF burn
+      if (!currentWeather || !exploreMode || !weatherCtx) { weatherAnimId = null; return; }
       weatherAnimId = requestAnimationFrame(animateWeather);
-      if (!currentWeather || !exploreMode || !weatherCtx) return;
       var w = weatherCanvas.width, h = weatherCanvas.height;
       if (w === 0 || h === 0) return;
       weatherCtx.clearRect(0, 0, w, h);
@@ -4678,6 +4366,30 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
       var factEl   = document.getElementById('beacon-fact-text');
       var beaconTimer = null, bubbleTimer = null, factIndex = 0, dismissed = false;
       var lastCommentedBuilding = null, viewCheckTimer = null;
+
+      // ── Pause beacon CSS animations when off-screen or tab hidden ──
+      if (beaconEl && 'IntersectionObserver' in window) {
+        var beaconIO = new IntersectionObserver(function(entries){
+          entries.forEach(function(en){
+            if (en.isIntersecting) beaconEl.classList.remove('paused');
+            else beaconEl.classList.add('paused');
+          });
+        }, { threshold: 0.01 });
+        beaconIO.observe(beaconEl);
+      }
+      document.addEventListener('visibilitychange', function(){
+        if (!beaconEl) return;
+        if (document.hidden) beaconEl.classList.add('paused');
+        else if (beaconEl.getBoundingClientRect().bottom > 0) beaconEl.classList.remove('paused');
+        // Also pause/resume the Cesium render loop — saves significant GPU when tab is backgrounded
+        var v = window._cesiumViewer;
+        if (v) {
+          try {
+            v.useDefaultRenderLoop = !document.hidden;
+            if (!document.hidden) v.scene.requestRender && v.scene.requestRender();
+          } catch(e){}
+        }
+      });
 
       // General facts (used when no building is in view)
       var FACTS = [
@@ -5608,7 +5320,7 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     {x:.87,w:.05,h:.70,ww:[[.2,.12],[.65,.12],[.2,.36],[.65,.36]]},
     {x:.94,w:.05,h:.48},
   ];
-  let t=0;
+  let t=0, rafId=null, running=false, inView=false;
   function draw(){
     t+=0.008;
     ctx.clearRect(0,0,W(),H());
@@ -5654,9 +5366,18 @@ function buildStructure3D(b,idx,group,meshList,winList,scale){
     ctx.strokeStyle='rgba(200,230,255,.5)'; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(bxt-9,byt+4); ctx.lineTo(bxt+14,byt+4); ctx.lineTo(bxt+4,byt); ctx.closePath(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(bxt+4,byt); ctx.lineTo(bxt+4,byt-18); ctx.lineTo(bxt+14,byt+1); ctx.stroke();
-    requestAnimationFrame(draw);
+    if (running) rafId = requestAnimationFrame(draw);
   }
-  draw();
+  // Only animate while the canvas is on-screen and the tab is visible — this loop
+  // otherwise ran at 60fps forever, even scrolled far away. Also (re)size on resize.
+  function start(){ if(running || document.hidden || !inView) return; running=true; rafId=requestAnimationFrame(draw); }
+  function stop(){ running=false; if(rafId){ cancelAnimationFrame(rafId); rafId=null; } }
+  window.addEventListener('resize', resize);
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stop() : start(); });
+  if ('IntersectionObserver' in window){
+    new IntersectionObserver(function(entries){ inView = entries[0].isIntersecting; inView ? start() : stop(); }, { threshold: 0 }).observe(cv);
+  } else { inView = true; start(); }
+  draw(); // paint one frame immediately so the canvas isn't blank before the observer fires
 })();
 
 // defined in the <head> script tag.
@@ -6119,7 +5840,9 @@ REMOVED_3D_MAP_END*/
   document.addEventListener('keydown',e=>{
     if(isTyping()) return; // never steal keys from chat / search / any input
     keys[e.key]=true;
-    if(state!==S.IDLE&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+    // Only swallow scroll keys while the game is actively using them (PLAYING / WAVE_CLEAR).
+    // In IDLE and GAME_OVER the page must keep normal arrow/space scrolling.
+    if((state===S.PLAYING||state===S.WAVE_CLEAR)&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
     if(e.key===' '){
       if(state===S.PLAYING) castLine();
       else if(state===S.WAVE_CLEAR&&waveReadyToContinue){ if(wave>=MAX_WAVE) endGame(); else startWave(wave+1); }

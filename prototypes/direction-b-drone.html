@@ -981,6 +981,7 @@ const fishSchool = (() => {
       if (!f.grp.visible){ // first frame of a leap
         f.grp.visible = true;
         if (window.fireworksSplash) fireworksSplash(f.x0, 0.5, f.z0);
+        SoundScape.splash(f.x0, 0.5, f.z0, camera);
       }
       const k = f.t / f.dur;
       const x = f.x0 + f.dx * k, z = f.z0 + f.dz * k;
@@ -1051,7 +1052,7 @@ const fireworks = (() => {
         cc[0], cc[1], cc[2], 1.5 + Math.random() * 1.3, 1);
     }
     bloomPulse = Math.min(0.5, bloomPulse + (big ? 0.30 : 0.12));
-    if (window.__sound && SoundScape.enabled) SoundScape.ping(52 + Math.random() * 18, 1.1, big ? 0.34 : 0.18);
+    SoundScape.boom(px, py, pz, big, camera);
   }
   window.fireworksSplash = function(px, py, pz){
     for (let k = 0; k < 14; k++){
@@ -1069,6 +1070,7 @@ const fireworks = (() => {
     spawn(sMap.x + (Math.random() - 0.5) * 10, sMap.h + 2, sMap.z + (Math.random() - 0.5) * 10,
       (Math.random() - 0.5) * 6, 52 + Math.random() * 26, (Math.random() - 0.5) * 6,
       c[0], c[1], c[2], 1.5 + Math.random() * 0.7, 0);
+    SoundScape.thoop(sMap.x, sMap.h + 2, sMap.z, camera);
   }
   let t1 = 0, t2 = 0;
   function update(dt, p){
@@ -1271,8 +1273,8 @@ function updateStations(p){
       if (!s.visible){
         s.el.style.visibility = 'visible'; s.el.removeAttribute('inert'); s.visible = true;
         const idx = stations.indexOf(s);
-        if (idx === 3) SoundScape.chime();
-        else if (idx > 0) SoundScape.ping(660, 0.7, 0.1, 'triangle');
+        if (idx === 3){ SoundScape.braam(73.42); SoundScape.chime(); }
+        else if (idx > 0) SoundScape.braam(58.27);
       }
       s.el.style.opacity = o;
       const rise = (1 - smoothstep(s.inP, s.full, p)) * 28 - smoothstep(s.outP, s.gone, p) * 28;
@@ -1312,13 +1314,18 @@ function updateLabels(p){
   }
 }
 
-/* ═════════════════ Soundscape — synthesized, zero assets ═════════════════ */
+/* ═════════════════ Soundscape — cinematic, spatial, zero assets ═════════════════ */
 const SoundScape = (() => {
-  let ctx = null, master = null, ready = false, enabled = false;
-  let bedGain, windGain, windFilter;
+  let ctx = null, master = null, scoreGain = null, fxGain = null, ready = false, enabled = false;
+  let bedGain, windGain, windFilter, riserSrc, riserFilter, riserGain;
+  let padVoices = [], ostGain = null, ostOsc = null, ostFilter = null;
+  let panners = [], pIdx = 0, crackleBudget = 0;
+  let lastP = 0, ostClock = 0, ostStep = 0;
 
-  function noiseBuffer(){ // 2s brown-ish noise loop
-    const len = ctx.sampleRate * 2;
+  const SPEED_OF_SOUND = 343;
+
+  function noiseBuffer(seconds){
+    const len = Math.floor(ctx.sampleRate * (seconds || 2));
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
     const d = buf.getChannelData(0);
     let last = 0;
@@ -1328,35 +1335,144 @@ const SoundScape = (() => {
     }
     return buf;
   }
+  let sharedNoise = null;
+
+  // ── The score: Zimmer-style pads + ostinato ──
+  // Journey chord map (minor voyage -> major arrival)
+  const CHORDS = {
+    Dm: [73.42, 146.83, 174.61], Bb: [58.27, 174.61, 233.08], F: [87.31, 174.61, 220.0],
+    Gm: [98.0, 146.83, 233.08], C: [65.41, 196.0, 261.63], DM: [73.42, 220.0, 293.66],
+  };
+  const LEG_CHORDS = [
+    [0.000, 'Dm'], [0.150, 'Bb'], [0.300, 'F'], [0.470, 'Gm'], [0.585, 'Bb'],
+    [0.694, 'C'], [0.788, 'Dm'], [0.860, 'Bb'], [0.916, 'C'], [0.955, 'DM'],
+  ];
+  let currentChord = '';
+
+  function makePadVoice(){
+    const g = ctx.createGain(); g.gain.value = 0;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700; f.Q.value = 0.4;
+    const o1 = ctx.createOscillator(); o1.type = 'sawtooth';
+    const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.detune.value = 9;
+    const o3 = ctx.createOscillator(); o3.type = 'triangle'; o3.detune.value = -7;
+    const og = ctx.createGain(); og.gain.value = 0.05;
+    o1.connect(og); o2.connect(og); o3.connect(og);
+    og.connect(f); f.connect(g); g.connect(scoreGain);
+    o1.start(); o2.start(); o3.start();
+    // slow breathing on the filter
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.06 + Math.random() * 0.05;
+    const lfoAmt = ctx.createGain(); lfoAmt.gain.value = 240;
+    lfo.connect(lfoAmt); lfoAmt.connect(f.frequency); lfo.start();
+    return { g, oscs: [o1, o2, o3], f };
+  }
+  function setChord(name, hard){
+    if (!ready || name === currentChord) return;
+    currentChord = name;
+    const freqs = CHORDS[name];
+    const t = ctx.currentTime;
+    padVoices.forEach((v, i) => {
+      const f = freqs[i % freqs.length];
+      v.oscs.forEach((o, k) => {
+        const mult = k === 2 ? 2 : 1; // triangle voice an octave up
+        o.frequency.setTargetAtTime(f * mult, t, hard ? 0.08 : 1.4); // slow voice-leading glide
+      });
+      v.g.gain.setTargetAtTime(0.5 + (name === 'DM' ? 0.25 : 0), t, hard ? 0.3 : 2.0);
+    });
+    if (ostOsc){
+      const root = freqs[0];
+      ostOsc.frequency.setTargetAtTime(root < 70 ? root : root / 2, t, 0.2);
+    }
+  }
+
+  // ── Spatial pool: positional one-shots through HRTF panners ──
+  function makePanner(){
+    const pan = ctx.createPanner();
+    pan.panningModel = 'HRTF';
+    pan.distanceModel = 'exponential';
+    pan.refDistance = 60; pan.rolloffFactor = 1.4; pan.maxDistance = 4000;
+    const g = ctx.createGain(); g.gain.value = 1;
+    pan.connect(g); g.connect(fxGain);
+    return { pan, g, busy: 0 };
+  }
+  function playAt(x, y, z, build){
+    if (!ready || !enabled) return;
+    const slot = panners[pIdx = (pIdx + 1) % panners.length];
+    const t = ctx.currentTime;
+    if (slot.busy > t + 4) return; // pool saturated — drop politely
+    if (slot.pan.positionX){ slot.pan.positionX.value = x; slot.pan.positionY.value = y; slot.pan.positionZ.value = z; }
+    else slot.pan.setPosition(x, y, z);
+    slot.busy = t + (build(slot.pan) || 2);
+  }
+  function setListener(cam){
+    if (!ready) return;
+    const L = ctx.listener, p = cam.position;
+    const fwd = new THREE.Vector3(); cam.getWorldDirection(fwd);
+    const up = cam.up;
+    if (L.positionX){
+      const t = ctx.currentTime;
+      L.positionX.setTargetAtTime(p.x, t, 0.05); L.positionY.setTargetAtTime(p.y, t, 0.05); L.positionZ.setTargetAtTime(p.z, t, 0.05);
+      L.forwardX.setTargetAtTime(fwd.x, t, 0.05); L.forwardY.setTargetAtTime(fwd.y, t, 0.05); L.forwardZ.setTargetAtTime(fwd.z, t, 0.05);
+      L.upX.setTargetAtTime(up.x, t, 0.05); L.upY.setTargetAtTime(up.y, t, 0.05); L.upZ.setTargetAtTime(up.z, t, 0.05);
+    } else {
+      L.setPosition(p.x, p.y, p.z);
+      L.setOrientation(fwd.x, fwd.y, fwd.z, up.x, up.y, up.z);
+    }
+  }
+  function distDelay(x, y, z, cam){
+    if (!cam) return 0;
+    const d = Math.hypot(x - cam.position.x, y - cam.position.y, z - cam.position.z);
+    return Math.min(1.4, d / SPEED_OF_SOUND);
+  }
+
   function init(){
     if (ready) return;
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    master = ctx.createGain();
-    master.gain.value = 0;
+    master = ctx.createGain(); master.gain.value = 0;
     const comp = ctx.createDynamicsCompressor();
-    master.connect(comp);
-    comp.connect(ctx.destination);
-    // Ocean bed: deep filtered noise with a slow swell LFO
-    const bed = ctx.createBufferSource();
-    bed.buffer = noiseBuffer(); bed.loop = true;
-    const bedFilter = ctx.createBiquadFilter();
-    bedFilter.type = 'lowpass'; bedFilter.frequency.value = 320;
-    bedGain = ctx.createGain(); bedGain.gain.value = 0.35;
+    comp.threshold.value = -18; comp.ratio.value = 6;
+    master.connect(comp); comp.connect(ctx.destination);
+    scoreGain = ctx.createGain(); scoreGain.gain.value = 0.5; scoreGain.connect(master);
+    fxGain = ctx.createGain(); fxGain.gain.value = 1.0; fxGain.connect(master);
+    sharedNoise = noiseBuffer(2);
+
+    // Ocean bed
+    const bed = ctx.createBufferSource(); bed.buffer = sharedNoise; bed.loop = true;
+    const bedFilter = ctx.createBiquadFilter(); bedFilter.type = 'lowpass'; bedFilter.frequency.value = 320;
+    bedGain = ctx.createGain(); bedGain.gain.value = 0.3;
     bed.connect(bedFilter); bedFilter.connect(bedGain); bedGain.connect(master);
     bed.start();
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.09;
-    const lfoAmt = ctx.createGain(); lfoAmt.gain.value = 0.13;
-    lfo.connect(lfoAmt); lfoAmt.connect(bedGain.gain); lfo.start();
-    // Wind: brighter noise band, driven by speed + altitude
-    const wind = ctx.createBufferSource();
-    wind.buffer = noiseBuffer(); wind.loop = true; wind.playbackRate.value = 1.7;
-    windFilter = ctx.createBiquadFilter();
-    windFilter.type = 'bandpass'; windFilter.frequency.value = 900; windFilter.Q.value = 0.8;
+    const swell = ctx.createOscillator(); swell.frequency.value = 0.09;
+    const swellAmt = ctx.createGain(); swellAmt.gain.value = 0.11;
+    swell.connect(swellAmt); swellAmt.connect(bedGain.gain); swell.start();
+
+    // Wind
+    const wind = ctx.createBufferSource(); wind.buffer = sharedNoise; wind.loop = true; wind.playbackRate.value = 1.7;
+    windFilter = ctx.createBiquadFilter(); windFilter.type = 'bandpass'; windFilter.frequency.value = 900; windFilter.Q.value = 0.8;
     windGain = ctx.createGain(); windGain.gain.value = 0;
     wind.connect(windFilter); windFilter.connect(windGain); windGain.connect(master);
     wind.start();
+
+    // Pads (3 voices) + ostinato
+    padVoices = [makePadVoice(), makePadVoice(), makePadVoice()];
+    ostOsc = ctx.createOscillator(); ostOsc.type = 'sawtooth'; ostOsc.frequency.value = 36.71;
+    ostFilter = ctx.createBiquadFilter(); ostFilter.type = 'lowpass'; ostFilter.frequency.value = 240; ostFilter.Q.value = 2;
+    ostGain = ctx.createGain(); ostGain.gain.value = 0;
+    ostOsc.connect(ostFilter); ostFilter.connect(ostGain); ostGain.connect(scoreGain);
+    ostOsc.start();
+
+    // Finale riser (always running, gain 0 until driven)
+    riserSrc = ctx.createBufferSource(); riserSrc.buffer = sharedNoise; riserSrc.loop = true; riserSrc.playbackRate.value = 2.5;
+    riserFilter = ctx.createBiquadFilter(); riserFilter.type = 'bandpass'; riserFilter.Q.value = 2.2; riserFilter.frequency.value = 300;
+    riserGain = ctx.createGain(); riserGain.gain.value = 0;
+    riserSrc.connect(riserFilter); riserFilter.connect(riserGain); riserGain.connect(master);
+    riserSrc.start();
+
+    // Spatial pool
+    for (let i = 0; i < 10; i++) panners.push(makePanner());
     ready = true;
+    setChord('Dm', true);
   }
+
   function setEnabled(on){
     enabled = on;
     if (on){
@@ -1367,11 +1483,20 @@ const SoundScape = (() => {
       master.gain.setTargetAtTime(0, ctx.currentTime, 0.2);
     }
   }
-  function ping(freq, dur, vol, type){ // sonar pulse / chime note
+
+  function duck(amount, recover){
+    if (!ready) return;
+    const t = ctx.currentTime;
+    scoreGain.gain.cancelScheduledValues(t);
+    scoreGain.gain.setValueAtTime(Math.max(0.18, 0.5 - amount), t);
+    scoreGain.gain.setTargetAtTime(0.5, t + 0.08, recover || 0.7);
+  }
+
+  // ── One-shots ──
+  function ping(freq, dur, vol, type){
     if (!ready || !enabled) return;
     const t0 = ctx.currentTime;
-    const o = ctx.createOscillator();
-    o.type = type || 'sine';
+    const o = ctx.createOscillator(); o.type = type || 'sine';
     o.frequency.setValueAtTime(freq, t0);
     o.frequency.exponentialRampToValueAtTime(freq * 0.62, t0 + dur);
     const g = ctx.createGain();
@@ -1381,13 +1506,31 @@ const SoundScape = (() => {
     o.connect(g); g.connect(master);
     o.start(t0); o.stop(t0 + dur + 0.05);
   }
-  function whoosh(){ // the beacon beam sweeping past
+  function braam(rootFreq){ // cinematic brass stab
     if (!ready || !enabled) return;
     const t0 = ctx.currentTime;
-    const src = ctx.createBufferSource();
-    src.buffer = noiseBuffer(); src.playbackRate.value = 2.2;
-    const f = ctx.createBiquadFilter();
-    f.type = 'bandpass'; f.Q.value = 1.2;
+    const g = ctx.createGain();
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 1.1;
+    f.frequency.setValueAtTime(120, t0);
+    f.frequency.exponentialRampToValueAtTime(900, t0 + 0.5);
+    f.frequency.exponentialRampToValueAtTime(160, t0 + 2.4);
+    [0, -12, 7, 1205].forEach((cents) => {
+      const o = ctx.createOscillator(); o.type = 'sawtooth';
+      o.frequency.value = rootFreq || 58.27;
+      o.detune.value = cents;
+      o.connect(f); o.start(t0); o.stop(t0 + 2.8);
+    });
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.34, t0 + 0.09);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.6);
+    f.connect(g); g.connect(master);
+    duck(0.22, 0.9);
+  }
+  function whoosh(){
+    if (!ready || !enabled) return;
+    const t0 = ctx.currentTime;
+    const src = ctx.createBufferSource(); src.buffer = sharedNoise; src.playbackRate.value = 2.2;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
     f.frequency.setValueAtTime(300, t0);
     f.frequency.exponentialRampToValueAtTime(1800, t0 + 0.5);
     f.frequency.exponentialRampToValueAtTime(280, t0 + 1.1);
@@ -1398,23 +1541,131 @@ const SoundScape = (() => {
     src.connect(f); f.connect(g); g.connect(master);
     src.start(t0); src.stop(t0 + 1.3);
   }
-  function chime(){ // arrival: two-note resolve
-    ping(392, 1.6, 0.2);
-    setTimeout(() => ping(523.25, 2.2, 0.24), 260);
+  function chime(){
+    ping(392, 1.6, 0.2); setTimeout(() => ping(523.25, 2.2, 0.24), 260);
   }
-  function update(speedN, alt){
+
+  // ── Spatial one-shots ──
+  function thoop(x, y, z, cam){ // firework launch
+    playAt(x, y, z, (input) => {
+      const t0 = ctx.currentTime + distDelay(x, y, z, cam) * 0.4;
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(240, t0);
+      o.frequency.exponentialRampToValueAtTime(70, t0 + 0.22);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+      o.connect(g); g.connect(input);
+      o.start(t0); o.stop(t0 + 0.4);
+      return 0.8;
+    });
+  }
+  function boom(x, y, z, big, cam){ // firework burst: delayed thump + crackle tail
+    const delay = distDelay(x, y, z, cam);
+    playAt(x, y, z, (input) => {
+      const t0 = ctx.currentTime + delay;
+      // thump
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(big ? 58 : 74, t0);
+      o.frequency.exponentialRampToValueAtTime(34, t0 + 0.5);
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0.0001, t0);
+      og.gain.exponentialRampToValueAtTime(big ? 1.5 : 0.9, t0 + 0.015);
+      og.gain.exponentialRampToValueAtTime(0.0001, t0 + (big ? 1.1 : 0.7));
+      o.connect(og); og.connect(input);
+      o.start(t0); o.stop(t0 + 1.3);
+      // burst noise
+      const n = ctx.createBufferSource(); n.buffer = sharedNoise; n.playbackRate.value = 1.4;
+      const nf = ctx.createBiquadFilter(); nf.type = 'lowpass';
+      nf.frequency.setValueAtTime(3200, t0);
+      nf.frequency.exponentialRampToValueAtTime(320, t0 + 0.6);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(big ? 0.8 : 0.5, t0 + 0.012);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.75);
+      n.connect(nf); nf.connect(ng); ng.connect(input);
+      n.start(t0); n.stop(t0 + 0.9);
+      // crackle tail (granular ticks)
+      if (crackleBudget < 90){
+        const nTicks = big ? 26 : 14;
+        crackleBudget += nTicks;
+        setTimeout(() => { crackleBudget -= nTicks; }, 1800);
+        for (let k = 0; k < nTicks; k++){
+          const tt = t0 + 0.15 + Math.random() * (big ? 1.3 : 0.8);
+          const c = ctx.createBufferSource(); c.buffer = sharedNoise;
+          c.playbackRate.value = 5 + Math.random() * 5;
+          const cf = ctx.createBiquadFilter(); cf.type = 'bandpass';
+          cf.frequency.value = 2400 + Math.random() * 3600; cf.Q.value = 4;
+          const cg = ctx.createGain();
+          cg.gain.setValueAtTime(0.0001, tt);
+          cg.gain.exponentialRampToValueAtTime(0.12 + Math.random() * 0.18, tt + 0.004);
+          cg.gain.exponentialRampToValueAtTime(0.0001, tt + 0.05 + Math.random() * 0.05);
+          c.connect(cf); cf.connect(cg); cg.connect(input);
+          c.start(tt); c.stop(tt + 0.13);
+        }
+      }
+      if (big) duck(0.16, 0.5);
+      return delay + (big ? 2.2 : 1.4);
+    });
+  }
+  function splash(x, y, z, cam){
+    playAt(x, y, z, (input) => {
+      const t0 = ctx.currentTime + distDelay(x, y, z, cam) * 0.5;
+      const n = ctx.createBufferSource(); n.buffer = sharedNoise; n.playbackRate.value = 2.8;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.4;
+      f.frequency.setValueAtTime(2600, t0);
+      f.frequency.exponentialRampToValueAtTime(700, t0 + 0.28);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.34);
+      n.connect(f); f.connect(g); g.connect(input);
+      n.start(t0); n.stop(t0 + 0.45);
+      return 0.9;
+    });
+  }
+
+  // ── Per-frame drive: mix follows position, speed and journey progress ──
+  function update(speedN, alt, p, dt){
     if (!ready || !enabled) return;
-    const bed = 0.42 * Math.max(0.22, 1 - alt / 420);
-    bedGain.gain.setTargetAtTime(bed, ctx.currentTime, 0.5);
-    const wind = Math.min(0.5, speedN * 0.35 + (alt / 600) * 0.22);
-    windGain.gain.setTargetAtTime(wind, ctx.currentTime, 0.35);
-    windFilter.frequency.setTargetAtTime(700 + speedN * 900, ctx.currentTime, 0.3);
+    const t = ctx.currentTime;
+    lastP = p;
+    // bed louder near water, thins with altitude
+    bedGain.gain.setTargetAtTime(0.4 * Math.max(0.2, 1 - alt / 420), t, 0.5);
+    // wind with speed + altitude
+    windGain.gain.setTargetAtTime(Math.min(0.5, speedN * 0.32 + (alt / 600) * 0.2), t, 0.35);
+    windFilter.frequency.setTargetAtTime(700 + speedN * 900, t, 0.3);
+    // chord by journey leg
+    for (let i = LEG_CHORDS.length - 1; i >= 0; i--){
+      if (p >= LEG_CHORDS[i][0]){ setChord(LEG_CHORDS[i][1], false); break; }
+    }
+    // ostinato pulse — driving eighths, intensity from speed, silent at stations
+    ostClock += dt;
+    if (ostClock >= 0.27){
+      ostClock = 0; ostStep++;
+      const accent = (ostStep % 4 === 0) ? 1.35 : (ostStep % 2 === 0 ? 1.0 : 0.75);
+      const level = Math.min(0.4, Math.max(0, speedN - 0.06) * 0.55) * accent;
+      if (level > 0.015){
+        ostGain.gain.cancelScheduledValues(t);
+        ostGain.gain.setValueAtTime(level, t);
+        ostGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        ostFilter.frequency.setValueAtTime(200 + speedN * 500, t);
+      }
+    }
+    // finale riser p .92 -> .965
+    const rp = Math.min(1, Math.max(0, (p - 0.92) / 0.045));
+    riserGain.gain.setTargetAtTime(rp > 0 && p < 0.968 ? rp * 0.3 : 0, t, 0.2);
+    if (rp > 0) riserFilter.frequency.setTargetAtTime(300 + rp * rp * 3800, t, 0.15);
   }
+
   document.addEventListener('visibilitychange', () => {
     if (!ready) return;
     master.gain.setTargetAtTime(document.hidden || !enabled ? 0 : 0.9, ctx.currentTime, 0.3);
   });
-  return { setEnabled, update, ping, chime, whoosh, get enabled(){ return enabled; } };
+
+  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash,
+           get enabled(){ return enabled; } };
 })();
 window.__sound = SoundScape;
 
@@ -1568,8 +1819,9 @@ function renderFrame(t, dtMs){
   fishSchool.update(dt, wTime);
   bloom.strength = cam.bloomStr + fireworks.pulse;
 
-  // audio follows the flight
-  SoundScape.update(speedN, camera.position.y);
+  // audio follows the flight (mix, score, spatial listener)
+  SoundScape.update(speedN, camera.position.y, smoothed, dt);
+  SoundScape.setListener(camera);
   const beamPhase = (wTime * 0.7) % Math.PI;
   if (beamPhase < renderFrame._beamPhase && smoothed < 0.17) SoundScape.whoosh();
   renderFrame._beamPhase = beamPhase;

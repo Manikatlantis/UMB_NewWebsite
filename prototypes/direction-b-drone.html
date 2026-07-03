@@ -935,6 +935,140 @@ const streaks = (() => {
   gsap.ticker.add((t) => { uniforms.uTime.value = t; uniforms.uCamPos.value.copy(camera.position); });
 }
 
+/* ═════════════════ Finale spectacle: light show, searchlights, shockwaves ═════════════════ */
+const finaleShow = (() => {
+  // "UMB" drone-swarm formation targets sampled from rasterized text
+  const cvs = document.createElement('canvas'); cvs.width = 240; cvs.height = 80;
+  const c2 = cvs.getContext('2d');
+  c2.font = '900 66px Arial, sans-serif';
+  c2.textAlign = 'center'; c2.textBaseline = 'middle';
+  c2.fillText('UMB', 120, 44);
+  const img = c2.getImageData(0, 0, 240, 80).data;
+  const targets = [];
+  for (let y = 0; y < 80; y += 2){
+    for (let x = 0; x < 240; x += 2){
+      if (img[(y * 240 + x) * 4 + 3] > 128 && Math.random() < 0.6) targets.push([x - 120, 40 - y]);
+    }
+  }
+  const N = Math.min(targets.length, 720);
+  // placement: floating beyond the arrival beacon, facing the final camera
+  const dir = new THREE.Vector2(ARRIVE.x - 152, ARRIVE.z + 56).normalize();
+  const CX = ARRIVE.x + dir.x * 135, CZ = ARRIVE.z + dir.y * 135, CY = 125;
+  const perp = { x: -dir.y, z: dir.x };
+  const aStart = new Float32Array(N * 3), aTarget = new Float32Array(N * 3), aPhase = new Float32Array(N), aCol = new Float32Array(N);
+  for (let i = 0; i < N; i++){
+    const t = targets[i];
+    const px = t[0] * 0.95, py = t[1] * 0.95;
+    aTarget[i*3]   = CX + perp.x * px;
+    aTarget[i*3+1] = CY + py;
+    aTarget[i*3+2] = CZ + perp.z * px;
+    const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1), r = 260 + Math.random() * 200;
+    aStart[i*3]   = CX + Math.sin(ph) * Math.cos(th) * r;
+    aStart[i*3+1] = Math.max(6, CY + Math.cos(ph) * r * 0.6);
+    aStart[i*3+2] = CZ + Math.sin(ph) * Math.sin(th) * r;
+    aPhase[i] = Math.random();
+    aCol[i] = Math.random();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(aStart.slice(), 3)); // placeholder
+  g.setAttribute('aStart', new THREE.BufferAttribute(aStart, 3));
+  g.setAttribute('aTarget', new THREE.BufferAttribute(aTarget, 3));
+  g.setAttribute('aPhase', new THREE.BufferAttribute(aPhase, 1));
+  g.setAttribute('aCol', new THREE.BufferAttribute(aCol, 1));
+  const uniforms = { uForm: { value: 0 }, uTime: { value: 0 } };
+  const m = new THREE.ShaderMaterial({
+    uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: `attribute vec3 aStart; attribute vec3 aTarget; attribute float aPhase; attribute float aCol;
+      uniform float uForm, uTime; varying float vA; varying float vC;
+      void main(){
+        float t = clamp(uForm * 1.5 - aPhase * 0.5, 0.0, 1.0);
+        float e = 1.0 - pow(1.0 - t, 3.0);
+        vec3 p = mix(aStart, aTarget, e);
+        p.x += sin(uTime * 1.3 + aPhase * 40.0) * 0.7 * e;
+        p.y += cos(uTime * 1.1 + aPhase * 31.0) * 0.7 * e;
+        vC = aCol;
+        vA = (0.35 + 0.65 * e) * (0.7 + 0.3 * sin(uTime * 2.2 + aPhase * 50.0));
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_PointSize = clamp(1500.0 / -mv.z, 1.6, 9.0);
+        gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying float vA; varying float vC;
+      void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;
+        vec3 gold = vec3(1.0, 0.72, 0.30), teal = vec3(0.0, 0.95, 0.82);
+        vec3 c = mix(gold, teal, step(0.72, vC));
+        float core = 1.0 - smoothstep(0.0, 0.2, d);
+        gl_FragColor = vec4(c * (1.4 + core * 1.6), vA * (core + 0.35 * (1.0 - d * 2.0))); }`,
+  });
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false; pts.visible = false;
+  scene.add(pts);
+
+  // Four premiere searchlights around the quad
+  const lights = [];
+  const beamMat2 = new THREE.ShaderMaterial({
+    uniforms: { uI: { value: 0 } },
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    vertexShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+      void main(){ vUv = uv; vN = normalize(normalMatrix * normal);
+        vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec2 vUv; varying vec3 vN; varying vec3 vV; uniform float uI;
+      void main(){
+        float core = pow(abs(dot(normalize(vN), normalize(vV))), 1.5);
+        float fall = pow(vUv.y, 1.6);
+        gl_FragColor = vec4(1.0, 0.9, 0.72, core * fall * 0.32 * uI); }`,
+  });
+  [[-95, -95], [95, -95], [-95, 95], [95, 95]].forEach((o, i) => {
+    const grp = new THREE.Group();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(26, 430, 14, 6, true), beamMat2);
+    cone.geometry.rotateX(Math.PI); // apex (bright) at the ground
+    cone.position.y = 215;
+    grp.add(cone);
+    grp.position.set(ARRIVE.x + o[0], 2, ARRIVE.z + o[1]);
+    grp.visible = false;
+    scene.add(grp);
+    lights.push({ grp, cone, phase: i * 1.7, dir: i % 2 ? 1 : -1 });
+  });
+
+  // Shockwave ring pool
+  const rings = [];
+  for (let i = 0; i < 3; i++){
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.16, 8, 64).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x9ffbe9, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    ring.position.y = 2.6; ring.visible = false;
+    scene.add(ring);
+    rings.push(ring);
+  }
+  let ringIdx = 0;
+  window.__shockwave = function(x, z){
+    const ring = rings[ringIdx = (ringIdx + 1) % rings.length];
+    ring.position.x = x; ring.position.z = z;
+    ring.visible = true;
+    ring.scale.setScalar(6);
+    ring.material.opacity = 0.65;
+    gsap.to(ring.scale, { x: 230, y: 230, z: 230, duration: 1.2, ease: 'power2.out', overwrite: true });
+    gsap.to(ring.material, { opacity: 0, duration: 1.2, ease: 'power1.out', overwrite: true,
+      onComplete(){ ring.visible = false; } });
+  };
+
+  let revealed = false;
+  function update(p, wt, arrive){
+    const on = p > 0.94;
+    pts.visible = on;
+    uniforms.uTime.value = wt;
+    const form = Math.min(1, Math.max(0, (p - 0.952) / 0.028));
+    uniforms.uForm.value += (form - uniforms.uForm.value) * 0.08;
+    if (form > 0.03 && !revealed){ revealed = true; SoundScape.reveal && SoundScape.reveal(); }
+    if (p < 0.9) revealed = false;
+    beamMat2.uniforms.uI.value = arrive;
+    for (const L of lights){
+      L.grp.visible = on;
+      L.grp.rotation.y = wt * 0.28 * L.dir + L.phase;
+      L.cone.rotation.z = 0.34 + Math.sin(wt * 0.45 + L.phase) * 0.22;
+    }
+  }
+  return { update };
+})();
+
 /* ═════════════════ Leaping fish — the harbor is alive ═════════════════ */
 const fishSchool = (() => {
   const FISH = [];
@@ -1039,7 +1173,9 @@ const fireworks = (() => {
     const i = alloc(); if (i < 0) return;
     parts.push({ i, x: px, y: py, z: pz, vx, vy, vz, r, g: gcol, b, life, max: life, kind });
   }
+  let lastFP = 0;
   function burst(px, py, pz, big){
+    if (big && lastFP > 0.94 && window.__shockwave) window.__shockwave(px, pz);
     const c = PALETTE[Math.floor(Math.random() * PALETTE.length)];
     const c2 = PALETTE[Math.floor(Math.random() * PALETTE.length)];
     const n = big ? 340 : 170;
@@ -1075,6 +1211,7 @@ const fireworks = (() => {
   let t1 = 0, t2 = 0, rocketQueue = 0;
   const salvos = [{ p: 0.02, n: 7 }, { p: 0.10, n: 6 }, { p: 0.165, n: 7 }];
   function update(dt, p){
+    lastFP = p;
     // launch control: three deliberate salvos on the approach, then nothing
     for (const sv of salvos){
       if (!sv.done && p > sv.p && p < 0.28){ sv.done = true; rocketQueue += sv.n; }
@@ -1088,8 +1225,8 @@ const fireworks = (() => {
       t2 -= dt;
       if (t2 <= 0){
         rocket(); rocket();
-        if (Math.random() < 0.5) burst(ARRIVE.x + (Math.random() - 0.5) * 260, 150 + Math.random() * 130, ARRIVE.z + (Math.random() - 0.5) * 260, true);
-        t2 = 0.5;
+        if (Math.random() < 0.62) burst(ARRIVE.x + (Math.random() - 0.5) * 280, 150 + Math.random() * 140, ARRIVE.z + (Math.random() - 0.5) * 280, true);
+        t2 = 0.42;
       }
     }
     for (let k = parts.length - 1; k >= 0; k--){
@@ -1193,8 +1330,8 @@ const KEYS = (() => {
   { at: 0.938, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
   { at: 0.951, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
   { at: 0.965, pos: [150, 190, 25], look: [ARRIVE.x + 10, 24, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
-  { at: 0.985, pos: [158, 42, -30], look: [ARRIVE.x + 8, 12, ARRIVE.z], fov: 50, ease: 'power2.out' },
-  { at: 1.000, pos: [152, 8, -56], look: [ARRIVE.x + 4, 12, ARRIVE.z - 4], fov: 48, ease: 'power2.out' },
+  { at: 0.985, pos: [158, 42, -30], look: [ARRIVE.x + 8, 34, ARRIVE.z], fov: 50, ease: 'power2.out' },
+  { at: 1.000, pos: [152, 9, -56], look: [ARRIVE.x + 2, 58, ARRIVE.z - 26], fov: 50, ease: 'power2.out' },
   ];
 })();
 
@@ -1557,6 +1694,23 @@ const SoundScape = (() => {
   function chime(){
     ping(392, 1.6, 0.2); setTimeout(() => ping(523.25, 2.2, 0.24), 260);
   }
+  function reveal(){ // the light show assembles: sub drop + rising bell shimmer
+    if (!ready || !enabled) return;
+    const t0 = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(92, t0);
+    o.frequency.exponentialRampToValueAtTime(27, t0 + 1.7);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.65, t0 + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.9);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0 + 2.0);
+    [880, 1174.66, 1318.5, 1760, 2349.3, 2637].forEach((f, i) => {
+      setTimeout(() => ping(f, 1.3, 0.09, 'sine'), 350 + i * 110);
+    });
+    duck(0.2, 1.2);
+  }
   // The theme: five notes, minor on the way, major at arrival. This is the soul.
   function motif(major, octaveUp){
     if (!ready || !enabled) return;
@@ -1707,7 +1861,7 @@ const SoundScape = (() => {
     master.gain.setTargetAtTime(document.hidden || !enabled ? 0 : 0.9, ctx.currentTime, 0.3);
   });
 
-  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash, motif,
+  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash, motif, reveal,
            get enabled(){ return enabled; } };
 })();
 window.__sound = SoundScape;
@@ -1857,9 +2011,10 @@ function renderFrame(t, dtMs){
   stars.material.uniforms.uTime.value = wTime;
   stars.position.copy(camera.position).setY(0);
 
-  // fireworks + fish + bloom pulse
+  // fireworks + fish + finale spectacle + bloom pulse
   fireworks.update(dt, smoothed);
   fishSchool.update(dt, wTime);
+  finaleShow.update(smoothed, wTime, arriveState.value);
   bloom.strength = cam.bloomStr + fireworks.pulse;
 
   // audio follows the flight (mix, score, spatial listener)

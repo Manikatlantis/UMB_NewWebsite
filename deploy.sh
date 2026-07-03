@@ -8,6 +8,6 @@ echo "⟶ Deploying to Vultr..."
 git push origin main
 
 # SSH into VPS, pull latest, restart backend if needed
-ssh root@104.156.225.159 "cd /var/www/umass-boston && git pull origin main && echo '✓ Files updated' && if pm2 list 2>/dev/null | grep -q server; then pm2 restart server && echo '✓ Backend restarted'; fi"
+ssh root@104.156.225.159 "cd /var/www/umass-boston && git checkout main && git pull origin main && echo '✓ Files updated' && if pm2 list 2>/dev/null | grep -q umass-boston; then pm2 restart umass-boston && echo '✓ Backend restarted'; fi"
 
 echo "✓ Deploy complete"

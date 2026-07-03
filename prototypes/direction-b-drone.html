@@ -1157,17 +1157,17 @@ const KEYS = (() => {
   { at: 0.100, pos: [LENS.x + 96, 56, LENS.z + 16], look: [LENS.x, 62, LENS.z], fov: 60, ease: 'power1.inOut' },
   { at: 0.145, pos: [LENS.x + 168, 34, LENS.z - 20], look: [LENS.x - 60, 40, LENS.z - 30], fov: 57, ease: 'power2.inOut' },
   // dive + skim — travel is fast
-  { at: 0.180, pos: [598, 7, -95], look: [500, 4, -120], fov: 64, ease: 'power2.in' },
+  { at: 0.183, pos: [598, 7, -95], look: [500, 4, -120], fov: 64, ease: 'power1.in' },
   { at: 0.205, pos: [560, 4.5, -108], look: [468, 6, -140], fov: 66, ease: 'none' },
   { at: 0.260, pos: [520, 5, -125], look: [430, 8, -170], fov: 66, ease: 'none' },
   // HEALEY — sprint in, hard brake, long slow drift
-  { at: 0.295, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power2.in' },
-  { at: 0.318, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power4.out', roll: -0.08 },
+  { at: 0.298, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power1.in' },
+  { at: 0.330, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power3.out', roll: -0.08 },
   { at: 0.398, pos: [H.x + 14, 66, H.z + 168], look: [H.x, 28, H.z], fov: 52, ease: 'none', roll: 0 },
   { at: 0.472, pos: [H.x - 160, 60, H.z + 48], look: [H.x, 28, H.z], fov: 53, ease: 'none', roll: 0.06 },
   // WHEATLEY — same grammar
-  { at: 0.492, pos: [H.x - 60, 40, H.z + 120], look: [mid[0], 26, mid[1]], fov: 58, ease: 'power2.in', roll: -0.18 },
-  { at: 0.512, pos: [WH.x - 118, 44, WH.z - 36], look: [WH.x, 20, WH.z], fov: 54, ease: 'power4.out' },
+  { at: 0.494, pos: [H.x - 60, 40, H.z + 120], look: [mid[0], 26, mid[1]], fov: 58, ease: 'power1.in', roll: -0.14 },
+  { at: 0.520, pos: [WH.x - 118, 44, WH.z - 36], look: [WH.x, 20, WH.z], fov: 54, ease: 'power3.out' },
   { at: 0.552, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 52, ease: 'none' },
   { at: 0.583, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 53, ease: 'none' },
   // MCCORMACK
@@ -1178,11 +1178,11 @@ const KEYS = (() => {
   { at: 0.692, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 52, ease: 'none' },
   { at: 0.720, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 53, ease: 'none' },
   // UNIVERSITY HALL — low, facade-first
-  { at: 0.736, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power2.in' },
-  { at: 0.756, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 53, ease: 'power4.out' },
+  { at: 0.738, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power1.in' },
+  { at: 0.760, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 53, ease: 'power3.out' },
   { at: 0.776, pos: [UH.x + 30, 44, UH.z - 50], look: [UH.x, 24, UH.z], fov: 52, ease: 'none' },
   // JFK — the crown jewel, longest drift
-  { at: 0.794, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power4.out' },
+  { at: 0.798, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power3.out' },
   { at: 0.826, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 50, ease: 'none' },
   { at: 0.850, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 52, ease: 'none' },
   // RESIDENCES — shoreline drift
@@ -1812,7 +1812,7 @@ function renderFrame(t, dtMs){
     bank += (targetBank - bank) * (1 - Math.exp(-dt * 4));
     camera.rotateZ(cam.roll + bank);
     // speed-scaled handheld shake
-    const sh = 0.002 * speedN;
+    const sh = 0.0013 * Math.min(speedN, 1.0);
     camera.rotateX(Math.sin(wTime * 6.3) * sh + Math.sin(wTime * 11.7) * sh * 0.5);
     camera.rotateY(Math.cos(wTime * 5.1) * sh);
     camera.fov = cam.fov;

@@ -89,6 +89,17 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'admin.html'));
 });
 
+// ── The Night Crossing — launched from the About section (and /experience) ──
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'umass-boston.html'));
+});
+app.get('/experience', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'prototypes', 'direction-b-drone.html'));
+});
+app.get('/home', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'umass-boston.html'));
+});
+
 // ── Health check ────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 

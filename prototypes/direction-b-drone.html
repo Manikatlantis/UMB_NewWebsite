@@ -1367,7 +1367,17 @@ const walker = (() => {
   addEventListener('keydown', (e) => {
     keys[e.key.toLowerCase()] = true;
     if (!api.active) return;
-    if ((e.key === 'e' || e.key === 'E') && near && !arrivalScreens.active) arrivalScreens.expand(near);
+    if ((e.key === 'e' || e.key === 'E') && near && !arrivalScreens.active && !shuttles.riding) arrivalScreens.expand(near);
+    if ((e.key === 'r' || e.key === 'R') && !arrivalScreens.active){
+      if (shuttles.riding){
+        const at = shuttles.leave();
+        if (at){ grp.position.x = at.x + 5; grp.position.z = at.z + 3; py = 4.55; air = false; vy = 0; }
+        grp.visible = true;
+      } else {
+        const n = shuttles.nearest(grp.position.x, grp.position.z);
+        if (n.car && n.d < 16){ grp.visible = false; shuttles.board(n.car); SoundScape.chime(); }
+      }
+    }
     if (e.key === ' ' && !air && !arrivalScreens.active){
       air = true; vy = 46;
       if (window.__shockwave) __shockwave(grp.position.x, grp.position.z, py + 0.12);
@@ -1453,6 +1463,7 @@ const walker = (() => {
   }
   function exit(){
     if (!api.active) return;
+    if (shuttles.riding){ shuttles.leave(); }
     api.active = false;
     grp.visible = false;
     hint.style.display = 'none';
@@ -1471,6 +1482,13 @@ const walker = (() => {
       prompt.style.display = 'none';
       markers.forEach((m) => { m.el.style.display = 'none'; });
       return; // reading a screen
+    }
+    if (shuttles.riding){
+      shuttles.rideFrame(dt);
+      prompt.textContent = '\u26a1  PRESS R \u2014 HOP OFF';
+      prompt.style.display = 'block';
+      markers.forEach((m) => { m.el.style.display = 'none'; });
+      return;
     }
     const run = keys['shift'] ? 2.1 : 1;
     let move = 0;
@@ -1548,12 +1566,183 @@ const walker = (() => {
       sc.hit.style.pointerEvents = (sc === near) ? 'auto' : 'none';
       sc.wrap.style.borderColor = (sc === near) ? 'rgba(255,179,71,0.8)' : 'rgba(0,229,199,0.5)';
     }
-    prompt.textContent = near ? ('⚡  PRESS E — OPEN ' + near.def.label) : '';
-    prompt.style.display = near ? 'block' : 'none';
+    const sn = shuttles.nearest(grp.position.x, grp.position.z);
+    if (sn.car && sn.d < 16){
+      prompt.textContent = '⚡  PRESS R — RIDE THE BEACON SHUTTLE';
+      prompt.style.display = 'block';
+    } else {
+      prompt.textContent = near ? ('⚡  PRESS E — OPEN ' + near.def.label) : '';
+      prompt.style.display = near ? 'block' : 'none';
+    }
     updateMarkers();
   }
   window.__walker = api;
   api.enter = enter; api.exit = exit; api.update = update;
+  return api;
+})();
+
+/* ═════════════════ Beacon Shuttles — rideable night tour with live narration ═════════════════ */
+const shuttles = (() => {
+  const ROUTE = [[86,-96],[150,-40],[185,100],[268,72],[330,-20],[330,-180],[330,-288],
+    [180,-360],[60,-300],[-60,-250],[-150,-90],[-168,-16],[-130,100],[96,170],[140,-10]];
+  const STOPS = [
+    { i: 2, key: 'campuscenter', name: 'Campus Center',
+      text: 'The Campus Center — 331,000 square feet of dining, events and student life, opened in 2004. The heart of campus.' },
+    { i: 3, key: 'uhall', name: 'University Hall',
+      text: 'University Hall — computer science, mathematics and the arts behind a LEED-certified glass facade.' },
+    { i: 6, key: 'jfk', name: 'JFK Presidential Library',
+      text: 'The John F. Kennedy Presidential Library — I. M. Pei\u2019s white tower, standing alone on the point since 1979.' },
+    { i: 8, key: 'eastres', name: 'The Residence Halls',
+      text: 'East and West Residence Halls — suite-style living for more than a thousand Beacons, with the harbor at the doorstep.' },
+    { i: 11, key: 'healey', name: 'Healey Library',
+      text: 'Healey Library — eleven Brutalist stories, seven hundred thousand volumes, and the best harbor view on campus.' },
+    { i: 12, key: 'mccormack', name: 'McCormack Hall',
+      text: 'McCormack Hall — liberal arts in the original 1974 campus core.' },
+    { i: 13, key: 'wheatley', name: 'Wheatley Hall',
+      text: 'Wheatley Hall — education, nursing and social work, joined to McCormack by the busiest corridor on campus.' },
+  ];
+  const curve = new THREE.CatmullRomCurve3(
+    ROUTE.map((pt) => new THREE.Vector3(pt[0], 4.8, pt[1])), true, 'centripetal', 0.35);
+  const LEN = curve.getLength();
+  // param for each stop (closest of 600 samples)
+  for (const st of STOPS){
+    let bu = 0, bd = 1e9;
+    for (let k = 0; k < 600; k++){
+      const u = k / 600, q = curve.getPointAt(u);
+      const d = Math.hypot(q.x - ROUTE[st.i][0], q.z - ROUTE[st.i][1]);
+      if (d < bd){ bd = d; bu = u; }
+    }
+    st.u = bu;
+  }
+  STOPS.sort((a, b) => a.u - b.u);
+
+  // the route reads as a road: faint dashed teal ribbon
+  const ribbonGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(360).map(q => new THREE.Vector3(q.x, 4.68, q.z)));
+  const ribbon = new THREE.Line(ribbonGeo, new THREE.LineDashedMaterial({
+    color: 0x00E5C7, transparent: true, opacity: 0.18, dashSize: 4, gapSize: 5 }));
+  ribbon.computeLineDistances();
+  scene.add(ribbon);
+
+  function makeShuttle(){
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.6, 9.2), new THREE.MeshBasicMaterial({ color: 0x12283a }));
+    body.position.y = 1.9;
+    const win = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.9, 7.6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.55, 0.75, 0.8) }));
+    win.position.y = 2.6;
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.16, 9.2), new THREE.MeshBasicMaterial({ color: new THREE.Color(0, 1.4, 1.15) }));
+    stripe.position.y = 1.1;
+    const head = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.5), new THREE.MeshBasicMaterial({
+      color: new THREE.Color(2.0, 1.7, 1.1), transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+    head.position.set(0, 1.1, 4.65);
+    g.add(body, win, stripe, head);
+    scene.add(g);
+    return g;
+  }
+  const CARS = [0.02, 0.36, 0.7].map((off) => ({
+    u: off, speed: 12, grp: makeShuttle(), state: 'drive', dwell: 0, lastStop: -1 }));
+
+  // narration card + speech
+  const card = document.createElement('div');
+  card.style.cssText = "position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:41;display:none;max-width:620px;" +
+    'background:rgba(0,12,24,0.88);border:1px solid rgba(0,229,199,0.3);border-left:3px solid #FFB347;padding:18px 26px;backdrop-filter:blur(8px);';
+  card.innerHTML = '<div id="tc-k" style="font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:3px;color:#FFB347;margin-bottom:6px;"></div>' +
+    '<div id="tc-n" style="font-family:\'Unbounded\',sans-serif;font-size:20px;font-weight:700;color:#EAF4FB;margin-bottom:6px;"></div>' +
+    '<div id="tc-t" style="font-family:\'Space Grotesk\',sans-serif;font-size:13px;line-height:1.55;color:rgba(207,232,255,0.75);"></div>';
+  document.body.appendChild(card);
+  function narrate(kicker, name, text){
+    card.style.display = 'block';
+    card.querySelector('#tc-k').textContent = kicker;
+    card.querySelector('#tc-n').textContent = name;
+    card.querySelector('#tc-t').textContent = text;
+    if (window.speechSynthesis && SoundScape.enabled){
+      speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(name + '. ' + text);
+      utt.rate = 0.96; utt.pitch = 0.92;
+      speechSynthesis.speak(utt);
+    }
+  }
+  function hideCard(){ card.style.display = 'none'; if (window.speechSynthesis) speechSynthesis.cancel(); }
+
+  const api = { riding: null };
+  let frameBlend = 0, frameStop = null, stopNo = 0;
+
+  function nextStop(u){
+    for (const st of STOPS){ if (st.u > u + 0.002) return st; }
+    return STOPS[0];
+  }
+  function update(dt){
+    for (const c of CARS){
+      const st = nextStop(c.u);
+      let gap = st.u - c.u; if (gap < 0) gap += 1;
+      const dist = gap * LEN;
+      if (c.state === 'dwell'){
+        c.dwell -= dt; c.speed = 0;
+        if (c.dwell <= 0){ c.state = 'drive'; if (api.riding === c){ hideCard(); frameStop = null; } }
+      } else {
+        const target = dist < 26 ? Math.max(1.6, 12 * dist / 26) : 12;
+        c.speed += (target - c.speed) * Math.min(1, dt * 3);
+        c.u = (c.u + (c.speed * dt) / LEN) % 1;
+        if (dist < 1.6 && c.lastStop !== st.u){
+          c.state = 'dwell'; c.dwell = api.riding === c ? 9 : 5; c.lastStop = st.u;
+          if (api.riding === c){
+            stopNo++;
+            frameStop = st;
+            narrate('BEACON SHUTTLE \u00b7 STOP ' + String(stopNo).padStart(2, '0'), st.name, st.text);
+          }
+        }
+      }
+      const q = curve.getPointAt(c.u);
+      const t = curve.getTangentAt(c.u);
+      c.grp.position.set(q.x, 4.8, q.z);
+      c.grp.rotation.y = Math.atan2(t.x, t.z);
+    }
+  }
+  const EYE = new THREE.Vector3(), AIM = new THREE.Vector3();
+  function rideFrame(dt){
+    const c = api.riding; if (!c) return;
+    const q = c.grp.position, t = curve.getTangentAt(c.u);
+    frameBlend += ((frameStop ? 1 : 0) - frameBlend) * Math.min(1, dt * 2.2);
+    // chase view
+    let ex = q.x - t.x * 17, ey = 13.5, ez = q.z - t.z * 17;
+    let ax = q.x + t.x * 14, ay = 5.5, az = q.z + t.z * 14;
+    if (frameBlend > 0.001 && frameStop){
+      const hp = heroPos[frameStop.key === 'eastres' ? 'eastres' : frameStop.key];
+      if (hp){
+        // pull way out and frame the whole building
+        let dx = q.x - hp.x, dz = q.z - hp.z;
+        const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+        const R = Math.max(120, hp.h * 3.2);
+        const fx = hp.x + dx * R, fy = hp.h * 1.15 + 34, fz = hp.z + dz * R;
+        const e2 = frameBlend * frameBlend * (3 - 2 * frameBlend);
+        ex = ex + (fx - ex) * e2; ey = ey + (fy - ey) * e2; ez = ez + (fz - ez) * e2;
+        ax = ax + (hp.x - ax) * e2; ay = ay + (hp.h * 0.45 - ay) * e2; az = az + (hp.z - az) * e2;
+      }
+    }
+    EYE.set(ex, ey, ez); AIM.set(ax, ay, az);
+    camera.position.lerp(EYE, Math.min(1, dt * 4));
+    camera.lookAt(AIM);
+    camera.fov += (52 - camera.fov) * 0.04;
+    camera.updateProjectionMatrix();
+  }
+  function board(c){
+    api.riding = c; frameBlend = 0; frameStop = null; stopNo = 0;
+    narrate('BEACON SHUTTLE', 'Welcome aboard', 'UMass Boston by night. Sit back \u2014 first stop coming up.');
+    setTimeout(() => { if (api.riding && !frameStop) hideCard(); }, 6500);
+  }
+  function leave(){
+    const c = api.riding; api.riding = null; hideCard(); frameStop = null;
+    return c ? c.grp.position : null;
+  }
+  function nearest(x, z){
+    let best = null, bd = 1e9;
+    for (const c of CARS){
+      const d = Math.hypot(c.grp.position.x - x, c.grp.position.z - z);
+      if (d < bd){ bd = d; best = c; }
+    }
+    return { car: best, d: bd };
+  }
+  api.update = update; api.rideFrame = rideFrame; api.board = board; api.leave = leave; api.nearest = nearest;
+  window.__shuttles = api;
   return api;
 })();
 
@@ -2625,6 +2814,7 @@ function renderFrame(t, dtMs){
   // fireworks + fish + finale spectacle + bloom pulse
   fireworks.update(dt, smoothed);
   fishSchool.update(dt, wTime);
+  shuttles.update(dt);
   finaleShow.update(smoothed, wTime, arriveState.value);
   walker.update(dt);
   arrivalScreens.update(smoothed, camera);

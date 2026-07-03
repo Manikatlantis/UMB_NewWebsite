@@ -872,6 +872,7 @@ html.lenis,html.lenis body{height:auto;}
       <button class="mode-pill mode-pill-gold" id="btn-shuttle" onclick="enterShuttleMode()" data-i18n="shuttle_tracker">Live Shuttle Tracker &rarr;</button>
       <button class="mode-pill" id="btn-tour" onclick="startCampusTour()" data-i18n="campus_tour">Campus Tour &rarr;</button>
       <button class="mode-pill" id="btn-byd" onclick="startBuildYourDay()">Build Your Day &#x2728;</button>
+      <button class="mode-pill" id="btn-walk" onclick="window.__cesiumWalk && __cesiumWalk.toggle()" style="display:none">&#x1F6B6; Walk the Real Campus (beta)</button>
       <a href="https://www.umb.edu/academics/" target="_blank" class="mode-pill" data-i18n="explore_programs">Explore Programs</a>
       <a href="https://www.umb.edu/admissions/apply/" target="_blank" class="mode-pill mode-pill-apply" data-i18n="apply_semester">Apply Fall 2026/Spring 2027</a>
     </div>
@@ -7763,6 +7764,187 @@ window.addEventListener('resize', function() {
       wrap.classList.remove('open');
     }
   });
+})();
+</script>
+<script src="/prototypes/campus-footprints.js"></script>
+<script>
+/* ── Cesium Walk (beta): third-person avatar on the real photorealistic tiles ── */
+(function(){
+  'use strict';
+  var isDesktop = !window.matchMedia('(pointer: coarse)').matches && window.innerWidth >= 1024;
+  if (!isDesktop || !window.CAMPUS_FOOTPRINTS) return;
+  var btn = document.getElementById('btn-walk');
+  if (btn) btn.style.display = '';
+
+  var active = false, tickCb = null;
+  var enuMat = null, C = null; // Cesium alias
+  var pos = { e: 86, n: 96 };  // local meters east/north — the campus quad
+  var yaw = 0, py = null, vy = 0, air = false, walkT = 0, lastT = 0, sampleT = 0;
+  var groundH = null; // smoothed terrain/tileset height under avatar (meters, ellipsoid)
+  var keys = {};
+  var entity = null, hint = null, exitBtn = null;
+
+  // collision solids from real footprints (x=east, z=south -> store [east, north])
+  var solids = window.CAMPUS_FOOTPRINTS.buildings.map(function(b){
+    var minE = 1e9, maxE = -1e9, minN = 1e9, maxN = -1e9;
+    var poly = b.p.map(function(pt){
+      var e = b.x + pt[0], n = -(b.z + pt[1]);
+      if (e < minE) minE = e; if (e > maxE) maxE = e;
+      if (n < minN) minN = n; if (n > maxN) maxN = n;
+      return [e, n];
+    });
+    return { poly: poly, minE: minE, maxE: maxE, minN: minN, maxN: maxN };
+  });
+  function inPoly(e, n, poly){
+    var c = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++){
+      var ei = poly[i][0], ni = poly[i][1], ej = poly[j][0], nj = poly[j][1];
+      if ((ni > n) !== (nj > n) && e < (ej - ei) * (n - ni) / (nj - ni + 1e-9) + ei) c = !c;
+    }
+    return c;
+  }
+  function blocked(e, n){
+    for (var i = 0; i < solids.length; i++){
+      var sd = solids[i];
+      if (e < sd.minE - 1 || e > sd.maxE + 1 || n < sd.minN - 1 || n > sd.maxN + 1) continue;
+      if (inPoly(e, n, sd.poly)) return true;
+    }
+    return false;
+  }
+
+  var scratch = null, scratchQ = null, scratchHPR = null;
+  function toECEF(e, n, h){
+    return C.Matrix4.multiplyByPoint(enuMat, new C.Cartesian3(e, n, h), new C.Cartesian3());
+  }
+
+  function ensureSetup(){
+    var viewer = window._cesiumViewer;
+    if (!viewer || enuMat) return !!enuMat;
+    C = window.Cesium;
+    enuMat = C.Transforms.eastNorthUpToFixedFrame(C.Cartesian3.fromDegrees(-71.0387, 42.3133));
+    entity = viewer.entities.add({
+      name: 'walker',
+      position: C.Cartesian3.fromDegrees(-71.0387, 42.3133, 0),
+      model: { uri: '/prototypes/cesium-man.glb', scale: 1.4, runAnimations: false,
+               minimumPixelSize: 24 },
+      show: false,
+    });
+    hint = document.createElement('div');
+    hint.innerHTML = 'WASD — WALK &nbsp;·&nbsp; SHIFT — RUN &nbsp;·&nbsp; SPACE — JUMP &nbsp;·&nbsp; ESC — EXIT WALK';
+    hint.style.cssText = "position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:60;display:none;" +
+      "font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:rgba(238,243,248,0.75);" +
+      'background:rgba(0,16,32,0.88);border:1px solid rgba(0,229,199,0.25);border-radius:999px;padding:10px 20px;pointer-events:none;';
+    document.body.appendChild(hint);
+    exitBtn = document.createElement('button');
+    exitBtn.textContent = '\u2934  EXIT WALK';
+    exitBtn.style.cssText = "position:fixed;top:86px;right:24px;z-index:60;display:none;cursor:pointer;" +
+      "font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;color:#EAF4FB;" +
+      'background:rgba(0,16,32,0.88);border:1px solid rgba(0,229,199,0.3);border-radius:999px;padding:12px 20px;';
+    exitBtn.addEventListener('click', stop);
+    document.body.appendChild(exitBtn);
+    return true;
+  }
+
+  function typing(){
+    var el = document.activeElement;
+    return el && /INPUT|TEXTAREA|SELECT/.test(el.tagName);
+  }
+  window.addEventListener('keydown', function(e){
+    if (!active || typing()) return;
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === 'Escape'){ stop(); return; }
+    if (e.key === ' ' && !air){ air = true; vy = 7.5; }
+    if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].indexOf(e.key.toLowerCase()) >= 0) e.preventDefault();
+  });
+  window.addEventListener('keyup', function(e){ keys[e.key.toLowerCase()] = false; });
+
+  function tick(){
+    var viewer = window._cesiumViewer;
+    if (!viewer) return;
+    var now = performance.now();
+    var dt = Math.min(0.05, (now - lastT) / 1000 || 0.016);
+    lastT = now;
+
+    // input
+    var run = keys['shift'] ? 2.2 : 1;
+    var move = 0;
+    if (keys['w'] || keys['arrowup']) move = 1;
+    else if (keys['s'] || keys['arrowdown']) move = -0.6;
+    if (keys['a'] || keys['arrowleft']) yaw -= dt * 2.2;
+    if (keys['d'] || keys['arrowright']) yaw += dt * 2.2;
+    var spd = 4.2 * run * move;
+    if (move !== 0){
+      var ne = pos.e + Math.sin(yaw) * spd * dt;
+      var nn = pos.n + Math.cos(yaw) * spd * dt;
+      if (!blocked(ne, nn) && Math.hypot(ne, nn) < 900){ pos.e = ne; pos.n = nn; }
+      walkT += dt * 6 * run;
+    }
+
+    // ground height: sync sample when tiles allow, hold last otherwise
+    sampleT -= dt;
+    if (sampleT <= 0){
+      sampleT = 0.22;
+      try {
+        var carto = C.Cartographic.fromCartesian(toECEF(pos.e, pos.n, (groundH || 20) + 40));
+        var h = viewer.scene.sampleHeight(carto, [entity]);
+        if (h !== undefined && h !== null && isFinite(h)){
+          groundH = (groundH === null) ? h : groundH + (h - groundH) * 0.5;
+        }
+      } catch (err) { /* tiles still streaming */ }
+    }
+    var g = (groundH === null) ? 0 : groundH;
+    if (py === null) py = g;
+    // vertical
+    if (air){
+      py += vy * dt; vy -= 19 * dt;
+      if (vy <= 0 && py <= g){ py = g; air = false; }
+    } else {
+      py += (g - py) * Math.min(1, dt * 8); // glide onto sampled terrain
+    }
+
+    var ecef = toECEF(pos.e, pos.n, py + 0.05);
+    entity.position = new C.ConstantPositionProperty(ecef);
+    entity.orientation = new C.ConstantProperty(
+      C.Transforms.headingPitchRollQuaternion(ecef, new C.HeadingPitchRoll(yaw - Math.PI / 2, 0, 0)));
+    entity.model.runAnimations = new C.ConstantProperty(move !== 0 && !air);
+
+    viewer.camera.lookAt(ecef, new C.HeadingPitchRange(yaw, -0.24, 17));
+  }
+
+  function start(){
+    var viewer = window._cesiumViewer;
+    if (!viewer || !ensureSetup()) { alert('The 3D map is still loading — try again in a moment.'); return; }
+    active = true;
+    entity.show = true;
+    py = null; groundH = null; air = false; vy = 0; lastT = performance.now();
+    viewer.scene.screenSpaceCameraController.enableInputs = false;
+    if (viewer.camera.cancelFlight) viewer.camera.cancelFlight();
+    // seed the height from most-detailed tiles
+    try {
+      var carto = C.Cartographic.fromCartesian(toECEF(pos.e, pos.n, 60));
+      viewer.scene.sampleHeightMostDetailed([carto]).then(function(rs){
+        if (rs && rs[0] && isFinite(rs[0].height)) groundH = rs[0].height;
+      }).catch(function(){});
+    } catch (err) {}
+    tickCb = viewer.scene.postUpdate.addEventListener(tick);
+    hint.style.display = 'block';
+    exitBtn.style.display = 'block';
+    if (btn) btn.textContent = 'Walking\u2026 (ESC to exit)';
+  }
+  function stop(){
+    var viewer = window._cesiumViewer;
+    active = false;
+    if (tickCb){ tickCb(); tickCb = null; }
+    if (entity) entity.show = false;
+    if (viewer){
+      viewer.scene.screenSpaceCameraController.enableInputs = true;
+      viewer.camera.lookAtTransform(C.Matrix4.IDENTITY);
+    }
+    if (hint) hint.style.display = 'none';
+    if (exitBtn) exitBtn.style.display = 'none';
+    if (btn) btn.innerHTML = '&#x1F6B6; Walk the Real Campus (beta)';
+  }
+  window.__cesiumWalk = { toggle: function(){ active ? stop() : start(); }, start: start, stop: stop };
 })();
 </script>
 </body>

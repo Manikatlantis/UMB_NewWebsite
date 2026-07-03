@@ -598,7 +598,7 @@ const ticker = (() => {
   tex.colorSpace = THREE.SRGBColorSpace;
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(Math.min(best * 0.94, 120), 5.2),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false })
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.FrontSide, depthWrite: false })
   );
   plane.position.set(mid[0], cc.h + 3.4, mid[1]);
   plane.rotation.y = ang;
@@ -1177,11 +1177,71 @@ const arrivalScreens = (() => {
     if (window.__lenis && !(window.__walker && window.__walker.active)) window.__lenis.start();
   }
 
+  // occluders: absolute footprint polys + heights (CSS3D can't depth-test against WebGL,
+  // so walls are made "opaque" by hiding any screen whose sight-line crosses a building)
+  const OCC = FP.map((b) => {
+    let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
+    const poly = b.p.map((pt) => {
+      const x = b.x + pt[0], z = b.z + pt[1];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+      return [x, z];
+    });
+    return { poly, h: b.h, minX, maxX, minZ, maxZ };
+  });
+  // each screen's host building (excluded from its own occlusion test)
+  function inPoly2(x, z, poly){
+    let c = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++){
+      const xi = poly[i][0], zi = poly[i][1], xj = poly[j][0], zj = poly[j][1];
+      if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi + 1e-9) + xi) c = !c;
+    }
+    return c;
+  }
+  for (const sc of screens){
+    const ix = sc.homePos.x - sc.normal.x * 4, iz = sc.homePos.z - sc.normal.z * 4;
+    sc.host = OCC.findIndex((o) => ix >= o.minX && ix <= o.maxX && iz >= o.minZ && iz <= o.maxZ && inPoly2(ix, iz, o.poly));
+  }
+  function segHit2D(ax, az, bx, bz, cx2, cz2, dx2, dz2){
+    const d1 = (bx - ax) * (cz2 - az) - (bz - az) * (cx2 - ax);
+    const d2 = (bx - ax) * (dz2 - az) - (bz - az) * (dx2 - ax);
+    if ((d1 > 0) === (d2 > 0)) return -1;
+    const d3 = (dx2 - cx2) * (az - cz2) - (dz2 - cz2) * (ax - cx2);
+    const d4 = (dx2 - cx2) * (bz - cz2) - (dz2 - cz2) * (bx - cx2);
+    if ((d3 > 0) === (d4 > 0)) return -1;
+    return d3 / (d3 - d4 + 1e-12); // t along a->b
+  }
+  function screenVisible(sc, cam){
+    const dx = cam.position.x - sc.homePos.x, dz = cam.position.z - sc.homePos.z;
+    if (dx * sc.normal.x + dz * sc.normal.z < 0.02) return false; // facing away
+    const ax = cam.position.x, az = cam.position.z, ay = cam.position.y;
+    const bx = sc.homePos.x + sc.normal.x * 2, bz = sc.homePos.z + sc.normal.z * 2, by = sc.homePos.y;
+    const loX = Math.min(ax, bx), hiX = Math.max(ax, bx), loZ = Math.min(az, bz), hiZ = Math.max(az, bz);
+    for (let i = 0; i < OCC.length; i++){
+      if (i === sc.host) continue;
+      const o = OCC[i];
+      if (o.maxX < loX || o.minX > hiX || o.maxZ < loZ || o.minZ > hiZ) continue;
+      for (let e = 0; e < o.poly.length; e++){
+        const p1 = o.poly[e], p2 = o.poly[(e + 1) % o.poly.length];
+        const t = segHit2D(ax, az, bx, bz, p1[0], p1[1], p2[0], p2[1]);
+        if (t > 0.02 && t < 0.985){
+          const rayY = ay + (by - ay) * t;
+          if (rayY < o.h + 1.5) return false; // blocked below this roof
+        }
+      }
+    }
+    return true;
+  }
+
   const FWD = new THREE.Vector3(), TARGET = new THREE.Vector3();
   function update(p, cam){
     if (!booted && p > 0.12){
       booted = true;
       screens.forEach((sc) => { if (!sc.frame.src) sc.frame.src = sc.def.url; });
+    }
+    for (const sc of screens){
+      const vis = (sc === active) || screenVisible(sc, cam);
+      if (vis !== sc.vis){ sc.vis = vis; sc.wrap.style.visibility = vis ? 'visible' : 'hidden'; }
     }
     expandT += ((active ? 1 : 0) - expandT) * 0.12;
     if (expandT > 0.001 && active){

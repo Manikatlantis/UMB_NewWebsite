@@ -286,7 +286,7 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
     <span class="bname">Wheatley Hall</span>
     <p class="fact">Education, nursing and social work.</p>
   </div>
-  <div class="blabel" id="lbl-mccormack" data-in="0.600" data-out="0.654">
+  <div class="blabel" id="lbl-mccormack" data-in="0.592" data-out="0.656">
     <span class="idx">03 · 1974</span>
     <span class="bname">McCormack Hall</span>
     <p class="fact">Liberal arts in the original core.</p>
@@ -296,17 +296,17 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
     <span class="bname">Campus Center</span>
     <p class="fact">Dining, events, student life — 331k ft².</p>
   </div>
-  <div class="blabel" id="lbl-uhall" data-in="0.754" data-out="0.794">
+  <div class="blabel" id="lbl-uhall" data-in="0.744" data-out="0.800">
     <span class="idx">05 · LEED Gold · 2016</span>
     <span class="bname">University Hall</span>
     <p class="fact">CS, math and sciences in a glass wedge.</p>
   </div>
-  <div class="blabel" id="lbl-jfk" data-in="0.794" data-out="0.862">
+  <div class="blabel" id="lbl-jfk" data-in="0.800" data-out="0.862">
     <span class="idx">06 · I.M. Pei · 1979</span>
     <span class="bname">JFK Presidential Library</span>
     <p class="fact">Pei's white tower, alone on the point.</p>
   </div>
-  <div class="blabel" id="lbl-res" data-in="0.862" data-out="0.930">
+  <div class="blabel" id="lbl-res" data-in="0.856" data-out="0.934">
     <span class="idx">07 · Live here · 2018</span>
     <span class="bname">The Residence Halls</span>
     <p class="fact">Suite-style living for 1,000+ Beacons.</p>
@@ -1171,27 +1171,27 @@ const KEYS = (() => {
   { at: 0.552, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 52, ease: 'none' },
   { at: 0.583, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 53, ease: 'none' },
   // MCCORMACK
-  { at: 0.602, pos: [MC.x + 95, 38, MC.z + 62], look: [MC.x, 14, MC.z], fov: 54, ease: 'power3.out', roll: -0.06 },
-  { at: 0.640, pos: [MC.x - 75, 34, MC.z + 88], look: [MC.x, 14, MC.z], fov: 52, ease: 'none', roll: 0.05 },
+  { at: 0.596, pos: [MC.x + 95, 38, MC.z + 62], look: [MC.x, 14, MC.z], fov: 54, ease: 'power3.out', roll: -0.06 },
+  { at: 0.646, pos: [MC.x - 75, 34, MC.z + 88], look: [MC.x, 14, MC.z], fov: 52, ease: 'none', roll: 0.05 },
   // CAMPUS CENTER — grand slow arc
   { at: 0.658, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power3.out', roll: 0 },
   { at: 0.692, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 52, ease: 'none' },
   { at: 0.720, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 53, ease: 'none' },
   // UNIVERSITY HALL — low, facade-first
-  { at: 0.738, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power1.in' },
-  { at: 0.760, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 53, ease: 'power3.out' },
-  { at: 0.776, pos: [UH.x + 30, 44, UH.z - 50], look: [UH.x, 24, UH.z], fov: 52, ease: 'none' },
+  { at: 0.734, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power1.in' },
+  { at: 0.750, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 53, ease: 'power3.out' },
+  { at: 0.788, pos: [UH.x + 30, 44, UH.z - 50], look: [UH.x, 24, UH.z], fov: 52, ease: 'none' },
   // JFK — the crown jewel, longest drift
-  { at: 0.798, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power3.out' },
+  { at: 0.802, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power3.out' },
   { at: 0.826, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 50, ease: 'none' },
   { at: 0.850, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 52, ease: 'none' },
   // RESIDENCES — shoreline drift
-  { at: 0.866, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 55, ease: 'power3.out', roll: -0.08 },
+  { at: 0.860, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 55, ease: 'power3.out', roll: -0.08 },
   { at: 0.894, pos: [dm[0] + 30, 24, dm[1] - 95], look: [WR.x, 18, WR.z], fov: 52, ease: 'none', roll: 0.06 },
-  { at: 0.918, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 53, ease: 'none', roll: 0 },
+  { at: 0.926, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 53, ease: 'none', roll: 0 },
   // climb + descent
-  { at: 0.935, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.949, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
+  { at: 0.938, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.951, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
   { at: 0.965, pos: [150, 190, 25], look: [ARRIVE.x + 10, 24, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
   { at: 0.985, pos: [158, 42, -30], look: [ARRIVE.x + 8, 12, ARRIVE.z], fov: 50, ease: 'power2.out' },
   { at: 1.000, pos: [152, 8, -56], look: [ARRIVE.x + 4, 12, ARRIVE.z - 4], fov: 48, ease: 'power2.out' },
@@ -1258,11 +1258,11 @@ const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el,
 const labels = [
   { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.322, outP: 0.468 },
   { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.516, outP: 0.580 },
-  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.600, outP: 0.654 },
+  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.592, outP: 0.656 },
   { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.654, outP: 0.732 },
-  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.754, outP: 0.794 },
-  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.794, outP: 0.862 },
-  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.862, outP: 0.930 },
+  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.744, outP: 0.800 },
+  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.800, outP: 0.862 },
+  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.856, outP: 0.934 },
 ];
 const LABEL_PING = { 'lbl-healey': 110, 'lbl-wheatley': 118, 'lbl-mccormack': 124, 'lbl-cc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165, 'lbl-res': 175 };
 const smoothstep = (a, b, x) => {
@@ -1726,7 +1726,7 @@ try {
 } catch(e){}
 
 /* ═════════════════ Scroll wiring ═════════════════ */
-qs('#journey-spacer').style.height = '2600vh';
+qs('#journey-spacer').style.height = '2900vh';
 const lenis = new Lenis({ lerp: 0.06 });
 window.__lenis = lenis;
 lenis.stop(); // locked until the loader finishes

@@ -255,7 +255,7 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   </div>
 
   <!-- S2 · mission (the climb / constellation) -->
-  <div class="station" data-in="0.888" data-full="0.905" data-out="0.932" data-gone="0.945">
+  <div class="station" data-in="0.918" data-full="0.934" data-out="0.952" data-gone="0.962">
     <div class="scrim"></div>
     <p class="kicker telemetry">Log 05 — The climb</p>
     <h2>The city is the laboratory<span class="dot">.</span></h2>
@@ -264,7 +264,7 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   </div>
 
   <!-- S3 · finale (arrival beacon) -->
-  <div class="station" data-in="0.945" data-full="0.975" data-out="1.01" data-gone="1.02">
+  <div class="station" data-in="0.958" data-full="0.985" data-out="1.01" data-gone="1.02">
     <div class="scrim"></div>
     <h2>You've made the crossing<span class="dot">.</span></h2>
     <p class="sub">Ask Harbor anything — buildings, programs, where to eat at midnight.
@@ -276,37 +276,37 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   </div>
 
   <!-- Building labels -->
-  <div class="blabel" id="lbl-healey" data-in="0.315" data-out="0.478">
+  <div class="blabel" id="lbl-healey" data-in="0.31" data-out="0.458">
     <span class="idx">01 · Brutalist landmark</span>
     <span class="bname">Healey Library</span>
     <p class="fact">Eleven stories of 1974 concrete — 700,000+ volumes and the best harbor view on campus.</p>
   </div>
-  <div class="blabel" id="lbl-wheatley" data-in="0.492" data-out="0.535">
+  <div class="blabel" id="lbl-wheatley" data-in="0.475" data-out="0.558">
     <span class="idx">02 · 1974</span>
     <span class="bname">Wheatley Hall</span>
     <p class="fact">Education, nursing and social work — the corridor between here and McCormack is campus at rush hour.</p>
   </div>
-  <div class="blabel" id="lbl-mccormack" data-in="0.535" data-out="0.578">
+  <div class="blabel" id="lbl-mccormack" data-in="0.562" data-out="0.605">
     <span class="idx">03 · 1974</span>
     <span class="bname">McCormack Hall</span>
     <p class="fact">Liberal arts and graduate studies in the original campus core.</p>
   </div>
-  <div class="blabel" id="lbl-cc" data-in="0.582" data-out="0.618">
+  <div class="blabel" id="lbl-cc" data-in="0.612" data-out="0.700">
     <span class="idx">04 · Heart of campus · 2004</span>
     <span class="bname">Campus Center</span>
     <p class="fact">Dining, student organizations, and events — 331,000 square feet at the center of it all.</p>
   </div>
-  <div class="blabel" id="lbl-uhall" data-in="0.622" data-out="0.685">
+  <div class="blabel" id="lbl-uhall" data-in="0.712" data-out="0.770">
     <span class="idx">05 · LEED Gold · 2016</span>
     <span class="bname">University Hall</span>
     <p class="fact">Computer science, math and the sciences in an angular glass wedge.</p>
   </div>
-  <div class="blabel" id="lbl-jfk" data-in="0.712" data-out="0.782">
+  <div class="blabel" id="lbl-jfk" data-in="0.786" data-out="0.856">
     <span class="idx">06 · I.M. Pei · 1979</span>
     <span class="bname">JFK Presidential Library</span>
     <p class="fact">The white tower on the point — President Kennedy's library, alone against the water.</p>
   </div>
-  <div class="blabel" id="lbl-res" data-in="0.812" data-out="0.868">
+  <div class="blabel" id="lbl-res" data-in="0.866" data-out="0.918">
     <span class="idx">07 · Live here · 2018</span>
     <span class="bname">The Residence Halls</span>
     <p class="fact">East and West — suite-style living for 1,000+ Beacons, harbor views included.</p>
@@ -344,7 +344,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
-import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
+
 
 gsap.registerPlugin(ScrollTrigger);
 history.scrollRestoration = 'manual';
@@ -722,25 +722,20 @@ const beamGroup = new THREE.Group();
     new THREE.MeshBasicMaterial({ color: new THREE.Color(3.0, 1.9, 0.75) }));
   lens.position.copy(LENS);
   scene.add(lens);
-  // Anamorphic-ish flare riding the lens
-  const flareTex = (() => {
+  // Soft gold halo riding the lens (additive sprite — no ghosting artifacts)
+  const haloTex = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 256;
     const x = c.getContext('2d');
-    const g = x.createRadialGradient(128, 128, 4, 128, 128, 128);
-    g.addColorStop(0, 'rgba(255,214,150,1)'); g.addColorStop(0.25, 'rgba(255,179,71,0.55)');
-    g.addColorStop(0.6, 'rgba(255,179,71,0.12)'); g.addColorStop(1, 'transparent');
+    const g = x.createRadialGradient(128, 128, 8, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,224,170,0.9)'); g.addColorStop(0.3, 'rgba(255,179,71,0.35)');
+    g.addColorStop(0.7, 'rgba(255,179,71,0.08)'); g.addColorStop(1, 'transparent');
     x.fillStyle = g; x.fillRect(0, 0, 256, 256);
-    x.fillStyle = 'rgba(255,220,170,0.75)'; x.fillRect(0, 124, 256, 8);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   })();
-  const flareLight = new THREE.PointLight(0xffb347, 0, 0);
-  flareLight.position.copy(LENS);
-  const lf = new Lensflare();
-  lf.addElement(new LensflareElement(flareTex, 220, 0));
-  lf.addElement(new LensflareElement(flareTex, 90, 0.35));
-  lf.addElement(new LensflareElement(flareTex, 50, 0.65));
-  flareLight.add(lf);
-  scene.add(flareLight);
+  const lensHalo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  lensHalo.scale.setScalar(70);
+  lensHalo.position.copy(LENS);
+  scene.add(lensHalo);
 
   // Beam: opposed cones, additive shader
   const beamUniforms = { uTime: { value: 0 }, uIntensity: { value: 1 } };
@@ -940,6 +935,106 @@ const streaks = (() => {
   gsap.ticker.add((t) => { uniforms.uTime.value = t; uniforms.uCamPos.value.copy(camera.position); });
 }
 
+/* ═════════════════ Fireworks — opening hook + arrival finale ═════════════════ */
+const fireworks = (() => {
+  const MAX = 3000;
+  const pos = new Float32Array(MAX * 3), col = new Float32Array(MAX * 3), attr = new Float32Array(MAX); // attr = alpha
+  const parts = []; // live particles
+  const free = [];
+  for (let i = MAX - 1; i >= 0; i--){ free.push(i); pos[i*3+1] = -9999; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('aA', new THREE.BufferAttribute(attr, 1));
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true,
+    vertexShader: `attribute float aA; varying float vA; varying vec3 vC;
+      void main(){ vC = color; vA = aA;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = clamp(2600.0 / -mv.z, 2.0, 26.0) * (0.6 + vA * 0.6);
+        gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying float vA; varying vec3 vC;
+      void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;
+        gl_FragColor = vec4(vC * (1.0 + vA), vA * (1.0 - d * 1.6)); }`,
+  });
+  const points = new THREE.Points(g, m);
+  points.frustumCulled = false;
+  scene.add(points);
+
+  const PALETTE = [
+    [0.0, 0.9, 0.78], [1.0, 0.70, 0.28], [1.0, 0.31, 0.64],
+    [0.31, 0.76, 1.0], [0.95, 0.95, 1.0], [0.62, 0.4, 1.0],
+  ];
+  const sites = FP.filter(b => b.k || b.h > 14).map(b => ({ x: b.x, z: b.z, h: b.h }));
+  let bloomPulse = 0;
+
+  function alloc(){ return free.length ? free.pop() : -1; }
+  function spawn(px, py, pz, vx, vy, vz, r, gcol, b, life, kind){
+    const i = alloc(); if (i < 0) return;
+    parts.push({ i, x: px, y: py, z: pz, vx, vy, vz, r, g: gcol, b, life, max: life, kind });
+  }
+  function burst(px, py, pz, big){
+    const c = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    const c2 = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    const n = big ? 340 : 170;
+    for (let k = 0; k < n; k++){
+      const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
+      const sp = (big ? 34 : 24) * (0.35 + Math.random() * 0.65);
+      const cc = Math.random() < 0.5 ? c : c2;
+      spawn(px, py, pz,
+        Math.sin(ph) * Math.cos(th) * sp, Math.cos(ph) * sp * 0.9, Math.sin(ph) * Math.sin(th) * sp,
+        cc[0], cc[1], cc[2], 1.5 + Math.random() * 1.3, 1);
+    }
+    bloomPulse = Math.min(0.5, bloomPulse + (big ? 0.30 : 0.12));
+    if (window.__sound && SoundScape.enabled) SoundScape.ping(52 + Math.random() * 18, 1.1, big ? 0.34 : 0.18);
+  }
+  function rocket(){
+    if (!sites.length) return;
+    const sMap = sites[Math.floor(Math.random() * sites.length)];
+    const c = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    spawn(sMap.x + (Math.random() - 0.5) * 10, sMap.h + 2, sMap.z + (Math.random() - 0.5) * 10,
+      (Math.random() - 0.5) * 6, 52 + Math.random() * 26, (Math.random() - 0.5) * 6,
+      c[0], c[1], c[2], 1.5 + Math.random() * 0.7, 0);
+  }
+  let t1 = 0, t2 = 0;
+  function update(dt, p){
+    // launch control: opening hook + grand finale
+    if (p > 0.012 && p < 0.30){
+      t1 -= dt;
+      if (t1 <= 0){ rocket(); if (Math.random() < 0.4) rocket(); t1 = 0.55 + Math.random() * 0.5; }
+    }
+    if (p > 0.945){
+      t2 -= dt;
+      if (t2 <= 0){
+        rocket(); rocket();
+        if (Math.random() < 0.5) burst(ARRIVE.x + (Math.random() - 0.5) * 260, 150 + Math.random() * 130, ARRIVE.z + (Math.random() - 0.5) * 260, true);
+        t2 = 0.5;
+      }
+    }
+    for (let k = parts.length - 1; k >= 0; k--){
+      const q = parts[k];
+      q.life -= dt;
+      if (q.life <= 0){
+        if (q.kind === 0) burst(q.x, q.y, q.z, Math.random() < 0.18);
+        pos[q.i*3+1] = -9999; attr[q.i] = 0;
+        free.push(q.i); parts.splice(k, 1); continue;
+      }
+      if (q.kind === 1){ q.vy -= 16 * dt; q.vx *= 0.985; q.vy *= 0.99; q.vz *= 0.985; }
+      q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
+      pos[q.i*3] = q.x; pos[q.i*3+1] = q.y; pos[q.i*3+2] = q.z;
+      col[q.i*3] = q.r; col[q.i*3+1] = q.g; col[q.i*3+2] = q.b;
+      const lr = q.life / q.max;
+      attr[q.i] = q.kind === 0 ? 0.9 : lr * (0.55 + 0.45 * Math.sin(q.life * 31.0)); // bursts twinkle
+    }
+    g.attributes.position.needsUpdate = true;
+    g.attributes.color.needsUpdate = true;
+    g.attributes.aA.needsUpdate = true;
+    bloomPulse = Math.max(0, bloomPulse - dt * 0.6);
+    return bloomPulse;
+  }
+  return { update, get pulse(){ return bloomPulse; } };
+})();
+
 /* ═════════════════ Post chain ═════════════════ */
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -968,44 +1063,50 @@ const KEYS = (() => {
         JK = heroPos['jfk'], WH = heroPos['wheatley'], MC = heroPos['mccormack'],
         ER = heroPos['eastres'], WR = heroPos['westres'];
   const mid = [(WH.x + MC.x) / 2, (WH.z + MC.z) / 2];
-  const dormMid = [(ER.x + WR.x) / 2, (ER.z + WR.z) / 2];
+  const dm = [(ER.x + WR.x) / 2, (ER.z + WR.z) / 2];
   return [
   { at: 0.000, pos: [LENS.x + 9, 64, LENS.z], look: [LENS.x, 64, LENS.z], fov: 68, ease: 'none' },
   { at: 0.055, pos: [LENS.x + 30, 63, LENS.z + 4], look: [LENS.x, 64, LENS.z], fov: 66, ease: 'power1.inOut' },
   { at: 0.100, pos: [LENS.x + 96, 56, LENS.z + 16], look: [LENS.x, 62, LENS.z], fov: 60, ease: 'power1.inOut' },
   { at: 0.145, pos: [LENS.x + 168, 34, LENS.z - 20], look: [LENS.x - 60, 40, LENS.z - 30], fov: 57, ease: 'power2.inOut' },
-  // dive + skim west toward campus
+  // dive + skim west toward campus (fireworks blooming over the skyline ahead)
   { at: 0.185, pos: [598, 7, -95], look: [500, 4, -120], fov: 64, ease: 'power2.in' },
   { at: 0.210, pos: [560, 4.5, -108], look: [468, 6, -140], fov: 66, ease: 'none' },
   { at: 0.265, pos: [520, 5, -125], look: [430, 8, -170], fov: 66, ease: 'none' },
-  { at: 0.305, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power2.inOut' },
-  // Healey — slow 270° orbit with a gentle dutch
-  { at: 0.360, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut', roll: -0.08 },
-  { at: 0.415, pos: [H.x + 14, 66, H.z + 168], look: [H.x, 28, H.z], fov: 55, ease: 'none', roll: 0 },
-  { at: 0.468, pos: [H.x - 160, 60, H.z + 48], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut', roll: 0.08 },
-  // the Wheatley–McCormack corridor thread, banked
-  { at: 0.500, pos: [H.x - 60, 40, H.z + 120], look: [mid[0], 26, mid[1]], fov: 60, ease: 'power2.inOut', roll: -0.22 },
-  { at: 0.542, pos: [mid[0], 30, mid[1] + 6], look: [CC.x - 20, 22, CC.z + 10], fov: 62, ease: 'none', roll: 0.18 },
-  { at: 0.585, pos: [CC.x - 40, 34, CC.z + 46], look: [CC.x + 30, 24, CC.z], fov: 60, ease: 'power1.inOut', roll: 0 },
+  { at: 0.300, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power2.inOut' },
+  // Healey — slow 270° orbit
+  { at: 0.350, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut', roll: -0.08 },
+  { at: 0.400, pos: [H.x + 14, 66, H.z + 168], look: [H.x, 28, H.z], fov: 55, ease: 'none', roll: 0 },
+  { at: 0.448, pos: [H.x - 160, 60, H.z + 48], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut', roll: 0.08 },
+  // Wheatley — half-orbit of its own (as requested)
+  { at: 0.482, pos: [WH.x - 118, 44, WH.z - 36], look: [WH.x, 20, WH.z], fov: 56, ease: 'power2.inOut' },
+  { at: 0.518, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 56, ease: 'none' },
+  { at: 0.552, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 56, ease: 'power1.inOut' },
+  // McCormack pass through the corridor
+  { at: 0.585, pos: [mid[0] + 10, 30, mid[1] - 4], look: [MC.x, 16, MC.z], fov: 60, ease: 'power2.inOut', roll: -0.15 },
+  // Campus Center — grand wide arc, JFK grammar
+  { at: 0.618, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power1.inOut', roll: 0.1 },
+  { at: 0.655, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 54, ease: 'none', roll: 0 },
+  { at: 0.695, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 55, ease: 'power1.inOut' },
   // University Hall rise-over
-  { at: 0.615, pos: [CC.x + 20, 14, CC.z + 60], look: [UH.x, 16, UH.z], fov: 57, ease: 'power2.inOut' },
-  { at: 0.648, pos: [UH.x - 36, 52, UH.z + 54], look: [UH.x, 20, UH.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.678, pos: [UH.x + 22, 60, UH.z + 88], look: [UH.x, 22, UH.z], fov: 55, ease: 'power1.inOut' },
-  // JFK swing — out over the water, slight push-in
-  { at: 0.710, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.742, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 51, ease: 'none' },
-  { at: 0.775, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 55, ease: 'power1.inOut' },
-  // residence halls — low pass along the north shore
-  { at: 0.805, pos: [JK.x - 60, 34, JK.z - 60], look: [ER.x, 24, ER.z], fov: 58, ease: 'power2.inOut', roll: -0.12 },
-  { at: 0.838, pos: [dormMid[0] + 90, 28, dormMid[1] - 90], look: [dormMid[0], 20, dormMid[1]], fov: 56, ease: 'none', roll: 0.1 },
-  { at: 0.862, pos: [WR.x - 60, 40, WR.z - 40], look: [WR.x, 18, WR.z], fov: 55, ease: 'power1.inOut', roll: 0 },
+  { at: 0.718, pos: [UH.x - 60, 22, UH.z + 80], look: [UH.x, 16, UH.z], fov: 57, ease: 'power2.inOut' },
+  { at: 0.742, pos: [UH.x + 6, 56, UH.z + 62], look: [UH.x, 20, UH.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.765, pos: [UH.x + 32, 62, UH.z - 58], look: [UH.x, 22, UH.z], fov: 55, ease: 'power1.inOut' },
+  // JFK swing — the reference move
+  { at: 0.792, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.822, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 51, ease: 'none' },
+  { at: 0.850, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 55, ease: 'power1.inOut' },
+  // Residence halls — low shoreline sweep, JFK-style arc between the towers
+  { at: 0.872, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 56, ease: 'power2.inOut', roll: -0.1 },
+  { at: 0.893, pos: [dm[0] + 30, 24, dm[1] - 95], look: [WR.x, 18, WR.z], fov: 54, ease: 'none', roll: 0.08 },
+  { at: 0.912, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 55, ease: 'power1.inOut', roll: 0 },
   // the climb — constellation reveal
-  { at: 0.892, pos: [WR.x - 40, 200, WR.z + 60], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.916, pos: [60, 420, -20], look: [60, 0, -80], fov: 52, ease: 'none' },
-  // descent into the open quad
-  { at: 0.945, pos: [150, 200, 30], look: [ARRIVE.x + 10, 24, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
-  { at: 0.975, pos: [160, 46, -28], look: [ARRIVE.x + 8, 12, ARRIVE.z], fov: 50, ease: 'power2.out' },
-  { at: 1.000, pos: [152, 8, -56], look: [ARRIVE.x + 4, 10, ARRIVE.z - 4], fov: 48, ease: 'power2.out' },
+  { at: 0.932, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.948, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
+  // descent into the quad — under the fireworks finale
+  { at: 0.965, pos: [150, 190, 25], look: [ARRIVE.x + 10, 24, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
+  { at: 0.985, pos: [158, 42, -30], look: [ARRIVE.x + 8, 12, ARRIVE.z], fov: 50, ease: 'power2.out' },
+  { at: 1.000, pos: [152, 8, -56], look: [ARRIVE.x + 4, 12, ARRIVE.z - 4], fov: 48, ease: 'power2.out' },
   ];
 })();
 
@@ -1049,12 +1150,12 @@ for (let i = 1; i < KEYS.length; i++){
 // environment tracks
 master.to(cam, { fogD: 0.0017, duration: 0.1, ease: 'none' }, 0.16);   // thick at sea level
 master.to(cam, { fogD: 0.0012, duration: 0.12, ease: 'none' }, 0.30);
-master.to(cam, { fogD: 0.0005, duration: 0.1, ease: 'none' }, 0.878);  // thin at altitude
-master.to(cam, { fogD: 0.0012, duration: 0.08, ease: 'none' }, 0.935);
+master.to(cam, { fogD: 0.0005, duration: 0.06, ease: 'none' }, 0.925);  // thin at altitude
+master.to(cam, { fogD: 0.0012, duration: 0.05, ease: 'none' }, 0.955);
 master.to(cam, { bloomStr: 0.65, duration: 0.14, ease: 'none' }, 0.10);
-master.to(cam, { bloomStr: 0.9, duration: 0.08, ease: 'none' }, 0.935);
+master.to(cam, { bloomStr: 1.0, duration: 0.06, ease: 'none' }, 0.945);
 master.to(cam, { beamI: 0.35, duration: 0.2, ease: 'none' }, 0.20);
-master.to(cam, { constel: 1, duration: 0.08, ease: 'none' }, 0.882);
+master.to(cam, { constel: 1, duration: 0.05, ease: 'none' }, 0.928);
 master.to(cam, { crest: 1.15, duration: 0.06, ease: 'none' }, 0.17);    // pumped crests during the skim
 master.to(cam, { crest: 1.0, duration: 0.08, ease: 'none' }, 0.30);
 master.duration(1);
@@ -1067,13 +1168,13 @@ const stations = [...document.querySelectorAll('.station')].map(el => ({
 }));
 const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el, target: +el.dataset.count, shown: -1 }));
 const labels = [
-  { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.315, outP: 0.478 },
-  { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.492, outP: 0.535 },
-  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.535, outP: 0.578 },
-  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.582, outP: 0.618 },
-  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.622, outP: 0.685 },
-  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.712, outP: 0.782 },
-  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.812, outP: 0.868 },
+  { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.31, outP: 0.458 },
+  { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.475, outP: 0.558 },
+  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.562, outP: 0.605 },
+  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.612, outP: 0.700 },
+  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.712, outP: 0.770 },
+  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.786, outP: 0.856 },
+  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.866, outP: 0.918 },
 ];
 const LABEL_PING = { 'lbl-healey': 110, 'lbl-wheatley': 118, 'lbl-mccormack': 124, 'lbl-cc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165, 'lbl-res': 175 };
 const smoothstep = (a, b, x) => {
@@ -1106,7 +1207,7 @@ function updateStations(p){
     const v = Math.round(c.target * local);
     if (v !== c.shown){ c.shown = v; c.el.textContent = v.toLocaleString('en-US'); }
   }
-  arriveState.value = Math.min(1, Math.max(0, (p - 0.94) / 0.06));
+  arriveState.value = Math.min(1, Math.max(0, (p - 0.955) / 0.045));
   if (p > 0.94 && !window.__crossedMarked){
     window.__crossedMarked = true;
     try { localStorage.setItem('umb.crossed', '1'); } catch(e){}
@@ -1347,7 +1448,6 @@ function renderFrame(t, dtMs){
   // environment from proxy
   scene.fog.density = cam.fogD;
   oceanUniforms.uFogD.value = cam.fogD;
-  bloom.strength = cam.bloomStr;
   beamGroup.userData.uniforms.uIntensity.value = cam.beamI;
   beamGroup.visible = cam.beamI > 0.02 && smoothed < 0.47;
   beamGroup.rotation.y = wTime * 0.7;
@@ -1381,6 +1481,10 @@ function renderFrame(t, dtMs){
   ocean.position.set(Math.round(camera.position.x / 50) * 50, 0, Math.round(camera.position.z / 50) * 50);
   stars.material.uniforms.uTime.value = wTime;
   stars.position.copy(camera.position).setY(0);
+
+  // fireworks + bloom pulse
+  fireworks.update(dt, smoothed);
+  bloom.strength = cam.bloomStr + fireworks.pulse;
 
   // audio follows the flight
   SoundScape.update(speedN, camera.position.y);

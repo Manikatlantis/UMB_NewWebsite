@@ -279,37 +279,37 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   <div class="blabel" id="lbl-healey" data-in="0.31" data-out="0.458">
     <span class="idx">01 · Brutalist landmark</span>
     <span class="bname">Healey Library</span>
-    <p class="fact">Eleven stories of 1974 concrete — 700,000+ volumes and the best harbor view on campus.</p>
+    <p class="fact">Eleven Brutalist stories, 700,000 volumes.</p>
   </div>
   <div class="blabel" id="lbl-wheatley" data-in="0.475" data-out="0.558">
     <span class="idx">02 · 1974</span>
     <span class="bname">Wheatley Hall</span>
-    <p class="fact">Education, nursing and social work — the corridor between here and McCormack is campus at rush hour.</p>
+    <p class="fact">Education, nursing and social work.</p>
   </div>
-  <div class="blabel" id="lbl-mccormack" data-in="0.562" data-out="0.605">
+  <div class="blabel" id="lbl-mccormack" data-in="0.565" data-out="0.625">
     <span class="idx">03 · 1974</span>
     <span class="bname">McCormack Hall</span>
-    <p class="fact">Liberal arts and graduate studies in the original campus core.</p>
+    <p class="fact">Liberal arts in the original core.</p>
   </div>
-  <div class="blabel" id="lbl-cc" data-in="0.612" data-out="0.700">
+  <div class="blabel" id="lbl-cc" data-in="0.632" data-out="0.700">
     <span class="idx">04 · Heart of campus · 2004</span>
     <span class="bname">Campus Center</span>
-    <p class="fact">Dining, student organizations, and events — 331,000 square feet at the center of it all.</p>
+    <p class="fact">Dining, events, student life — 331k ft².</p>
   </div>
-  <div class="blabel" id="lbl-uhall" data-in="0.712" data-out="0.770">
+  <div class="blabel" id="lbl-uhall" data-in="0.710" data-out="0.768">
     <span class="idx">05 · LEED Gold · 2016</span>
     <span class="bname">University Hall</span>
-    <p class="fact">Computer science, math and the sciences in an angular glass wedge.</p>
+    <p class="fact">CS, math and sciences in a glass wedge.</p>
   </div>
-  <div class="blabel" id="lbl-jfk" data-in="0.786" data-out="0.856">
+  <div class="blabel" id="lbl-jfk" data-in="0.782" data-out="0.846">
     <span class="idx">06 · I.M. Pei · 1979</span>
     <span class="bname">JFK Presidential Library</span>
-    <p class="fact">The white tower on the point — President Kennedy's library, alone against the water.</p>
+    <p class="fact">Pei's white tower, alone on the point.</p>
   </div>
-  <div class="blabel" id="lbl-res" data-in="0.866" data-out="0.918">
+  <div class="blabel" id="lbl-res" data-in="0.854" data-out="0.926">
     <span class="idx">07 · Live here · 2018</span>
     <span class="bname">The Residence Halls</span>
-    <p class="fact">East and West — suite-style living for 1,000+ Beacons, harbor views included.</p>
+    <p class="fact">Suite-style living for 1,000+ Beacons.</p>
   </div>
 </div>
 
@@ -935,6 +935,67 @@ const streaks = (() => {
   gsap.ticker.add((t) => { uniforms.uTime.value = t; uniforms.uCamPos.value.copy(camera.position); });
 }
 
+/* ═════════════════ Leaping fish — the harbor is alive ═════════════════ */
+const fishSchool = (() => {
+  const FISH = [];
+  const geo = new THREE.SphereGeometry(0.9, 8, 6);
+  geo.scale(1.0, 0.55, 3.2); // elongated body
+  const mat = new THREE.MeshBasicMaterial({ color: 0x9fc8d8 });
+  const tailGeo = new THREE.ConeGeometry(0.7, 1.8, 6);
+  tailGeo.rotateX(Math.PI / 2);
+  // spawn zones: the skim corridor + residence shoreline + arrival bay
+  const ZONES = [
+    { x: 560, z: -110, r: 90 }, { x: 460, z: -150, r: 80 }, { x: 620, z: -60, r: 70 },
+    { x: 60, z: -420, r: 80 }, { x: 300, z: -420, r: 90 }, { x: 520, z: 160, r: 90 },
+  ];
+  for (let i = 0; i < 9; i++){
+    const zone = ZONES[i % ZONES.length];
+    const grp = new THREE.Group();
+    const body = new THREE.Mesh(geo, mat);
+    const tail = new THREE.Mesh(tailGeo, mat);
+    tail.position.z = -3.4;
+    grp.add(body); grp.add(tail);
+    grp.visible = false;
+    scene.add(grp);
+    const a0 = Math.random() * Math.PI * 2, r0 = Math.random() * zone.r;
+    const d0 = Math.random() * Math.PI * 2, dist0 = 9 + Math.random() * 9;
+    FISH.push({ grp, zone, t: -(1 + Math.random() * 6), dur: 1.25,
+      x0: zone.x + Math.cos(a0) * r0, z0: zone.z + Math.sin(a0) * r0,
+      dx: Math.cos(d0) * dist0, dz: Math.sin(d0) * dist0, h: 6 + Math.random() * 5 });
+  }
+  function update(dt, wt){
+    for (const f of FISH){
+      f.t += dt;
+      if (f.t < 0){ continue; }
+      if (f.t > f.dur){ // done — schedule next leap
+        f.grp.visible = false;
+        f.t = -(2.5 + Math.random() * 7);
+        const a = Math.random() * Math.PI * 2, rr = Math.random() * f.zone.r;
+        f.x0 = f.zone.x + Math.cos(a) * rr; f.z0 = f.zone.z + Math.sin(a) * rr;
+        const dir = Math.random() * Math.PI * 2;
+        const dist = 9 + Math.random() * 9;
+        f.dx = Math.cos(dir) * dist; f.dz = Math.sin(dir) * dist;
+        f.h = 5 + Math.random() * 6;
+        continue;
+      }
+      if (!f.grp.visible){ // first frame of a leap
+        f.grp.visible = true;
+        if (window.fireworksSplash) fireworksSplash(f.x0, 0.5, f.z0);
+      }
+      const k = f.t / f.dur;
+      const x = f.x0 + f.dx * k, z = f.z0 + f.dz * k;
+      const y = waveHeightJS(x, z, wt) + Math.sin(Math.PI * k) * f.h;
+      // face along velocity: horizontal dir + vertical slope
+      f.grp.position.set(x, y, z);
+      const vy = Math.PI * Math.cos(Math.PI * k) * f.h / f.dur;
+      f.grp.rotation.y = Math.atan2(f.dx, f.dz);
+      f.grp.rotation.x = -Math.atan2(vy, Math.hypot(f.dx, f.dz) / f.dur) * 0.8;
+      if (k > 0.96 && window.fireworksSplash) fireworksSplash(x, 0.5, z);
+    }
+  }
+  return { update };
+})();
+
 /* ═════════════════ Fireworks — opening hook + arrival finale ═════════════════ */
 const fireworks = (() => {
   const MAX = 3000;
@@ -951,11 +1012,15 @@ const fireworks = (() => {
     vertexShader: `attribute float aA; varying float vA; varying vec3 vC;
       void main(){ vC = color; vA = aA;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = clamp(2600.0 / -mv.z, 2.0, 26.0) * (0.6 + vA * 0.6);
+        gl_PointSize = clamp(1900.0 / -mv.z, 1.6, 13.0) * (0.7 + vA * 0.5);
         gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `varying float vA; varying vec3 vC;
       void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard;
-        gl_FragColor = vec4(vC * (1.0 + vA), vA * (1.0 - d * 1.6)); }`,
+        // hard bright core + thin falloff = crisp spark, not a blob
+        float core = 1.0 - smoothstep(0.0, 0.16, d);
+        float glow = pow(max(0.0, 1.0 - d * 2.0), 3.0) * 0.35;
+        vec3 c = vC * (1.0 + vA * 1.6) * (core * 2.2 + glow);
+        gl_FragColor = vec4(c, vA * (core + glow)); }`,
   });
   const points = new THREE.Points(g, m);
   points.frustumCulled = false;
@@ -988,6 +1053,15 @@ const fireworks = (() => {
     bloomPulse = Math.min(0.5, bloomPulse + (big ? 0.30 : 0.12));
     if (window.__sound && SoundScape.enabled) SoundScape.ping(52 + Math.random() * 18, 1.1, big ? 0.34 : 0.18);
   }
+  window.fireworksSplash = function(px, py, pz){
+    for (let k = 0; k < 14; k++){
+      const th = Math.random() * Math.PI * 2;
+      const sp = 3 + Math.random() * 5;
+      const w = Math.random() < 0.5;
+      spawn(px, py, pz, Math.cos(th) * sp, 5 + Math.random() * 6, Math.sin(th) * sp,
+        w ? 0.9 : 0.0, w ? 0.98 : 0.9, w ? 1.0 : 0.78, 0.5 + Math.random() * 0.3, 1);
+    }
+  };
   function rocket(){
     if (!sites.length) return;
     const sMap = sites[Math.floor(Math.random() * sites.length)];
@@ -1024,6 +1098,12 @@ const fireworks = (() => {
       pos[q.i*3] = q.x; pos[q.i*3+1] = q.y; pos[q.i*3+2] = q.z;
       col[q.i*3] = q.r; col[q.i*3+1] = q.g; col[q.i*3+2] = q.b;
       const lr = q.life / q.max;
+      if (q.kind === 1 && lr < 0.45){ // embers cool as they fall
+        const t = lr / 0.45;
+        col[q.i*3]   = q.r * t + 1.0 * (1 - t);
+        col[q.i*3+1] = q.g * t + 0.32 * (1 - t);
+        col[q.i*3+2] = q.b * t + 0.08 * (1 - t);
+      }
       attr[q.i] = q.kind === 0 ? 0.9 : lr * (0.55 + 0.45 * Math.sin(q.life * 31.0)); // bursts twinkle
     }
     g.attributes.position.needsUpdate = true;
@@ -1040,7 +1120,7 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 1.0, 0.5, 0.85);
 composer.addPass(bloom);
-const bokeh = new BokehPass(scene, camera, { focus: 60, aperture: 0.000028, maxblur: 0.0045 });
+const bokeh = new BokehPass(scene, camera, { focus: 60, aperture: 0.000022, maxblur: 0.0028 });
 composer.addPass(bokeh);
 const caPass = new ShaderPass({
   uniforms: { tDiffuse: { value: null }, uAmount: { value: 0 } },
@@ -1082,27 +1162,28 @@ const KEYS = (() => {
   { at: 0.482, pos: [WH.x - 118, 44, WH.z - 36], look: [WH.x, 20, WH.z], fov: 56, ease: 'power2.inOut' },
   { at: 0.518, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 56, ease: 'none' },
   { at: 0.552, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 56, ease: 'power1.inOut' },
-  // McCormack pass through the corridor
-  { at: 0.585, pos: [mid[0] + 10, 30, mid[1] - 4], look: [MC.x, 16, MC.z], fov: 60, ease: 'power2.inOut', roll: -0.15 },
+  // McCormack — its own half-arc (no more drive-by)
+  { at: 0.578, pos: [MC.x + 95, 38, MC.z + 62], look: [MC.x, 14, MC.z], fov: 56, ease: 'power2.inOut', roll: -0.08 },
+  { at: 0.612, pos: [MC.x - 75, 34, MC.z + 88], look: [MC.x, 14, MC.z], fov: 56, ease: 'power1.inOut', roll: 0.06 },
   // Campus Center — grand wide arc, JFK grammar
-  { at: 0.618, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power1.inOut', roll: 0.1 },
-  { at: 0.655, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 54, ease: 'none', roll: 0 },
-  { at: 0.695, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 55, ease: 'power1.inOut' },
-  // University Hall rise-over
-  { at: 0.718, pos: [UH.x - 60, 22, UH.z + 80], look: [UH.x, 16, UH.z], fov: 57, ease: 'power2.inOut' },
-  { at: 0.742, pos: [UH.x + 6, 56, UH.z + 62], look: [UH.x, 20, UH.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.765, pos: [UH.x + 32, 62, UH.z - 58], look: [UH.x, 22, UH.z], fov: 55, ease: 'power1.inOut' },
+  { at: 0.634, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power1.inOut', roll: 0 },
+  { at: 0.664, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 54, ease: 'none' },
+  { at: 0.694, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 55, ease: 'power1.inOut' },
+  // University Hall — lower, facade-first
+  { at: 0.716, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power2.inOut' },
+  { at: 0.740, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.762, pos: [UH.x + 30, 44, UH.z - 50], look: [UH.x, 24, UH.z], fov: 55, ease: 'power1.inOut' },
   // JFK swing — the reference move
-  { at: 0.792, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.822, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 51, ease: 'none' },
-  { at: 0.850, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 55, ease: 'power1.inOut' },
-  // Residence halls — low shoreline sweep, JFK-style arc between the towers
-  { at: 0.872, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 56, ease: 'power2.inOut', roll: -0.1 },
-  { at: 0.893, pos: [dm[0] + 30, 24, dm[1] - 95], look: [WR.x, 18, WR.z], fov: 54, ease: 'none', roll: 0.08 },
-  { at: 0.912, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 55, ease: 'power1.inOut', roll: 0 },
+  { at: 0.788, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.815, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 51, ease: 'none' },
+  { at: 0.840, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 55, ease: 'power1.inOut' },
+  // Residence halls — extended shoreline sweep between the towers
+  { at: 0.860, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 56, ease: 'power2.inOut', roll: -0.1 },
+  { at: 0.886, pos: [dm[0] + 30, 24, dm[1] - 95], look: [WR.x, 18, WR.z], fov: 54, ease: 'none', roll: 0.08 },
+  { at: 0.916, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 55, ease: 'power1.inOut', roll: 0 },
   // the climb — constellation reveal
-  { at: 0.932, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.948, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
+  { at: 0.934, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.949, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
   // descent into the quad — under the fireworks finale
   { at: 0.965, pos: [150, 190, 25], look: [ARRIVE.x + 10, 24, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
   { at: 0.985, pos: [158, 42, -30], look: [ARRIVE.x + 8, 12, ARRIVE.z], fov: 50, ease: 'power2.out' },
@@ -1170,11 +1251,11 @@ const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el,
 const labels = [
   { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.31, outP: 0.458 },
   { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.475, outP: 0.558 },
-  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.562, outP: 0.605 },
-  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.612, outP: 0.700 },
-  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.712, outP: 0.770 },
-  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.786, outP: 0.856 },
-  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.866, outP: 0.918 },
+  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.565, outP: 0.625 },
+  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.632, outP: 0.700 },
+  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.710, outP: 0.768 },
+  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.782, outP: 0.846 },
+  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.854, outP: 0.926 },
 ];
 const LABEL_PING = { 'lbl-healey': 110, 'lbl-wheatley': 118, 'lbl-mccormack': 124, 'lbl-cc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165, 'lbl-res': 175 };
 const smoothstep = (a, b, x) => {
@@ -1482,8 +1563,9 @@ function renderFrame(t, dtMs){
   stars.material.uniforms.uTime.value = wTime;
   stars.position.copy(camera.position).setY(0);
 
-  // fireworks + bloom pulse
+  // fireworks + fish + bloom pulse
   fireworks.update(dt, smoothed);
+  fishSchool.update(dt, wTime);
   bloom.strength = cam.bloomStr + fireworks.pulse;
 
   // audio follows the flight

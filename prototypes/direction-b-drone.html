@@ -267,8 +267,8 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   <div class="station" data-in="0.958" data-full="0.985" data-out="1.01" data-gone="1.02">
     <div class="scrim"></div>
     <h2>You've made the crossing<span class="dot">.</span></h2>
-    <p class="sub">Ask Harbor anything — buildings, programs, where to eat at midnight.
-      It flies the camera; you just ask.</p>
+    <p class="sub">The quad is live — play the arcade on the left screen, talk to
+      Harbor on the right. Or step into the full campus.</p>
     <div class="cta-row">
       <a class="cta-primary" href="/home">Enter the Campus &rarr;</a>
       <a class="cta-ghost" href="/home#chatbot-section">Ask Harbor</a>
@@ -344,6 +344,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
 
 gsap.registerPlugin(ScrollTrigger);
@@ -1067,6 +1068,69 @@ const finaleShow = (() => {
     }
   }
   return { update };
+})();
+
+/* ═════════════════ Arrival screens — live, interactive billboards ═════════════════ */
+const arrivalScreens = (() => {
+  const cssScene = new THREE.Scene();
+  const cssRenderer = new CSS3DRenderer();
+  cssRenderer.setSize(innerWidth, innerHeight);
+  Object.assign(cssRenderer.domElement.style, {
+    position: 'fixed', top: '0', left: '0', zIndex: '6', pointerEvents: 'none',
+  });
+  document.body.appendChild(cssRenderer.domElement);
+
+  const CAM_END = { x: 152, z: -56 }; // final camera position — screens face it
+  const dir = new THREE.Vector2(ARRIVE.x - CAM_END.x, ARRIVE.z - CAM_END.z).normalize();
+  const perp = { x: -dir.y, z: dir.x };
+
+  function makeScreen(url, wPx, hPx, side, label){
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:' + wPx + 'px;height:' + hPx + 'px;' +
+      'background:#020a12;border:3px solid rgba(0,229,199,0.55);' +
+      'box-shadow:0 0 90px rgba(0,229,199,0.28), inset 0 0 40px rgba(0,0,0,0.6);pointer-events:none;';
+    const frame = document.createElement('iframe');
+    frame.title = label;
+    frame.style.cssText = 'width:100%;height:100%;border:0;display:block;pointer-events:inherit;';
+    wrap.appendChild(frame);
+    const tag = document.createElement('div');
+    tag.textContent = '● ' + label;
+    tag.style.cssText = "position:absolute;top:-58px;left:2px;font-family:'Space Mono',monospace;" +
+      'font-size:22px;letter-spacing:6px;color:#FFB347;text-shadow:0 0 22px rgba(255,179,71,0.8);white-space:nowrap;';
+    wrap.appendChild(tag);
+    const obj = new CSS3DObject(wrap);
+    const px = ARRIVE.x + perp.x * side + dir.x * 26;
+    const pz = ARRIVE.z + perp.z * side + dir.y * 26;
+    obj.position.set(px, hPx * 0.05 + 26, pz);
+    obj.rotation.y = Math.atan2(CAM_END.x - px, CAM_END.z - pz);
+    obj.scale.setScalar(0.1);
+    obj.visible = false;
+    cssScene.add(obj);
+    return { obj, frame, wrap, url };
+  }
+  const game = makeScreen('/prototypes/harbor-game.html', 720, 405, -60, 'HARBOR ARCADE — PLAY ME');
+  const chat = makeScreen('/prototypes/harbor-chat.html', 540, 420, 80, 'ASK HARBOR — LIVE AI');
+  let interactive = null;
+
+  function update(p, cam){
+    const show = p > 0.88;
+    game.obj.visible = chat.obj.visible = show;
+    if (show){
+      if (!game.frame.src) game.frame.src = game.url;   // lazy boot
+      if (!chat.frame.src) chat.frame.src = chat.url;
+    }
+    const canTouch = p > 0.962;
+    if (canTouch !== interactive){
+      interactive = canTouch;
+      [game, chat].forEach((sc) => {
+        sc.wrap.style.pointerEvents = canTouch ? 'auto' : 'none';
+        sc.wrap.style.borderColor = canTouch ? 'rgba(255,179,71,0.75)' : 'rgba(0,229,199,0.55)';
+      });
+    }
+    cssRenderer.render(cssScene, cam);
+  }
+  function resize(){ cssRenderer.setSize(innerWidth, innerHeight); }
+  return { update, resize };
 })();
 
 /* ═════════════════ Leaping fish — the harbor is alive ═════════════════ */
@@ -2123,6 +2187,7 @@ function renderFrame(t, dtMs){
   fireworks.update(dt, smoothed);
   fishSchool.update(dt, wTime);
   finaleShow.update(smoothed, wTime, arriveState.value);
+  arrivalScreens.update(smoothed, camera);
   bloom.strength = cam.bloomStr + fireworks.pulse;
 
   // audio follows the flight (mix, score, spatial listener)
@@ -2172,6 +2237,7 @@ function onResize(){
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth / 2, innerHeight / 2);
+  if (typeof arrivalScreens !== 'undefined') arrivalScreens.resize();
 }
 window.addEventListener('resize', () => { onResize(); lenis.resize(); });
 renderer.domElement.addEventListener('webglcontextlost', (e) => {

@@ -286,12 +286,12 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
     <span class="bname">Wheatley Hall</span>
     <p class="fact">Education, nursing and social work.</p>
   </div>
-  <div class="blabel" id="lbl-mccormack" data-in="0.592" data-out="0.656">
+  <div class="blabel" id="lbl-mccormack" data-in="0.586" data-out="0.660">
     <span class="idx">03 · 1974</span>
     <span class="bname">McCormack Hall</span>
     <p class="fact">Liberal arts in the original core.</p>
   </div>
-  <div class="blabel" id="lbl-cc" data-in="0.654" data-out="0.732">
+  <div class="blabel" id="lbl-cc" data-in="0.660" data-out="0.732">
     <span class="idx">04 · Heart of campus · 2004</span>
     <span class="bname">Campus Center</span>
     <p class="fact">Dining, events, student life — 331k ft².</p>
@@ -811,6 +811,7 @@ const arriveState = { value: 0 };
     ripple.material.opacity = p > 0 ? (1 - p) * 0.5 : 0;
     pMat.opacity = 0.03 + p * 0.97; // pillar ignites as the drone descends
   });
+  window.__beaconFx = { ring, ripple };
 }
 
 /* ═════════════════ Particles ═════════════════ */
@@ -1082,11 +1083,11 @@ const arrivalScreens = (() => {
 
   const DEFS = [
     { key: 'healey',       url: '/prototypes/panel.html?view=about',    label: 'OUR STORY',  w: 520, h: 420 },
-    { key: 'wheatley',     url: '/prototypes/panel.html?view=programs', label: 'PROGRAMS',   w: 560, h: 430 },
-    { key: 'mccormack',    url: '/prototypes/panel.html?view=events',   label: 'EVENTS',     w: 540, h: 420 },
-    { key: 'campuscenter', url: '/prototypes/panel.html?view=gallery',  label: 'GALLERY',    w: 560, h: 420 },
-    { key: 'uhall',        url: '/prototypes/harbor-game.html',         label: 'ARCADE',     w: 640, h: 400 },
-    { key: 'eastres',      url: '/prototypes/harbor-chat.html',         label: 'ASK HARBOR', w: 540, h: 430 },
+    { key: 'wheatley',     url: '/prototypes/panel.html?view=programs', label: 'PROGRAMS',   w: 560, h: 430, view: [-30, 116] },
+    { key: 'mccormack',    url: '/prototypes/panel.html?view=events',   label: 'EVENTS',     w: 540, h: 420, view: [18, 112] },
+    { key: 'campuscenter', url: '/prototypes/panel.html?view=gallery',  label: 'GALLERY',    w: 560, h: 420, view: [120, 120], radial: true },
+    { key: 'jfk',          url: '/prototypes/harbor-game.html',         label: 'ARCADE',     w: 640, h: 400, view: [110, 160], radial: true },
+    { key: 'eastres',      url: '/prototypes/harbor-chat.html',         label: 'ASK HARBOR', w: 540, h: 430, view: [150, -100] },
   ];
   const screens = [];
   let active = null, expandT = 0, booted = false;
@@ -1094,18 +1095,44 @@ const arrivalScreens = (() => {
   for (const d of DEFS){
     const hp = heroPos[d.key];
     if (!hp || hp.poly.length < 2) continue;
-    // longest wall edge, outward-facing
-    let best = 0, bi = 0;
-    for (let i = 0; i < hp.poly.length; i++){
-      const a = hp.poly[i], b = hp.poly[(i + 1) % hp.poly.length];
-      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      if (len > best){ best = len; bi = i; }
+    // choose the wall the camera actually films: score edges by length x facing-the-view,
+    // or (radial) mount tangent to a curved facade toward the view point
+    const vw = d.view ? [hp.x + d.view[0], hp.z + d.view[1]] : null;
+    let mid, nx, nz, wallLen;
+    if (d.radial && vw){
+      let vx = vw[0] - hp.x, vz = vw[1] - hp.z;
+      const vl = Math.hypot(vx, vz); vx /= vl; vz /= vl;
+      let bestR = 0;
+      for (const pt of hp.poly){ // furthest boundary reach along the view direction
+        const r = (pt[0] - hp.x) * vx + (pt[1] - hp.z) * vz;
+        if (r > bestR) bestR = r;
+      }
+      mid = [hp.x + vx * (bestR + 0.5), hp.z + vz * (bestR + 0.5)];
+      nx = vx; nz = vz; wallLen = 70;
+    } else {
+      let bestScore = -1, bi = 0, bestLen = 1;
+      for (let i = 0; i < hp.poly.length; i++){
+        const a = hp.poly[i], b = hp.poly[(i + 1) % hp.poly.length];
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (len < 6) continue;
+        const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        let ex = -(b[1] - a[1]) / len, ez = (b[0] - a[0]) / len;
+        if ((m[0] - hp.x) * ex + (m[1] - hp.z) * ez < 0){ ex = -ex; ez = -ez; }
+        let facing = 1;
+        if (vw){
+          const tv = Math.hypot(vw[0] - m[0], vw[1] - m[1]);
+          facing = Math.max(0, ((vw[0] - m[0]) / tv) * ex + ((vw[1] - m[1]) / tv) * ez);
+        }
+        const score = len * (vw ? (0.1 + 0.9 * facing) : 1);
+        if (score > bestScore){ bestScore = score; bi = i; bestLen = len; }
+      }
+      const a = hp.poly[bi], b = hp.poly[(bi + 1) % hp.poly.length];
+      mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      wallLen = bestLen;
+      nx = -(b[1] - a[1]) / bestLen; nz = (b[0] - a[0]) / bestLen;
+      if ((mid[0] - hp.x) * nx + (mid[1] - hp.z) * nz < 0){ nx = -nx; nz = -nz; }
     }
-    const a = hp.poly[bi], b = hp.poly[(bi + 1) % hp.poly.length];
-    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    let nx = -(b[1] - a[1]) / best, nz = (b[0] - a[0]) / best;
-    if ((mid[0] - hp.x) * nx + (mid[1] - hp.z) * nz < 0){ nx = -nx; nz = -nz; } // point away from centroid
-    const scl = Math.min(0.075, (hp.h * 0.92) / d.h, (best * 0.85) / d.w);
+    const scl = Math.min(0.075, (hp.h * (d.radial ? 1.2 : 0.92)) / d.h, (wallLen * 0.85) / d.w);
 
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:relative;width:' + d.w + 'px;height:' + d.h + 'px;' +
@@ -1269,25 +1296,30 @@ const arrivalScreens = (() => {
 /* ═════════════════ The Walker — a beacon spirit roams the campus ═════════════════ */
 const walker = (() => {
   // glowing stick figure
-  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 1.6, 1.35) });
+  const mat = new THREE.MeshBasicMaterial({ color: 0x51707f });        // matte slate — no bloom
+  const accent = new THREE.MeshBasicMaterial({ color: 0x00b39c });      // quiet teal trim
   const grp = new THREE.Group();
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), mat);
-  head.position.y = 3.1;
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 1.5, 8), mat);
-  torso.position.y = 2.0;
-  grp.add(head, torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10), mat);
+  head.position.y = 2.95;
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.16), accent);
+  visor.position.set(0, 2.98, 0.26);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.26, 6), mat);
+  neck.position.y = 2.66;
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.78, 4, 8), mat);
+  torso.position.y = 2.1;
+  const hips = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.22, 0.26), mat);
+  hips.position.y = 1.55;
+  grp.add(head, visor, neck, torso, hips);
   const limbs = {};
-  [['armL', 0.55, 2.6, 1.1], ['armR', -0.55, 2.6, 1.1], ['legL', 0.22, 1.25, 1.25], ['legR', -0.22, 1.25, 1.25]].forEach(([k, x, y, len]) => {
+  [['armL', 0.42, 2.5, 1.0], ['armR', -0.42, 2.5, 1.0], ['legL', 0.17, 1.44, 1.42], ['legR', -0.17, 1.44, 1.42]].forEach(([k, x, y, len]) => {
     const pivot = new THREE.Group();
     pivot.position.set(x, y, 0);
-    const limb = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, len, 6), mat);
+    const limb = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, len, 6), mat);
     limb.position.y = -len / 2;
     pivot.add(limb);
     grp.add(pivot);
     limbs[k] = pivot;
   });
-  const glow = new THREE.PointLight(0x00E5C7, 0, 30); // subtle presence light (unused by basic mats, kept cheap)
-  grp.add(glow);
   grp.visible = false;
   scene.add(grp);
 
@@ -1323,6 +1355,11 @@ const walker = (() => {
     keys[e.key.toLowerCase()] = true;
     if (!api.active) return;
     if ((e.key === 'e' || e.key === 'E') && near && !arrivalScreens.active) arrivalScreens.expand(near);
+    if (e.key === ' ' && !air && !arrivalScreens.active){
+      air = true; vy = 24;
+      if (window.__shockwave) __shockwave(grp.position.x, grp.position.z);
+      SoundScape.whoosh();
+    }
     if (e.key === 'Escape'){
       if (arrivalScreens.active) arrivalScreens.collapse();
       else exit();
@@ -1352,6 +1389,7 @@ const walker = (() => {
   exitBtn.addEventListener('click', () => exit());
 
   let yaw = 0, walkT = 0, stepT = 0, near = null;
+  let air = false, vy = 0, jy = 0;
   const api = { active: false };
 
   function enter(){
@@ -1365,6 +1403,7 @@ const walker = (() => {
     if (st) st.style.visibility = 'hidden';
     hint.style.display = 'block';
     exitBtn.style.display = 'block';
+    if (window.__beaconFx){ __beaconFx.ring.visible = false; __beaconFx.ripple.visible = false; }
     SoundScape.motif(false);
   }
   function exit(){
@@ -1376,6 +1415,7 @@ const walker = (() => {
     exitBtn.style.display = 'none';
     const st = document.getElementById('stations');
     if (st) st.style.visibility = '';
+    if (window.__beaconFx){ __beaconFx.ring.visible = true; __beaconFx.ripple.visible = true; }
     if (window.__lenis) window.__lenis.start();
   }
   const CAMV = new THREE.Vector3();
@@ -1397,15 +1437,29 @@ const walker = (() => {
       }
       walkT += dt * 7.5 * run;
       stepT += dt;
-      if (stepT > (run > 1 ? 0.26 : 0.4)){ stepT = 0; SoundScape.ping(85, 0.1, 0.05); }
+      if (!air && stepT > (run > 1 ? 0.26 : 0.4)){ stepT = 0; SoundScape.footstep(false); }
     } else {
       walkT += (Math.round(walkT / Math.PI) * Math.PI - walkT) * 0.2; // settle limbs
     }
     grp.rotation.y = yaw;
-    const sw = Math.sin(walkT) * (move !== 0 ? 0.65 : 0.65);
-    limbs.legL.rotation.x = sw; limbs.legR.rotation.x = -sw;
-    limbs.armL.rotation.x = -sw * 0.8; limbs.armR.rotation.x = sw * 0.8;
-    grp.position.y = 2.6 + Math.abs(Math.sin(walkT)) * 0.12 * (move !== 0 ? 1 : 0);
+    // jump physics — concentric ring at takeoff and landing
+    if (air){
+      jy += vy * dt; vy -= 42 * dt;
+      if (jy <= 0){
+        jy = 0; air = false;
+        if (window.__shockwave) __shockwave(grp.position.x, grp.position.z);
+        SoundScape.footstep(true);
+      }
+    }
+    if (air){
+      limbs.legL.rotation.x = -0.9; limbs.legR.rotation.x = 0.45;
+      limbs.armL.rotation.x = -2.5; limbs.armR.rotation.x = -2.5;
+    } else {
+      const sw = Math.sin(walkT) * 0.65;
+      limbs.legL.rotation.x = sw; limbs.legR.rotation.x = -sw;
+      limbs.armL.rotation.x = -sw * 0.8; limbs.armR.rotation.x = sw * 0.8;
+    }
+    grp.position.y = 2.6 + jy + (air ? 0 : Math.abs(Math.sin(walkT)) * 0.12 * (move !== 0 ? 1 : 0));
 
     // third-person camera
     CAMV.set(grp.position.x - Math.sin(yaw) * 13, grp.position.y + 6.5, grp.position.z - Math.cos(yaw) * 13);
@@ -1672,10 +1726,11 @@ const KEYS = (() => {
   { at: 0.552, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 52, ease: 'none' },
   { at: 0.583, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 53, ease: 'none' },
   // MCCORMACK
-  { at: 0.596, pos: [MC.x + 95, 38, MC.z + 62], look: [MC.x, 14, MC.z], fov: 54, ease: 'power3.out', roll: -0.06 },
-  { at: 0.646, pos: [MC.x - 75, 34, MC.z + 88], look: [MC.x, 14, MC.z], fov: 52, ease: 'none', roll: 0.05 },
+  { at: 0.590, pos: [MC.x + 118, 44, MC.z + 82], look: [MC.x, 14, MC.z], fov: 55, ease: 'power3.out', roll: -0.06 },
+  { at: 0.628, pos: [MC.x + 18, 42, MC.z + 112], look: [MC.x, 14, MC.z], fov: 52, ease: 'none', roll: 0 },
+  { at: 0.654, pos: [MC.x - 88, 40, MC.z + 98], look: [MC.x, 14, MC.z], fov: 53, ease: 'none', roll: 0.04 },
   // CAMPUS CENTER — grand slow arc
-  { at: 0.658, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power3.out', roll: 0 },
+  { at: 0.664, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power3.out', roll: 0 },
   { at: 0.692, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 52, ease: 'none' },
   { at: 0.720, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 53, ease: 'none' },
   // UNIVERSITY HALL — low, facade-first
@@ -1759,8 +1814,8 @@ const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el,
 const labels = [
   { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.322, outP: 0.468 },
   { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.516, outP: 0.580 },
-  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.592, outP: 0.656 },
-  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.654, outP: 0.732 },
+  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.586, outP: 0.660 },
+  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.660, outP: 0.732 },
   { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.744, outP: 0.800 },
   { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.800, outP: 0.862 },
   { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.856, outP: 0.934 },
@@ -2159,6 +2214,19 @@ const SoundScape = (() => {
     setTimeout(() => cowbell(12, 1.0), 180);
     setTimeout(() => cowbell(19, 0.8), 360);
   }
+  function footstep(land){
+    if (!ready || !enabled) return;
+    const t0 = ctx.currentTime;
+    const n = ctx.createBufferSource(); n.buffer = sharedNoise;
+    n.playbackRate.value = 0.65 + Math.random() * 0.3;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = land ? 520 : 300;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(land ? 0.26 : 0.05, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + (land ? 0.24 : 0.08));
+    n.connect(f); f.connect(g); g.connect(master);
+    n.start(t0); n.stop(t0 + 0.3);
+  }
   function reveal(){ // the light show assembles: sub drop + rising bell shimmer
     if (!ready || !enabled) return;
     const t0 = ctx.currentTime;
@@ -2334,7 +2402,7 @@ const SoundScape = (() => {
     master.gain.setTargetAtTime(document.hidden || !enabled ? 0 : 0.9, ctx.currentTime, 0.3);
   });
 
-  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash, motif, reveal, setDrift,
+  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash, motif, reveal, setDrift, footstep,
            get enabled(){ return enabled; } };
 })();
 window.__sound = SoundScape;
@@ -2493,7 +2561,7 @@ function renderFrame(t, dtMs){
   bloom.strength = cam.bloomStr + fireworks.pulse;
 
   // audio follows the flight (mix, score, spatial listener)
-  SoundScape.update(speedN, camera.position.y, smoothed, dt);
+  SoundScape.update(walker.active ? 0 : speedN, walker.active ? 40 : camera.position.y, smoothed, dt);
   SoundScape.setListener(camera);
   const beamPhase = (wTime * 0.7) % Math.PI;
   if (beamPhase < renderFrame._beamPhase && smoothed < 0.17) SoundScape.whoosh();

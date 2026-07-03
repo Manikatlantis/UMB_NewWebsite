@@ -286,27 +286,27 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
     <span class="bname">Wheatley Hall</span>
     <p class="fact">Education, nursing and social work.</p>
   </div>
-  <div class="blabel" id="lbl-mccormack" data-in="0.606" data-out="0.652">
+  <div class="blabel" id="lbl-mccormack" data-in="0.600" data-out="0.654">
     <span class="idx">03 · 1974</span>
     <span class="bname">McCormack Hall</span>
     <p class="fact">Liberal arts in the original core.</p>
   </div>
-  <div class="blabel" id="lbl-cc" data-in="0.662" data-out="0.726">
+  <div class="blabel" id="lbl-cc" data-in="0.654" data-out="0.732">
     <span class="idx">04 · Heart of campus · 2004</span>
     <span class="bname">Campus Center</span>
     <p class="fact">Dining, events, student life — 331k ft².</p>
   </div>
-  <div class="blabel" id="lbl-uhall" data-in="0.758" data-out="0.792">
+  <div class="blabel" id="lbl-uhall" data-in="0.754" data-out="0.794">
     <span class="idx">05 · LEED Gold · 2016</span>
     <span class="bname">University Hall</span>
     <p class="fact">CS, math and sciences in a glass wedge.</p>
   </div>
-  <div class="blabel" id="lbl-jfk" data-in="0.798" data-out="0.856">
+  <div class="blabel" id="lbl-jfk" data-in="0.794" data-out="0.862">
     <span class="idx">06 · I.M. Pei · 1979</span>
     <span class="bname">JFK Presidential Library</span>
     <p class="fact">Pei's white tower, alone on the point.</p>
   </div>
-  <div class="blabel" id="lbl-res" data-in="0.870" data-out="0.924">
+  <div class="blabel" id="lbl-res" data-in="0.862" data-out="0.930">
     <span class="idx">07 · Live here · 2018</span>
     <span class="bname">The Residence Halls</span>
     <p class="fact">Suite-style living for 1,000+ Beacons.</p>
@@ -1258,11 +1258,11 @@ const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el,
 const labels = [
   { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.322, outP: 0.468 },
   { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.516, outP: 0.580 },
-  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.606, outP: 0.652 },
-  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.662, outP: 0.726 },
-  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.758, outP: 0.792 },
-  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.798, outP: 0.856 },
-  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.870, outP: 0.924 },
+  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.600, outP: 0.654 },
+  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.654, outP: 0.732 },
+  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.754, outP: 0.794 },
+  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.794, outP: 0.862 },
+  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.862, outP: 0.930 },
 ];
 const LABEL_PING = { 'lbl-healey': 110, 'lbl-wheatley': 118, 'lbl-mccormack': 124, 'lbl-cc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165, 'lbl-res': 175 };
 const smoothstep = (a, b, x) => {

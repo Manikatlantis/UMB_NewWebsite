@@ -276,37 +276,37 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   </div>
 
   <!-- Building labels -->
-  <div class="blabel" id="lbl-healey" data-in="0.31" data-out="0.458">
+  <div class="blabel" id="lbl-healey" data-in="0.322" data-out="0.468">
     <span class="idx">01 · Brutalist landmark</span>
     <span class="bname">Healey Library</span>
     <p class="fact">Eleven Brutalist stories, 700,000 volumes.</p>
   </div>
-  <div class="blabel" id="lbl-wheatley" data-in="0.475" data-out="0.558">
+  <div class="blabel" id="lbl-wheatley" data-in="0.516" data-out="0.580">
     <span class="idx">02 · 1974</span>
     <span class="bname">Wheatley Hall</span>
     <p class="fact">Education, nursing and social work.</p>
   </div>
-  <div class="blabel" id="lbl-mccormack" data-in="0.565" data-out="0.625">
+  <div class="blabel" id="lbl-mccormack" data-in="0.606" data-out="0.652">
     <span class="idx">03 · 1974</span>
     <span class="bname">McCormack Hall</span>
     <p class="fact">Liberal arts in the original core.</p>
   </div>
-  <div class="blabel" id="lbl-cc" data-in="0.632" data-out="0.700">
+  <div class="blabel" id="lbl-cc" data-in="0.662" data-out="0.726">
     <span class="idx">04 · Heart of campus · 2004</span>
     <span class="bname">Campus Center</span>
     <p class="fact">Dining, events, student life — 331k ft².</p>
   </div>
-  <div class="blabel" id="lbl-uhall" data-in="0.710" data-out="0.768">
+  <div class="blabel" id="lbl-uhall" data-in="0.758" data-out="0.792">
     <span class="idx">05 · LEED Gold · 2016</span>
     <span class="bname">University Hall</span>
     <p class="fact">CS, math and sciences in a glass wedge.</p>
   </div>
-  <div class="blabel" id="lbl-jfk" data-in="0.782" data-out="0.846">
+  <div class="blabel" id="lbl-jfk" data-in="0.798" data-out="0.856">
     <span class="idx">06 · I.M. Pei · 1979</span>
     <span class="bname">JFK Presidential Library</span>
     <p class="fact">Pei's white tower, alone on the point.</p>
   </div>
-  <div class="blabel" id="lbl-res" data-in="0.854" data-out="0.926">
+  <div class="blabel" id="lbl-res" data-in="0.870" data-out="0.924">
     <span class="idx">07 · Live here · 2018</span>
     <span class="bname">The Residence Halls</span>
     <p class="fact">Suite-style living for 1,000+ Beacons.</p>
@@ -1072,12 +1072,17 @@ const fireworks = (() => {
       c[0], c[1], c[2], 1.5 + Math.random() * 0.7, 0);
     SoundScape.thoop(sMap.x, sMap.h + 2, sMap.z, camera);
   }
-  let t1 = 0, t2 = 0;
+  let t1 = 0, t2 = 0, rocketQueue = 0;
+  const salvos = [{ p: 0.02, n: 7 }, { p: 0.10, n: 6 }, { p: 0.165, n: 7 }];
   function update(dt, p){
-    // launch control: opening hook + grand finale
-    if (p > 0.012 && p < 0.30){
+    // launch control: three deliberate salvos on the approach, then nothing
+    for (const sv of salvos){
+      if (!sv.done && p > sv.p && p < 0.28){ sv.done = true; rocketQueue += sv.n; }
+      if (sv.done && p < sv.p - 0.01) sv.done = false; // re-arm when scrolling back
+    }
+    if (rocketQueue > 0){
       t1 -= dt;
-      if (t1 <= 0){ rocket(); if (Math.random() < 0.4) rocket(); t1 = 0.55 + Math.random() * 0.5; }
+      if (t1 <= 0){ rocket(); rocketQueue--; t1 = 0.16 + Math.random() * 0.14; }
     }
     if (p > 0.945){
       t2 -= dt;
@@ -1151,42 +1156,42 @@ const KEYS = (() => {
   { at: 0.055, pos: [LENS.x + 30, 63, LENS.z + 4], look: [LENS.x, 64, LENS.z], fov: 66, ease: 'power1.inOut' },
   { at: 0.100, pos: [LENS.x + 96, 56, LENS.z + 16], look: [LENS.x, 62, LENS.z], fov: 60, ease: 'power1.inOut' },
   { at: 0.145, pos: [LENS.x + 168, 34, LENS.z - 20], look: [LENS.x - 60, 40, LENS.z - 30], fov: 57, ease: 'power2.inOut' },
-  // dive + skim west toward campus (fireworks blooming over the skyline ahead)
-  { at: 0.185, pos: [598, 7, -95], look: [500, 4, -120], fov: 64, ease: 'power2.in' },
-  { at: 0.210, pos: [560, 4.5, -108], look: [468, 6, -140], fov: 66, ease: 'none' },
-  { at: 0.265, pos: [520, 5, -125], look: [430, 8, -170], fov: 66, ease: 'none' },
-  { at: 0.300, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power2.inOut' },
-  // Healey — slow 270° orbit
-  { at: 0.350, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut', roll: -0.08 },
-  { at: 0.400, pos: [H.x + 14, 66, H.z + 168], look: [H.x, 28, H.z], fov: 55, ease: 'none', roll: 0 },
-  { at: 0.448, pos: [H.x - 160, 60, H.z + 48], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut', roll: 0.08 },
-  // Wheatley — half-orbit of its own (as requested)
-  { at: 0.482, pos: [WH.x - 118, 44, WH.z - 36], look: [WH.x, 20, WH.z], fov: 56, ease: 'power2.inOut' },
-  { at: 0.518, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 56, ease: 'none' },
-  { at: 0.552, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 56, ease: 'power1.inOut' },
-  // McCormack — its own half-arc (no more drive-by)
-  { at: 0.578, pos: [MC.x + 95, 38, MC.z + 62], look: [MC.x, 14, MC.z], fov: 56, ease: 'power2.inOut', roll: -0.08 },
-  { at: 0.612, pos: [MC.x - 75, 34, MC.z + 88], look: [MC.x, 14, MC.z], fov: 56, ease: 'power1.inOut', roll: 0.06 },
-  // Campus Center — grand wide arc, JFK grammar
-  { at: 0.634, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power1.inOut', roll: 0 },
-  { at: 0.664, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 54, ease: 'none' },
-  { at: 0.694, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 55, ease: 'power1.inOut' },
-  // University Hall — lower, facade-first
-  { at: 0.716, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power2.inOut' },
-  { at: 0.740, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.762, pos: [UH.x + 30, 44, UH.z - 50], look: [UH.x, 24, UH.z], fov: 55, ease: 'power1.inOut' },
-  // JFK swing — the reference move
-  { at: 0.788, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power2.inOut' },
-  { at: 0.815, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 51, ease: 'none' },
-  { at: 0.840, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 55, ease: 'power1.inOut' },
-  // Residence halls — extended shoreline sweep between the towers
-  { at: 0.860, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 56, ease: 'power2.inOut', roll: -0.1 },
-  { at: 0.886, pos: [dm[0] + 30, 24, dm[1] - 95], look: [WR.x, 18, WR.z], fov: 54, ease: 'none', roll: 0.08 },
-  { at: 0.916, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 55, ease: 'power1.inOut', roll: 0 },
-  // the climb — constellation reveal
-  { at: 0.934, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
+  // dive + skim — travel is fast
+  { at: 0.180, pos: [598, 7, -95], look: [500, 4, -120], fov: 64, ease: 'power2.in' },
+  { at: 0.205, pos: [560, 4.5, -108], look: [468, 6, -140], fov: 66, ease: 'none' },
+  { at: 0.260, pos: [520, 5, -125], look: [430, 8, -170], fov: 66, ease: 'none' },
+  // HEALEY — sprint in, hard brake, long slow drift
+  { at: 0.295, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power2.in' },
+  { at: 0.318, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power4.out', roll: -0.08 },
+  { at: 0.398, pos: [H.x + 14, 66, H.z + 168], look: [H.x, 28, H.z], fov: 52, ease: 'none', roll: 0 },
+  { at: 0.472, pos: [H.x - 160, 60, H.z + 48], look: [H.x, 28, H.z], fov: 53, ease: 'none', roll: 0.06 },
+  // WHEATLEY — same grammar
+  { at: 0.492, pos: [H.x - 60, 40, H.z + 120], look: [mid[0], 26, mid[1]], fov: 58, ease: 'power2.in', roll: -0.18 },
+  { at: 0.512, pos: [WH.x - 118, 44, WH.z - 36], look: [WH.x, 20, WH.z], fov: 54, ease: 'power4.out' },
+  { at: 0.552, pos: [WH.x - 30, 40, WH.z + 116], look: [WH.x, 18, WH.z], fov: 52, ease: 'none' },
+  { at: 0.583, pos: [WH.x + 104, 38, WH.z + 52], look: [WH.x, 18, WH.z], fov: 53, ease: 'none' },
+  // MCCORMACK
+  { at: 0.602, pos: [MC.x + 95, 38, MC.z + 62], look: [MC.x, 14, MC.z], fov: 54, ease: 'power3.out', roll: -0.06 },
+  { at: 0.640, pos: [MC.x - 75, 34, MC.z + 88], look: [MC.x, 14, MC.z], fov: 52, ease: 'none', roll: 0.05 },
+  // CAMPUS CENTER — grand slow arc
+  { at: 0.658, pos: [CC.x - 90, 50, CC.z + 150], look: [CC.x, 18, CC.z], fov: 55, ease: 'power3.out', roll: 0 },
+  { at: 0.692, pos: [CC.x + 120, 54, CC.z + 120], look: [CC.x, 16, CC.z], fov: 52, ease: 'none' },
+  { at: 0.720, pos: [CC.x + 165, 48, CC.z - 60], look: [CC.x, 16, CC.z], fov: 53, ease: 'none' },
+  // UNIVERSITY HALL — low, facade-first
+  { at: 0.736, pos: [UH.x - 60, 18, UH.z + 80], look: [UH.x, 18, UH.z], fov: 57, ease: 'power2.in' },
+  { at: 0.756, pos: [UH.x + 4, 38, UH.z + 64], look: [UH.x, 22, UH.z], fov: 53, ease: 'power4.out' },
+  { at: 0.776, pos: [UH.x + 30, 44, UH.z - 50], look: [UH.x, 24, UH.z], fov: 52, ease: 'none' },
+  // JFK — the crown jewel, longest drift
+  { at: 0.794, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power4.out' },
+  { at: 0.826, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 50, ease: 'none' },
+  { at: 0.850, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 52, ease: 'none' },
+  // RESIDENCES — shoreline drift
+  { at: 0.866, pos: [ER.x + 150, 30, ER.z - 100], look: [ER.x, 22, ER.z], fov: 55, ease: 'power3.out', roll: -0.08 },
+  { at: 0.894, pos: [dm[0] + 30, 24, dm[1] - 95], look: [WR.x, 18, WR.z], fov: 52, ease: 'none', roll: 0.06 },
+  { at: 0.918, pos: [WR.x - 95, 42, WR.z + 10], look: [WR.x, 20, WR.z], fov: 53, ease: 'none', roll: 0 },
+  // climb + descent
+  { at: 0.935, pos: [WR.x - 30, 230, WR.z + 90], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
   { at: 0.949, pos: [60, 430, -30], look: [60, 0, -80], fov: 52, ease: 'none' },
-  // descent into the quad — under the fireworks finale
   { at: 0.965, pos: [150, 190, 25], look: [ARRIVE.x + 10, 24, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
   { at: 0.985, pos: [158, 42, -30], look: [ARRIVE.x + 8, 12, ARRIVE.z], fov: 50, ease: 'power2.out' },
   { at: 1.000, pos: [152, 8, -56], look: [ARRIVE.x + 4, 12, ARRIVE.z - 4], fov: 48, ease: 'power2.out' },
@@ -1251,13 +1256,13 @@ const stations = [...document.querySelectorAll('.station')].map(el => ({
 }));
 const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el, target: +el.dataset.count, shown: -1 }));
 const labels = [
-  { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.31, outP: 0.458 },
-  { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.475, outP: 0.558 },
-  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.565, outP: 0.625 },
-  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.632, outP: 0.700 },
-  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.710, outP: 0.768 },
-  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.782, outP: 0.846 },
-  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.854, outP: 0.926 },
+  { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.322, outP: 0.468 },
+  { el: qs('#lbl-wheatley'), anchor: labelAnchors['wheatley'], inP: 0.516, outP: 0.580 },
+  { el: qs('#lbl-mccormack'), anchor: labelAnchors['mccormack'], inP: 0.606, outP: 0.652 },
+  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.662, outP: 0.726 },
+  { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.758, outP: 0.792 },
+  { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.798, outP: 0.856 },
+  { el: qs('#lbl-res'), anchor: labelAnchors['eastres'], inP: 0.870, outP: 0.924 },
 ];
 const LABEL_PING = { 'lbl-healey': 110, 'lbl-wheatley': 118, 'lbl-mccormack': 124, 'lbl-cc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165, 'lbl-res': 175 };
 const smoothstep = (a, b, x) => {
@@ -1273,8 +1278,8 @@ function updateStations(p){
       if (!s.visible){
         s.el.style.visibility = 'visible'; s.el.removeAttribute('inert'); s.visible = true;
         const idx = stations.indexOf(s);
-        if (idx === 3){ SoundScape.braam(73.42); SoundScape.chime(); }
-        else if (idx > 0) SoundScape.braam(58.27);
+        if (idx === 3){ SoundScape.braam(73.42); setTimeout(() => SoundScape.motif(true, true), 900); }
+        else if (idx > 0) SoundScape.ping(660, 0.9, 0.09, 'triangle');
       }
       s.el.style.opacity = o;
       const rise = (1 - smoothstep(s.inP, s.full, p)) * 28 - smoothstep(s.outP, s.gone, p) * 28;
@@ -1302,7 +1307,7 @@ function updateLabels(p){
   for (const l of labels){
     const o = smoothstep(l.inP, l.inP + 0.02, p) * (1 - smoothstep(l.outP - 0.02, l.outP, p));
     if (o <= 0.002){ l.el.style.opacity = 0; l.el.style.visibility = 'hidden'; l.pinged = false; continue; }
-    if (!l.pinged){ l.pinged = true; SoundScape.ping(LABEL_PING[l.el.id] || 120, 1.4, 0.3); }
+    if (!l.pinged){ l.pinged = true; SoundScape.motif(false); if (l.el.id === 'lbl-jfk') SoundScape.braam(73.42); }
     l.anchor.getWorldPosition(V).project(camera);
     if (V.z > 1){ l.el.style.opacity = 0; l.el.style.visibility = 'hidden'; continue; }
     l.el.style.visibility = 'visible';
@@ -1320,6 +1325,7 @@ const SoundScape = (() => {
   let bedGain, windGain, windFilter, riserSrc, riserFilter, riserGain;
   let padVoices = [], ostGain = null, ostOsc = null, ostFilter = null;
   let panners = [], pIdx = 0, crackleBudget = 0;
+  let leadDelay = null, leadBus = null, lastMotif = 0;
   let lastP = 0, ostClock = 0, ostStep = 0;
 
   const SPEED_OF_SOUND = 343;
@@ -1467,6 +1473,13 @@ const SoundScape = (() => {
     riserSrc.connect(riserFilter); riserFilter.connect(riserGain); riserGain.connect(master);
     riserSrc.start();
 
+    // Lead voice for the motif — warm triangle through a feedback echo
+    leadDelay = ctx.createDelay(1.0); leadDelay.delayTime.value = 0.27;
+    const fb = ctx.createGain(); fb.gain.value = 0.34;
+    leadDelay.connect(fb); fb.connect(leadDelay);
+    leadBus = ctx.createGain(); leadBus.gain.value = 0.9;
+    leadBus.connect(scoreGain); leadBus.connect(leadDelay); leadDelay.connect(scoreGain);
+
     // Spatial pool
     for (let i = 0; i < 10; i++) panners.push(makePanner());
     ready = true;
@@ -1543,6 +1556,34 @@ const SoundScape = (() => {
   }
   function chime(){
     ping(392, 1.6, 0.2); setTimeout(() => ping(523.25, 2.2, 0.24), 260);
+  }
+  // The theme: five notes, minor on the way, major at arrival. This is the soul.
+  function motif(major, octaveUp){
+    if (!ready || !enabled) return;
+    const t = ctx.currentTime;
+    if (t - lastMotif < 3) return; // never overlaps itself
+    lastMotif = t;
+    const root = (CHORDS[currentChord] || CHORDS.Dm)[0] * (octaveUp ? 4 : 2);
+    const steps = major ? [0, 4, 7, 9, 12] : [0, 3, 7, 5, 12];
+    const times = [0, 0.36, 0.72, 1.18, 1.62];
+    const durs  = [0.34, 0.34, 0.44, 0.42, 1.5];
+    steps.forEach((semi, i) => {
+      const f = root * Math.pow(2, semi / 12);
+      const t0 = t + times[i];
+      const o = ctx.createOscillator(); o.type = 'triangle';
+      o.frequency.value = f;
+      const o2 = ctx.createOscillator(); o2.type = 'sine';
+      o2.frequency.value = f * 2; // airy octave shimmer
+      const g = ctx.createGain();
+      const g2 = ctx.createGain(); g2.gain.value = 0.25;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(i === 4 ? 0.5 : 0.34, t0 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + durs[i] + 0.35);
+      o.connect(g); o2.connect(g2); g2.connect(g); g.connect(leadBus);
+      o.start(t0); o.stop(t0 + durs[i] + 0.5);
+      o2.start(t0); o2.stop(t0 + durs[i] + 0.5);
+    });
+    duck(0.14, 1.4);
   }
 
   // ── Spatial one-shots ──
@@ -1631,6 +1672,8 @@ const SoundScape = (() => {
     if (!ready || !enabled) return;
     const t = ctx.currentTime;
     lastP = p;
+    // music blooms in the slow building moments, recedes in travel
+    scoreGain.gain.setTargetAtTime(speedN < 0.12 ? 0.66 : 0.42, t, 1.1);
     // bed louder near water, thins with altitude
     bedGain.gain.setTargetAtTime(0.4 * Math.max(0.2, 1 - alt / 420), t, 0.5);
     // wind with speed + altitude
@@ -1645,7 +1688,7 @@ const SoundScape = (() => {
     if (ostClock >= 0.27){
       ostClock = 0; ostStep++;
       const accent = (ostStep % 4 === 0) ? 1.35 : (ostStep % 2 === 0 ? 1.0 : 0.75);
-      const level = Math.min(0.4, Math.max(0, speedN - 0.06) * 0.55) * accent;
+      const level = Math.min(0.42, Math.max(0, speedN - 0.18) * 0.75) * accent; // silent in the slow moments
       if (level > 0.015){
         ostGain.gain.cancelScheduledValues(t);
         ostGain.gain.setValueAtTime(level, t);
@@ -1664,7 +1707,7 @@ const SoundScape = (() => {
     master.gain.setTargetAtTime(document.hidden || !enabled ? 0 : 0.9, ctx.currentTime, 0.3);
   });
 
-  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash,
+  return { setEnabled, update, setListener, ping, chime, whoosh, braam, boom, thoop, splash, motif,
            get enabled(){ return enabled; } };
 })();
 window.__sound = SoundScape;

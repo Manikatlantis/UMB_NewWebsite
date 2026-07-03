@@ -81,6 +81,10 @@ body{
 #gl{position:fixed;inset:0;z-index:0;display:block;width:100%;height:100%;}
 #journey-spacer{position:relative;width:1px;}
 
+/* ── Cinematic letterbox — closes in with speed ── */
+.lbx{position:fixed;left:0;right:0;height:0;background:#000;z-index:15;pointer-events:none;}
+#lbx-top{top:0;}#lbx-bottom{bottom:0;}
+
 /* ── Film grain ── */
 .grain{
   position:fixed;inset:-50%;z-index:60;pointer-events:none;opacity:0.05;
@@ -91,7 +95,7 @@ body{
 
 /* ── Fixed chrome ── */
 .topbar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:22px 32px;pointer-events:none;}
-.wordmark{font-family:'Unbounded',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;}
+a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text);}
 .wordmark em{font-style:normal;color:var(--accent);}
 .topbar-right{display:flex;gap:10px;align-items:center;}
 .proto-chip{
@@ -187,6 +191,8 @@ body{
 <body>
 
 <div class="grain"></div>
+<div class="lbx" id="lbx-top"></div>
+<div class="lbx" id="lbx-bottom"></div>
 <canvas id="gl"></canvas>
 <div id="journey-spacer"></div>
 
@@ -263,10 +269,10 @@ body{
     <span class="bname">Healey Library</span>
     <p class="fact">Eleven stories of 1974 concrete — 700,000+ volumes and the best harbor view on campus.</p>
   </div>
-  <div class="blabel" id="lbl-isc" data-in="0.465" data-out="0.555">
-    <span class="idx">02 · LEED Gold · 2015</span>
-    <span class="bname">Integrated Sciences Complex</span>
-    <p class="fact">Research labs for biology, chemistry and physics — sampling the harbor next door.</p>
+  <div class="blabel" id="lbl-cc" data-in="0.465" data-out="0.555">
+    <span class="idx">02 · Heart of campus · 2004</span>
+    <span class="bname">Campus Center</span>
+    <p class="fact">Dining, student organizations, and events — 331,000 square feet at the center of it all.</p>
   </div>
   <div class="blabel" id="lbl-uhall" data-in="0.575" data-out="0.645">
     <span class="idx">03 · LEED Gold · 2016</span>
@@ -298,6 +304,7 @@ body{
 
 <div id="debug-hud">--</div>
 
+<script src="/prototypes/campus-footprints.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
@@ -309,6 +316,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 
 gsap.registerPlugin(ScrollTrigger);
 history.scrollRestoration = 'manual';
@@ -447,146 +456,170 @@ moon.scale.setScalar(260);
 moon.position.set(900, 700, -1400); // matches uMoonDir azimuth roughly
 scene.add(moon);
 
-/* ═════════════════ Window textures ═════════════════ */
-function windowTexture(kind){
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const x = c.getContext('2d');
-  const base = { concrete: '#0a1420', glass: '#0a1a28', brick: '#120e10', white: '#9b978c', dark: '#070d14' }[kind] || '#0a1420';
-  x.fillStyle = base; x.fillRect(0, 0, 256, 256);
-  const cw = kind === 'glass' ? 24 : 30, ch = kind === 'glass' ? 18 : 22;
-  const litP = { concrete: 0.5, glass: 0.62, brick: 0.42, white: 0.2, dark: 0.1 }[kind] || 0.4;
-  for (let py = 6; py < 250; py += ch){
-    for (let px = 6; px < 250; px += cw){
-      const r = Math.random();
-      if (r < litP){
-        const warm = Math.random() < 0.92;
-        const a = 0.35 + Math.random() * 0.6;
-        x.fillStyle = warm ? `rgba(255,200,96,${a})` : `rgba(0,229,199,${a * 0.8})`;
-      } else {
-        x.fillStyle = 'rgba(10,30,50,0.5)';
-      }
-      x.fillRect(px, py, cw - 9, ch - 9);
-    }
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  return t;
-}
-const TEX = { concrete: windowTexture('concrete'), glass: windowTexture('glass'), brick: windowTexture('brick'), white: windowTexture('white'), dark: windowTexture('dark') };
+/* ═════════════════ Buildings — real OSM footprints + night facade shader ═════════════════ */
+const FP = (window.CAMPUS_FOOTPRINTS && window.CAMPUS_FOOTPRINTS.buildings) || [];
+const HULL = (window.CAMPUS_FOOTPRINTS && window.CAMPUS_FOOTPRINTS.hull) || [];
 const edgeMat = new THREE.LineBasicMaterial({ color: 0x00E5C7, transparent: true, opacity: 0.35 });
 
-/* ═════════════════ Buildings ═════════════════ */
-const S = 10; // world scale per main-site part unit
-const buildings = [];   // { group, center, radius } for culling
-const labelAnchors = {};// name -> Object3D
-
-function addBuilding(name, cx, cz, parts, kind, opts = {}){
-  const group = new THREE.Group();
-  let maxY = 0;
-  for (const p of parts){
-    const w = p.w * S, h = p.h * S, d = p.d * S;
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const tex = TEX[kind].clone();
-    tex.repeat.set(Math.max(1, Math.round(w / 26)), Math.max(1, Math.round(h / 26)));
-    const winMat = new THREE.MeshBasicMaterial({ map: tex, color: opts.tint || 0xffffff });
-    const roofMat = new THREE.MeshBasicMaterial({ color: 0x050e18 });
-    // BoxGeometry face order: +x,-x,+y(top),-y(bottom),+z,-z
-    const mesh = new THREE.Mesh(geo, [winMat, winMat, roofMat, roofMat, winMat, winMat]);
-    mesh.position.set(cx + (p.ox || 0) * S, (p.oy || 0) * S + h / 2, cz + (p.oz || 0) * S);
-    group.add(mesh);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
-    edges.position.copy(mesh.position);
-    group.add(edges);
-    maxY = Math.max(maxY, (p.oy || 0) * S + h);
-  }
-  if (opts.fins){ // Healey's Brutalist ribbing
-    const fin = new THREE.BoxGeometry(0.5, opts.fins.h, 1.2);
-    const finMat = new THREE.MeshBasicMaterial({ color: 0x04101c });
-    const inst = new THREE.InstancedMesh(fin, finMat, opts.fins.n * 2);
-    const M = new THREE.Matrix4();
-    for (let i = 0; i < opts.fins.n; i++){
-      const fx = cx - opts.fins.w / 2 + (i / (opts.fins.n - 1)) * opts.fins.w;
-      M.setPosition(fx, opts.fins.h / 2 + 2, cz - opts.fins.d / 2 - 0.8); inst.setMatrixAt(i, M);
-      M.setPosition(fx, opts.fins.h / 2 + 2, cz + opts.fins.d / 2 + 0.8); inst.setMatrixAt(opts.fins.n + i, M);
-    }
-    group.add(inst);
-  }
-  const anchor = new THREE.Object3D();
-  anchor.position.set(cx, maxY * 0.62, cz);
-  group.add(anchor);
-  labelAnchors[name] = anchor;
-  scene.add(group);
-  buildings.push({ group, center: new THREE.Vector3(cx, maxY / 2, cz), radius: 900 });
-  return group;
+// World-space procedural windows: floors every 3.6m, bays every 3.2m, per-cell
+// lit hash with warm/teal mix and slow flicker. Roofs read dark via normal.y.
+function facadeMaterial(litRatio, baseCol, emitBoost){
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 }, uFogD: { value: 0.0011 }, uFogCol: { value: COL.night.clone() },
+      uCamPos: { value: new THREE.Vector3() },
+      uLit: { value: litRatio }, uBase: { value: new THREE.Color(baseCol) }, uEmit: { value: emitBoost },
+    },
+    vertexShader: `
+      varying vec3 vW; varying vec3 vN;
+      void main(){
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vW = wp.xyz;
+        vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }`,
+    fragmentShader: `
+      varying vec3 vW; varying vec3 vN;
+      uniform float uTime, uFogD, uLit, uEmit;
+      uniform vec3 uFogCol, uBase, uCamPos;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      void main(){
+        vec3 col = uBase;
+        if (abs(vN.y) < 0.55){
+          float u = (abs(vN.x) > abs(vN.z)) ? vW.z : vW.x;
+          float v = vW.y;
+          vec2 cell = vec2(floor(u / 3.2), floor(v / 3.6));
+          vec2 f = vec2(fract(u / 3.2), fract(v / 3.6));
+          float inWin = step(0.26, f.x) * step(f.x, 0.74) * step(0.32, f.y) * step(f.y, 0.72);
+          float h1 = hash(cell + floor(vW.xz / 97.0) * 7.0);
+          float lit = step(1.0 - uLit, h1);
+          float flick = 0.72 + 0.28 * sin(uTime * 0.5 + h1 * 43.0);
+          vec3 warm = vec3(1.0, 0.78, 0.38);
+          vec3 cool = vec3(0.0, 0.9, 0.78);
+          vec3 winCol = mix(cool, warm, step(0.14, hash(cell * 1.73)));
+          float glow = (0.30 + 0.55 * hash(cell * 2.31)) * flick * (1.0 + uEmit * 0.5);
+          vec3 win = mix(vec3(0.015, 0.045, 0.085), winCol * glow, lit);
+          col += inWin * win;
+          col += (1.0 - smoothstep(0.0, 7.0, v)) * vec3(0.01, 0.03, 0.05); // ground-floor spill
+        }
+        float d = distance(vW, uCamPos);
+        float fogF = 1.0 - exp(-uFogD * uFogD * d * d);
+        gl_FragColor = vec4(mix(col, uFogCol, fogF), 1.0);
+      }`,
+  });
 }
+const heroFacade = facadeMaterial(0.34, '#0b1622', 0.35);
+const fillFacade = facadeMaterial(0.18, '#081020', 0.0);
+const facadeMats = [heroFacade, fillFacade];
 
-// The five heroes (positions authored for the flight; proportions from the main site)
-addBuilding('healey', -36, 84, [
-  { w: 3.5, h: 8, d: 3.5 }, { w: 5, h: 2.5, d: 4.5 }, { w: 1, h: 0.6, d: 1, oy: 8 },
-], 'concrete', { fins: { n: 18, w: 34, d: 34, h: 80 } });
+const buildings = [];
+const labelAnchors = {};
+const heroPos = {};  // k -> {x, z, h, poly (world pts)}
 
-addBuilding('isc', 108, -24, [
-  { w: 3.5, h: 5, d: 3 }, { w: 3, h: 3.5, d: 3, ox: 2 }, { w: 2, h: 5.5, d: 2, ox: 0.8, oz: -1.5 },
-], 'glass');
-
-addBuilding('campuscenter', 0, 0, [
-  { w: 6, h: 2.8, d: 3.5 }, { w: 3, h: 2.8, d: 2.5, ox: 3.5, oz: -0.5 }, { w: 2, h: 1.2, d: 6, oy: 2.8 },
-], 'glass', { tint: 0xd9d2c0 });
-// curved roof on the campus center
-{
-  const roof = new THREE.Mesh(
-    new THREE.CylinderGeometry(13, 13, 58, 24, 1, false, 0, Math.PI).rotateZ(Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color: 0x081420 })
-  );
-  roof.position.set(0, 28, 0); roof.rotation.y = Math.PI / 2;
-  scene.add(roof);
-}
-
-addBuilding('uhall', 84, 48, [
-  { w: 6, h: 3.5, d: 2.5, oz: -1.5 }, { w: 4.5, h: 3.5, d: 2.5, oz: 0.5 },
-  { w: 2.5, h: 3.5, d: 2, oz: 2.5 }, { w: 1.5, h: 4.5, d: 1.5, ox: -2.5, oz: -1.5 },
-], 'glass', { tint: 0xd9d2c0 });
-
-addBuilding('jfk', -80, 380, [
-  { w: 2.5, h: 8, d: 2.5 }, { w: 3.5, h: 5, d: 3.5, ox: 3 }, { w: 5, h: 2, d: 3, ox: 1.5, oz: 2.5 },
-], 'white', { tint: 0xf2eee6 });
-
-// Filler blocks for parallax density
-const FILLERS = [
-  [-30, -150, 5, 2.5, 3], [150, -130, 3, 5.5, 3], [-96, 36, 4, 4.5, 2.5], [-144, 120, 6, 2.6, 6],
-  [168, -84, 5, 7, 5], [192, 144, 4, 5, 3], [216, 96, 4, 5, 3], [-60, -60, 3.5, 3, 3.5],
-];
-for (const [fx, fz, w, h, d] of FILLERS){
-  addBuilding('f' + fx + fz, fx, fz, [{ w, h, d }], 'dark');
-}
-
-/* ═════════════════ Peninsula ground + shoal glow ═════════════════ */
-{
+const STAR_KEYS = { healey: 1, campuscenter: 1, uhall: 1, jfk: 1 };
+for (const b of FP){
   const shape = new THREE.Shape();
-  shape.moveTo(-260, -200); shape.lineTo(240, -180); shape.lineTo(300, 60); shape.lineTo(220, 220);
-  shape.lineTo(40, 260); shape.lineTo(-20, 420); shape.lineTo(-140, 460); shape.lineTo(-180, 340);
-  shape.lineTo(-120, 240); shape.lineTo(-280, 120); shape.closePath();
-  const ground = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false }).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color: 0x04101c })
+  b.p.forEach((pt, i) => {
+    const x = pt[0], y = -pt[1]; // shape XY -> world XZ after rotateX(PI/2) flips Y
+    i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y);
+  });
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: b.h, bevelEnabled: false });
+  geo.rotateX(-Math.PI / 2); // extrusion +Z becomes +Y (up); shape Y becomes world -Z
+  const named = !!b.k;
+  const mesh = new THREE.Mesh(geo, named ? heroFacade : fillFacade);
+  mesh.position.set(b.x, 0.4, b.z);
+  scene.add(mesh);
+  if (STAR_KEYS[b.k]){
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 32), edgeMat);
+    edges.position.copy(mesh.position);
+    scene.add(edges);
+  }
+  if (b.k){
+    const anchor = new THREE.Object3D();
+    anchor.position.set(b.x, b.h * 0.62, b.z);
+    scene.add(anchor);
+    labelAnchors[b.k] = anchor;
+    heroPos[b.k] = { x: b.x, z: b.z, h: b.h, poly: b.p.map(pt => [b.x + pt[0], b.z + pt[1]]) };
+  }
+  buildings.push({ group: mesh, center: new THREE.Vector3(b.x, b.h / 2, b.z), radius: 950 });
+}
+// Fallback anchors if any expected hero is missing from the data
+for (const k of ['healey','campuscenter','uhall','jfk','wheatley','mccormack']){
+  if (!labelAnchors[k]){
+    const a = new THREE.Object3D(); a.position.set(0, 30, 0); scene.add(a);
+    labelAnchors[k] = a; heroPos[k] = { x: 0, z: 0, h: 30, poly: [] };
+  }
+}
+
+/* ── NYC touch #1: LED ticker wrapped on the Campus Center roofline ── */
+const ticker = (() => {
+  const cc = heroPos['campuscenter'];
+  if (!cc || cc.poly.length < 2) return null;
+  let best = 0, bi = 0;
+  for (let i = 0; i < cc.poly.length; i++){
+    const a = cc.poly[i], b2 = cc.poly[(i + 1) % cc.poly.length];
+    const len = Math.hypot(b2[0] - a[0], b2[1] - a[1]);
+    if (len > best){ best = len; bi = i; }
+  }
+  const a = cc.poly[bi], b2 = cc.poly[(bi + 1) % cc.poly.length];
+  const mid = [(a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2];
+  const ang = Math.atan2(-(b2[1] - a[1]), b2[0] - a[0]);
+  const cv = document.createElement('canvas'); cv.width = 2048; cv.height = 128;
+  const cx = cv.getContext('2d');
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(Math.min(best * 0.94, 120), 5.2),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false })
   );
-  ground.position.y = 2.2;
-  scene.add(ground);
-  const rim = new THREE.LineSegments(new THREE.EdgesGeometry(ground.geometry), new THREE.LineBasicMaterial({ color: 0x00E5C7, transparent: true, opacity: 0.10 }));
-  rim.position.y = 2.25;
-  scene.add(rim);
+  plane.position.set(mid[0], cc.h + 3.4, mid[1]);
+  plane.rotation.y = ang;
+  scene.add(plane);
+  const MSG = 'WELCOME TO UMASS BOSTON  ✦  16,000 STUDENTS  ✦  200+ PROGRAMS  ✦  BOSTON\\u2019S ONLY PUBLIC RESEARCH UNIVERSITY  ✦  GO BEACONS  ✦  THE NIGHT CROSSING  ✦  ';
+  let off = 0;
+  return {
+    plane,
+    update(dt){
+      off = (off + dt * 110) % 4096;
+      cx.clearRect(0, 0, 2048, 128);
+      cx.fillStyle = 'rgba(2,10,18,0.88)';
+      cx.fillRect(0, 0, 2048, 128);
+      cx.font = '700 74px "Space Mono", monospace';
+      cx.fillStyle = '#00E5C7';
+      cx.shadowColor = '#00E5C7'; cx.shadowBlur = 26;
+      const w = cx.measureText(MSG).width;
+      for (let x = -(off % w); x < 2048; x += w) cx.fillText(MSG, x, 88);
+      tex.needsUpdate = true;
+    },
+  };
+})();
+/* ═════════════════ Peninsula ground — real coastline hull ═════════════════ */
+{
+  if (HULL.length > 2){
+    const shape = new THREE.Shape();
+    HULL.forEach((pt, i) => { i === 0 ? shape.moveTo(pt[0], -pt[1]) : shape.lineTo(pt[0], -pt[1]); });
+    const ground = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false }).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x04101c })
+    );
+    ground.position.y = 0.5;
+    scene.add(ground);
+    const rim = new THREE.LineSegments(new THREE.EdgesGeometry(ground.geometry), new THREE.LineBasicMaterial({ color: 0x00E5C7, transparent: true, opacity: 0.10 }));
+    rim.position.y = 0.55;
+    scene.add(rim);
+  }
 }
 
 /* ═════════════════ Constellation (points + figure lines) ═════════════════ */
 const constelState = { value: 0 };
 {
+  const hp = (k) => heroPos[k] ? [heroPos[k].x, heroPos[k].z] : [0, 0];
   const paths = [
-    [[-36, 84], [0, 40], [0, 0], [60, -30], [108, -24]],
-    [[0, 0], [40, 24], [84, 48]],
-    [[84, 48], [40, 120], [-10, 180], [-80, 380]],
-    [[-96, 36], [-36, 84], [-100, 140]],
-    [[36, -108], [60, -72], [108, -24], [168, -84]],
+    [hp('garage'), hp('clark'), hp('healey'), hp('mccormack'), hp('wheatley')],
+    [hp('healey'), hp('quinn'), hp('garage')],
+    [hp('mccormack'), hp('campuscenter'), hp('uhall')],
+    [hp('uhall'), hp('jfk')],
+    [hp('westres'), hp('eastres'), hp('wheatley')],
   ];
   const pts = [], cols = [], phases = [];
   const gold = new THREE.Color('#FFB347'), teal = new THREE.Color('#00E5C7');
@@ -603,7 +636,7 @@ const constelState = { value: 0 };
     }
   }
   for (let i = 0; i < 500; i++){ // scattered spill
-    pts.push((Math.random() - 0.5) * 500, 4, (Math.random() - 0.5) * 500 + 80);
+    pts.push((Math.random() - 0.5) * 620 + 60, 4, (Math.random() - 0.5) * 520 - 100);
     const c = Math.random() < 0.5 ? teal : new THREE.Color('#CFE8FF');
     cols.push(c.r * 0.7, c.g * 0.7, c.b * 0.7);
     phases.push(Math.random() * Math.PI * 2);
@@ -627,7 +660,7 @@ const constelState = { value: 0 };
   scene.add(new THREE.Points(g, m));
 
   // Constellation figure — building tops joined, revealed on the climb
-  const anchors = ['healey', 'isc', 'campuscenter', 'uhall', 'jfk'].map(n => labelAnchors[n].position);
+  const anchors = ['healey', 'mccormack', 'campuscenter', 'uhall', 'jfk'].map(n => labelAnchors[n].position);
   const linePts = [];
   const joins = [[0, 2], [2, 1], [1, 3], [3, 2]]; // no JFK long-hauls — they read as stray wires
   for (const [a, b] of joins){ linePts.push(anchors[a].clone(), anchors[b].clone()); }
@@ -639,7 +672,7 @@ const constelState = { value: 0 };
 }
 
 /* ═════════════════ Lighthouse + volumetric beam ═════════════════ */
-const LH = new THREE.Vector3(-450, 0, 300);
+const LH = new THREE.Vector3(700, 0, -60);
 const LENS = new THREE.Vector3(LH.x, 64, LH.z);
 const beamGroup = new THREE.Group();
 {
@@ -662,6 +695,25 @@ const beamGroup = new THREE.Group();
     new THREE.MeshBasicMaterial({ color: new THREE.Color(3.0, 1.9, 0.75) }));
   lens.position.copy(LENS);
   scene.add(lens);
+  // Anamorphic-ish flare riding the lens
+  const flareTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const x = c.getContext('2d');
+    const g = x.createRadialGradient(128, 128, 4, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,214,150,1)'); g.addColorStop(0.25, 'rgba(255,179,71,0.55)');
+    g.addColorStop(0.6, 'rgba(255,179,71,0.12)'); g.addColorStop(1, 'transparent');
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    x.fillStyle = 'rgba(255,220,170,0.75)'; x.fillRect(0, 124, 256, 8);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const flareLight = new THREE.PointLight(0xffb347, 0, 0);
+  flareLight.position.copy(LENS);
+  const lf = new Lensflare();
+  lf.addElement(new LensflareElement(flareTex, 220, 0));
+  lf.addElement(new LensflareElement(flareTex, 90, 0.35));
+  lf.addElement(new LensflareElement(flareTex, 50, 0.65));
+  flareLight.add(lf);
+  scene.add(flareLight);
 
   // Beam: opposed cones, additive shader
   const beamUniforms = { uTime: { value: 0 }, uIntensity: { value: 1 } };
@@ -702,7 +754,7 @@ const beamGroup = new THREE.Group();
 }
 
 /* ═════════════════ Arrival beacon ═════════════════ */
-const ARRIVE = new THREE.Vector3(60, 2.4, 170);
+const ARRIVE = new THREE.Vector3(207, 2.4, 26);
 const arriveState = { value: 0 };
 {
   const ring = new THREE.Mesh(new THREE.TorusGeometry(9, 0.5, 10, 48).rotateX(Math.PI / 2),
@@ -864,8 +916,10 @@ const streaks = (() => {
 /* ═════════════════ Post chain ═════════════════ */
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 1.0, 0.5, 0.8);
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 1.0, 0.5, 0.85);
 composer.addPass(bloom);
+const bokeh = new BokehPass(scene, camera, { focus: 60, aperture: 0.000028, maxblur: 0.0045 });
+composer.addPass(bokeh);
 const caPass = new ShaderPass({
   uniforms: { tDiffuse: { value: null }, uAmount: { value: 0 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
@@ -882,41 +936,46 @@ composer.addPass(new OutputPass());
 
 /* ═════════════════ Camera path ═════════════════ */
 /* Keyframes: at = scroll progress when the drone reaches this point. */
-const KEYS = [
+const KEYS = (() => {
+  const H = heroPos['healey'], CC = heroPos['campuscenter'], UH = heroPos['uhall'],
+        JK = heroPos['jfk'], WH = heroPos['wheatley'], MC = heroPos['mccormack'];
+  const mid = [(WH.x + MC.x) / 2, (WH.z + MC.z) / 2]; // the thread corridor
+  return [
   { at: 0.000, pos: [LENS.x + 9, 64, LENS.z], look: [LENS.x, 64, LENS.z], fov: 68, ease: 'none' },
-  { at: 0.060, pos: [LENS.x + 30, 63, LENS.z + 3], look: [LENS.x, 64, LENS.z], fov: 66, ease: 'power1.inOut' },
-  { at: 0.110, pos: [LENS.x + 105, 56, LENS.z + 14], look: [LENS.x, 62, LENS.z], fov: 60, ease: 'power1.inOut' },
-  { at: 0.160, pos: [LENS.x + 190, 34, LENS.z + 8], look: [LENS.x + 40, 45, LENS.z], fov: 57, ease: 'power2.inOut' },
-  // dive + skim toward campus
-  { at: 0.205, pos: [-230, 7, 295], look: [-140, 4, 275], fov: 64, ease: 'power2.in' },
-  { at: 0.230, pos: [-195, 4.5, 285], look: [-110, 5, 258], fov: 66, ease: 'none' },       // stats dwell start
-  { at: 0.285, pos: [-172, 4.8, 278], look: [-90, 6, 250], fov: 66, ease: 'none' },        // stats dwell end (slow drift)
-  { at: 0.325, pos: [-130, 14, 230], look: [-36, 40, 84], fov: 60, ease: 'power2.inOut' },
-  // Healey orbit — look locked mid-tower
-  { at: 0.365, pos: [-140, 52, 140], look: [-36, 42, 84], fov: 55, ease: 'power1.inOut' },
-  { at: 0.405, pos: [-96, 58, 8], look: [-36, 42, 84], fov: 55, ease: 'none' },
-  { at: 0.445, pos: [22, 50, 30], look: [-36, 42, 84], fov: 55, ease: 'power1.inOut' },
-  // ISC ↔ Campus Center thread — authored roll
-  { at: 0.475, pos: [48, 46, -62], look: [84, 34, -18], fov: 60, ease: 'power2.inOut', roll: -0.22 },
-  { at: 0.515, pos: [74, 39, -18], look: [96, 30, 28], fov: 62, ease: 'none', roll: 0.18 },
-  { at: 0.555, pos: [90, 44, 24], look: [98, 30, 58], fov: 60, ease: 'power1.inOut', roll: 0 },
+  { at: 0.060, pos: [LENS.x + 30, 63, LENS.z + 4], look: [LENS.x, 64, LENS.z], fov: 66, ease: 'power1.inOut' },
+  { at: 0.110, pos: [LENS.x + 96, 56, LENS.z + 16], look: [LENS.x, 62, LENS.z], fov: 60, ease: 'power1.inOut' },
+  { at: 0.160, pos: [LENS.x + 168, 34, LENS.z - 20], look: [LENS.x - 60, 40, LENS.z - 30], fov: 57, ease: 'power2.inOut' },
+  // dive + skim west toward campus
+  { at: 0.205, pos: [598, 7, -95], look: [500, 4, -120], fov: 64, ease: 'power2.in' },
+  { at: 0.230, pos: [560, 4.5, -108], look: [468, 6, -140], fov: 66, ease: 'none' },
+  { at: 0.285, pos: [520, 5, -125], look: [430, 8, -170], fov: 66, ease: 'none' },
+  { at: 0.325, pos: [340, 18, -90], look: [H.x, 34, H.z], fov: 60, ease: 'power2.inOut' },
+  // Healey orbit — 270°, gaze locked
+  { at: 0.365, pos: [H.x + 170, 60, H.z + 44], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut' },
+  { at: 0.405, pos: [H.x + 14, 66, H.z + 168], look: [H.x, 28, H.z], fov: 55, ease: 'none' },
+  { at: 0.445, pos: [H.x - 160, 60, H.z + 48], look: [H.x, 28, H.z], fov: 55, ease: 'power1.inOut' },
+  // thread the Wheatley–McCormack corridor, banked
+  { at: 0.475, pos: [H.x - 60, 40, H.z + 120], look: [mid[0], 26, mid[1]], fov: 60, ease: 'power2.inOut', roll: -0.22 },
+  { at: 0.515, pos: [mid[0], 30, mid[1] + 6], look: [CC.x - 20, 22, CC.z + 10], fov: 62, ease: 'none', roll: 0.18 },
+  { at: 0.555, pos: [CC.x - 40, 34, CC.z + 46], look: [CC.x + 30, 24, CC.z], fov: 60, ease: 'power1.inOut', roll: 0 },
   // University Hall rise-over
-  { at: 0.585, pos: [110, 14, 76], look: [84, 22, 48], fov: 57, ease: 'power2.inOut' },
-  { at: 0.615, pos: [92, 52, 96], look: [84, 24, 48], fov: 55, ease: 'power2.inOut' },
-  { at: 0.640, pos: [58, 60, 120], look: [84, 26, 48], fov: 55, ease: 'power1.inOut' },
-  // JFK swing — alone on the point
-  { at: 0.675, pos: [10, 50, 232], look: [-80, 28, 380], fov: 55, ease: 'power2.inOut' },
-  { at: 0.705, pos: [-6, 36, 322], look: [-80, 32, 380], fov: 53, ease: 'none' },
-  { at: 0.740, pos: [-148, 36, 442], look: [-80, 30, 380], fov: 55, ease: 'power1.inOut' },
-  // the climb — spiral up, constellation reveal
-  { at: 0.780, pos: [-140, 150, 320], look: [-20, 20, 160], fov: 55, ease: 'power2.inOut' },
-  { at: 0.820, pos: [-30, 340, 200], look: [0, 0, 120], fov: 55, ease: 'none' },
-  { at: 0.860, pos: [70, 560, 90], look: [10, 0, 110], fov: 52, ease: 'power1.inOut' },
+  { at: 0.585, pos: [CC.x + 20, 14, CC.z + 60], look: [UH.x, 16, UH.z], fov: 57, ease: 'power2.inOut' },
+  { at: 0.615, pos: [UH.x - 36, 52, UH.z + 54], look: [UH.x, 20, UH.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.640, pos: [UH.x + 22, 60, UH.z + 88], look: [UH.x, 22, UH.z], fov: 55, ease: 'power1.inOut' },
+  // JFK swing — out over the water at the point
+  { at: 0.675, pos: [JK.x - 160, 54, JK.z + 170], look: [JK.x, 24, JK.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.705, pos: [JK.x + 110, 42, JK.z + 160], look: [JK.x, 28, JK.z], fov: 53, ease: 'none' },
+  { at: 0.740, pos: [JK.x + 190, 46, JK.z - 70], look: [JK.x, 26, JK.z], fov: 55, ease: 'power1.inOut' },
+  // the climb — constellation reveal
+  { at: 0.780, pos: [JK.x + 40, 170, JK.z + 140], look: [CC.x, 10, CC.z], fov: 55, ease: 'power2.inOut' },
+  { at: 0.820, pos: [180, 360, 160], look: [60, 0, -60], fov: 55, ease: 'none' },
+  { at: 0.860, pos: [40, 580, 60], look: [40, 0, -80], fov: 52, ease: 'power1.inOut' },
   // descent to the arrival beacon
-  { at: 0.905, pos: [130, 240, 140], look: [ARRIVE.x, 30, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
-  { at: 0.950, pos: [70, 56, 220], look: [ARRIVE.x + 14, 14, ARRIVE.z], fov: 50, ease: 'power2.out' },
-  { at: 1.000, pos: [22, 7, 200], look: [ARRIVE.x + 6, 10, ARRIVE.z], fov: 48, ease: 'power2.out' },
-];
+  { at: 0.905, pos: [120, 240, 130], look: [ARRIVE.x + 14, 30, ARRIVE.z], fov: 52, ease: 'power2.inOut' },
+  { at: 0.950, pos: [150, 56, 105], look: [ARRIVE.x + 14, 14, ARRIVE.z], fov: 50, ease: 'power2.out' },
+  { at: 1.000, pos: [166, 7, 74], look: [ARRIVE.x + 6, 10, ARRIVE.z], fov: 48, ease: 'power2.out' },
+  ];
+})();
 
 const posCurve = new THREE.CatmullRomCurve3(KEYS.map(k => new THREE.Vector3(...k.pos)), false, 'centripetal', 0.5);
 const lookCurve = new THREE.CatmullRomCurve3(KEYS.map(k => new THREE.Vector3(...k.look)), false, 'centripetal', 0.5);
@@ -977,11 +1036,11 @@ const stations = [...document.querySelectorAll('.station')].map(el => ({
 const counters = [...document.querySelectorAll('[data-count]')].map(el => ({ el, target: +el.dataset.count, shown: -1 }));
 const labels = [
   { el: qs('#lbl-healey'), anchor: labelAnchors['healey'], inP: 0.33, outP: 0.445 },
-  { el: qs('#lbl-isc'), anchor: labelAnchors['isc'], inP: 0.465, outP: 0.555 },
+  { el: qs('#lbl-cc'), anchor: labelAnchors['campuscenter'], inP: 0.465, outP: 0.555 },
   { el: qs('#lbl-uhall'), anchor: labelAnchors['uhall'], inP: 0.575, outP: 0.645 },
   { el: qs('#lbl-jfk'), anchor: labelAnchors['jfk'], inP: 0.655, outP: 0.745 },
 ];
-const LABEL_PING = { 'lbl-healey': 110, 'lbl-isc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165 };
+const LABEL_PING = { 'lbl-healey': 110, 'lbl-cc': 131, 'lbl-uhall': 147, 'lbl-jfk': 165 };
 const smoothstep = (a, b, x) => {
   if (b <= a) return x >= b ? 1 : 0; // degenerate window — avoid NaN
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -1199,6 +1258,7 @@ function fpsSample(dt){
 
 /* ═════════════════ Render loop ═════════════════ */
 const sigilBeamEl = qs('#sigil-beam'), sigilPctEl = qs('#sigil-pct');
+const lbxTop = qs('#lbx-top'), lbxBot = qs('#lbx-bottom');
 const tmAlt = qs('#tm-alt'), tmSpd = qs('#tm-spd'), tmHdg = qs('#tm-hdg');
 const debugHud = qs('#debug-hud');
 if (DEBUG) debugHud.style.display = 'block';
@@ -1258,6 +1318,24 @@ function renderFrame(t, dtMs){
   scene.background.copy(COL.dusk).lerp(COL.night, Math.min(smoothed * 1.6, 1));
   oceanUniforms.uFogCol.value.copy(scene.background);
   caPass.uniforms.uAmount.value = tier === 0 ? (0.0016 * speedN + (smoothed < 0.16 ? 0.003 * (1 - smoothed / 0.16) : 0)) : 0;
+
+  // facades: time + fog + camera
+  for (const m of facadeMats){
+    m.uniforms.uTime.value = wTime;
+    m.uniforms.uFogD.value = cam.fogD;
+    m.uniforms.uFogCol.value.copy(scene.background);
+    m.uniforms.uCamPos.value.copy(camera.position);
+  }
+  // depth of field: focus glides to the look target; disabled off-T0
+  bokeh.enabled = tier === 0;
+  if (bokeh.enabled){
+    const fd = camera.position.distanceTo(L);
+    bokeh.uniforms.focus.value += (fd - bokeh.uniforms.focus.value) * (1 - Math.exp(-dt * 5));
+  }
+  // letterbox follows speed
+  renderFrame._lbx = (renderFrame._lbx || 0) + ((Math.min(speedN, 1.3) * 46) - (renderFrame._lbx || 0)) * (1 - Math.exp(-dt * 4));
+  lbxTop.style.height = lbxBot.style.height = renderFrame._lbx.toFixed(1) + 'px';
+  if (ticker && tier < 2) ticker.update(dt);
 
   // ocean follow + time
   oceanUniforms.uTime.value = wTime;

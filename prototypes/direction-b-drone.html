@@ -1036,7 +1036,7 @@ const finaleShow = (() => {
   for (let i = 0; i < 3; i++){
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.16, 8, 64).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: 0x9ffbe9, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
-    ring.position.y = 2.6; ring.visible = false;
+    ring.position.y = 4.62; ring.visible = false;
     scene.add(ring);
     rings.push(ring);
   }
@@ -1085,8 +1085,8 @@ const arrivalScreens = (() => {
     { key: 'healey',       url: '/prototypes/panel.html?view=about',    label: 'OUR STORY',  w: 520, h: 420 },
     { key: 'wheatley',     url: '/prototypes/panel.html?view=programs', label: 'PROGRAMS',   w: 560, h: 430, view: [-30, 116] },
     { key: 'mccormack',    url: '/prototypes/panel.html?view=events',   label: 'EVENTS',     w: 540, h: 420, view: [18, 112] },
-    { key: 'campuscenter', url: '/prototypes/panel.html?view=gallery',  label: 'GALLERY',    w: 560, h: 420, view: [120, 120], radial: true },
-    { key: 'jfk',          url: '/prototypes/harbor-game.html',         label: 'ARCADE',     w: 640, h: 400, view: [110, 160], radial: true },
+    { key: 'campuscenter', url: '/prototypes/panel.html?view=gallery',  label: 'GALLERY',    w: 560, h: 420 },
+    { key: 'westres',      url: '/prototypes/harbor-game.html',         label: 'ARCADE',     w: 640, h: 400, view: [-95, 10] },
     { key: 'eastres',      url: '/prototypes/harbor-chat.html',         label: 'ASK HARBOR', w: 540, h: 430, view: [150, -100] },
   ];
   const screens = [];
@@ -1356,7 +1356,7 @@ const walker = (() => {
     if (!api.active) return;
     if ((e.key === 'e' || e.key === 'E') && near && !arrivalScreens.active) arrivalScreens.expand(near);
     if (e.key === ' ' && !air && !arrivalScreens.active){
-      air = true; vy = 24;
+      air = true; vy = 34;
       if (window.__shockwave) __shockwave(grp.position.x, grp.position.z);
       SoundScape.whoosh();
     }
@@ -1396,7 +1396,7 @@ const walker = (() => {
     if (api.active) return;
     api.active = true;
     grp.visible = true;
-    grp.position.set(ARRIVE.x + 14, 2.6, ARRIVE.z + 10);
+    grp.position.set(ARRIVE.x + 14, 4.55, ARRIVE.z + 10);
     yaw = Math.atan2(-1, -0.5);
     if (window.__lenis) window.__lenis.stop();
     const st = document.getElementById('stations');
@@ -1426,20 +1426,35 @@ const walker = (() => {
     let move = 0;
     if (keys['w'] || keys['arrowup']) move = 1;
     else if (keys['s'] || keys['arrowdown']) move = -0.7;
-    if (keys['a'] || keys['arrowleft']) yaw += dt * 2.4;
-    if (keys['d'] || keys['arrowright']) yaw -= dt * 2.4;
-    const spd = 13 * run * move;
-    if (move !== 0){
-      const nx = grp.position.x + Math.sin(yaw) * spd * dt;
-      const nz = grp.position.z + Math.cos(yaw) * spd * dt;
-      if (!blocked(nx, nz) && Math.hypot(nx - 60, nz + 100) < 700){
-        grp.position.x = nx; grp.position.z = nz;
+    if (air){
+      // full air control — drift and strafe mid-jump
+      let strafe = 0;
+      if (keys['a'] || keys['arrowleft']) strafe = -1;
+      if (keys['d'] || keys['arrowright']) strafe = 1;
+      if (move !== 0 || strafe !== 0){
+        const sp = 13 * run;
+        const nx = grp.position.x + (Math.sin(yaw) * move + Math.cos(yaw) * strafe) * sp * dt;
+        const nz = grp.position.z + (Math.cos(yaw) * move - Math.sin(yaw) * strafe) * sp * dt;
+        if (!blocked(nx, nz) && Math.hypot(nx - 60, nz + 100) < 700){
+          grp.position.x = nx; grp.position.z = nz;
+        }
       }
-      walkT += dt * 7.5 * run;
-      stepT += dt;
-      if (!air && stepT > (run > 1 ? 0.26 : 0.4)){ stepT = 0; SoundScape.footstep(false); }
     } else {
-      walkT += (Math.round(walkT / Math.PI) * Math.PI - walkT) * 0.2; // settle limbs
+      if (keys['a'] || keys['arrowleft']) yaw += dt * 2.4;
+      if (keys['d'] || keys['arrowright']) yaw -= dt * 2.4;
+      const spd = 13 * run * move;
+      if (move !== 0){
+        const nx = grp.position.x + Math.sin(yaw) * spd * dt;
+        const nz = grp.position.z + Math.cos(yaw) * spd * dt;
+        if (!blocked(nx, nz) && Math.hypot(nx - 60, nz + 100) < 700){
+          grp.position.x = nx; grp.position.z = nz;
+        }
+        walkT += dt * 7.5 * run;
+        stepT += dt;
+        if (stepT > (run > 1 ? 0.26 : 0.4)){ stepT = 0; SoundScape.footstep(false); }
+      } else {
+        walkT += (Math.round(walkT / Math.PI) * Math.PI - walkT) * 0.2; // settle limbs
+      }
     }
     grp.rotation.y = yaw;
     // jump physics — concentric ring at takeoff and landing
@@ -1459,7 +1474,7 @@ const walker = (() => {
       limbs.legL.rotation.x = sw; limbs.legR.rotation.x = -sw;
       limbs.armL.rotation.x = -sw * 0.8; limbs.armR.rotation.x = sw * 0.8;
     }
-    grp.position.y = 2.6 + jy + (air ? 0 : Math.abs(Math.sin(walkT)) * 0.12 * (move !== 0 ? 1 : 0));
+    grp.position.y = 4.55 + jy + (air ? 0 : Math.abs(Math.sin(walkT)) * 0.12 * (move !== 0 ? 1 : 0));
 
     // third-person camera
     CAMV.set(grp.position.x - Math.sin(yaw) * 13, grp.position.y + 6.5, grp.position.z - Math.cos(yaw) * 13);
@@ -1593,7 +1608,7 @@ const fireworks = (() => {
   }
   let lastFP = 0;
   function burst(px, py, pz, big){
-    if (big && lastFP > 0.94 && window.__shockwave) window.__shockwave(px, pz);
+    if (big && lastFP > 0.94 && window.__shockwave && !(window.__walker && window.__walker.active)) window.__shockwave(px, pz);
     const c = PALETTE[Math.floor(Math.random() * PALETTE.length)];
     const c2 = PALETTE[Math.floor(Math.random() * PALETTE.length)];
     const n = big ? 340 : 170;

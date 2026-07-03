@@ -267,8 +267,8 @@ a.wordmark,a.wordmark:visited,.wordmark{font-family:'Unbounded',sans-serif;font-
   <div class="station" data-in="0.958" data-full="0.985" data-out="1.01" data-gone="1.02">
     <div class="scrim"></div>
     <h2>You've made the crossing<span class="dot">.</span></h2>
-    <p class="sub">The quad is live — play the arcade on the left screen, talk to
-      Harbor on the right. Or step into the full campus.</p>
+    <p class="sub">The quad is live — the whole of UMass Boston floats around you.
+      Click any screen to step inside it.</p>
     <div class="cta-row">
       <a class="cta-primary" href="/home">Enter the Campus &rarr;</a>
       <a class="cta-ghost" href="/home#chatbot-section">Ask Harbor</a>
@@ -1070,7 +1070,7 @@ const finaleShow = (() => {
   return { update };
 })();
 
-/* ═════════════════ Arrival screens — live, interactive billboards ═════════════════ */
+/* ═════════════════ The Portal Plaza — the whole site on living screens ═════════════════ */
 const arrivalScreens = (() => {
   const cssScene = new THREE.Scene();
   const cssRenderer = new CSS3DRenderer();
@@ -1080,51 +1080,128 @@ const arrivalScreens = (() => {
   });
   document.body.appendChild(cssRenderer.domElement);
 
-  const CAM_END = { x: 152, z: -56 }; // final camera position — screens face it
-  const dir = new THREE.Vector2(ARRIVE.x - CAM_END.x, ARRIVE.z - CAM_END.z).normalize();
-  const perp = { x: -dir.y, z: dir.x };
+  const CAM_END = new THREE.Vector3(152, 9, -56);
+  const baseDir = Math.atan2(ARRIVE.x - CAM_END.x, ARRIVE.z - CAM_END.z); // toward the beacon
 
-  function makeScreen(url, wPx, hPx, side, label){
+  const DEFS = [
+    { url: '/prototypes/harbor-game.html',      label: 'ARCADE',      ang: -52, w: 660, h: 400 },
+    { url: '/prototypes/panel.html?view=programs', label: 'PROGRAMS', ang: -31, w: 540, h: 430 },
+    { url: '/prototypes/panel.html?view=about',    label: 'OUR STORY', ang: -13, w: 500, h: 410 },
+    { url: '/prototypes/panel.html?view=events',   label: 'EVENTS',    ang: 13,  w: 500, h: 410 },
+    { url: '/prototypes/panel.html?view=gallery',  label: 'GALLERY',   ang: 31,  w: 540, h: 430 },
+    { url: '/prototypes/harbor-chat.html',      label: 'ASK HARBOR',  ang: 52,  w: 580, h: 440 },
+  ];
+  const SCALE = 0.1, RADIUS = 150;
+  const screens = [];
+  let active = null, expandT = 0, plazaOn = false;
+
+  for (const d of DEFS){
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative;width:' + wPx + 'px;height:' + hPx + 'px;' +
-      'background:#020a12;border:3px solid rgba(0,229,199,0.55);' +
-      'box-shadow:0 0 90px rgba(0,229,199,0.28), inset 0 0 40px rgba(0,0,0,0.6);pointer-events:none;';
+    wrap.style.cssText = 'position:relative;width:' + d.w + 'px;height:' + d.h + 'px;' +
+      'background:#020a12;border:3px solid rgba(0,229,199,0.5);' +
+      'box-shadow:0 0 80px rgba(0,229,199,0.25), inset 0 0 40px rgba(0,0,0,0.6);pointer-events:none;';
     const frame = document.createElement('iframe');
-    frame.title = label;
-    frame.style.cssText = 'width:100%;height:100%;border:0;display:block;pointer-events:inherit;';
+    frame.title = d.label;
+    frame.style.cssText = 'width:100%;height:100%;border:0;display:block;pointer-events:none;';
     wrap.appendChild(frame);
     const tag = document.createElement('div');
-    tag.textContent = '● ' + label;
+    tag.textContent = '◳  ' + d.label;
     tag.style.cssText = "position:absolute;top:-58px;left:2px;font-family:'Space Mono',monospace;" +
-      'font-size:22px;letter-spacing:6px;color:#FFB347;text-shadow:0 0 22px rgba(255,179,71,0.8);white-space:nowrap;';
+      'font-size:24px;letter-spacing:6px;color:#FFB347;text-shadow:0 0 22px rgba(255,179,71,0.8);white-space:nowrap;';
     wrap.appendChild(tag);
+    const hit = document.createElement('div'); // plaza-mode click catcher
+    hit.style.cssText = 'position:absolute;inset:-64px 0 0 0;cursor:pointer;pointer-events:none;';
+    hit.title = 'Expand ' + d.label;
+    wrap.appendChild(hit);
+
+    const ang = (baseDir + d.ang * Math.PI / 180);
+    const px = CAM_END.x + Math.sin(ang) * RADIUS;
+    const pz = CAM_END.z + Math.cos(ang) * RADIUS;
     const obj = new CSS3DObject(wrap);
-    const px = ARRIVE.x + perp.x * side + dir.x * 26;
-    const pz = ARRIVE.z + perp.z * side + dir.y * 26;
-    obj.position.set(px, hPx * 0.05 + 26, pz);
+    obj.position.set(px, d.h * SCALE * 0.5 + 20, pz);
     obj.rotation.y = Math.atan2(CAM_END.x - px, CAM_END.z - pz);
-    obj.scale.setScalar(0.1);
+    obj.scale.setScalar(SCALE);
     obj.visible = false;
     cssScene.add(obj);
-    return { obj, frame, wrap, url };
-  }
-  const game = makeScreen('/prototypes/harbor-game.html', 720, 405, -60, 'HARBOR ARCADE — PLAY ME');
-  const chat = makeScreen('/prototypes/harbor-chat.html', 540, 420, 80, 'ASK HARBOR — LIVE AI');
-  let interactive = null;
 
+    const sc = {
+      def: d, obj, frame, wrap, hit, tag,
+      homePos: obj.position.clone(),
+      homeQuat: obj.quaternion.clone(),
+    };
+    hit.addEventListener('click', () => expand(sc));
+    screens.push(sc);
+  }
+
+  // Back control
+  const back = document.createElement('button');
+  back.textContent = '✕  BACK TO THE QUAD';
+  back.style.cssText = "position:fixed;top:84px;left:50%;transform:translateX(-50%);z-index:40;display:none;" +
+    "font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;color:#EAF4FB;" +
+    'background:rgba(0,16,32,0.85);border:1px solid rgba(255,179,71,0.5);border-radius:999px;padding:12px 22px;cursor:pointer;';
+  document.body.appendChild(back);
+  back.addEventListener('click', collapse);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && active) collapse(); });
+
+  function expand(sc){
+    if (active) return;
+    active = sc;
+    if (window.__lenis) window.__lenis.stop();
+    back.style.display = 'block';
+    sc.frame.style.pointerEvents = 'auto';
+    sc.hit.style.pointerEvents = 'none';
+    sc.wrap.style.borderColor = 'rgba(255,179,71,0.85)';
+    sc.tag.style.opacity = '0';
+    screens.forEach((o) => { if (o !== sc) o.wrap.style.opacity = '0.12'; });
+    const st = document.getElementById('stations');
+    if (st) st.style.visibility = 'hidden';
+    SoundScape.ping(660, 0.5, 0.12, 'triangle');
+  }
+  function collapse(){
+    if (!active) return;
+    const sc = active;
+    sc.frame.style.pointerEvents = 'none';
+    sc.wrap.style.borderColor = 'rgba(0,229,199,0.5)';
+    sc.tag.style.opacity = '1';
+    screens.forEach((o) => { o.wrap.style.opacity = '1'; });
+    back.style.display = 'none';
+    const st = document.getElementById('stations');
+    if (st) st.style.visibility = '';
+    active = null;
+    if (window.__lenis) window.__lenis.start();
+  }
+
+  const FWD = new THREE.Vector3(), TARGET = new THREE.Vector3();
   function update(p, cam){
-    const show = p > 0.88;
-    game.obj.visible = chat.obj.visible = show;
-    if (show){
-      if (!game.frame.src) game.frame.src = game.url;   // lazy boot
-      if (!chat.frame.src) chat.frame.src = chat.url;
+    const show = p > 0.86;
+    if (show !== plazaOn){
+      plazaOn = show;
+      screens.forEach((sc) => {
+        sc.obj.visible = show;
+        if (show && !sc.frame.src) sc.frame.src = sc.def.url; // lazy boot
+      });
     }
-    const canTouch = p > 0.962;
-    if (canTouch !== interactive){
-      interactive = canTouch;
-      [game, chat].forEach((sc) => {
-        sc.wrap.style.pointerEvents = canTouch ? 'auto' : 'none';
-        sc.wrap.style.borderColor = canTouch ? 'rgba(255,179,71,0.75)' : 'rgba(0,229,199,0.55)';
+    if (!show && active) collapse();
+    const canTouch = p > 0.955 && !active;
+    screens.forEach((sc) => {
+      if (sc !== active) sc.hit.style.pointerEvents = canTouch ? 'auto' : 'none';
+    });
+    // expansion choreography: the active screen glides to the camera and fills the view
+    expandT += ((active ? 1 : 0) - expandT) * 0.12;
+    if (expandT > 0.001){
+      const sc = active || screens.find((o) => o.wrap.style.opacity !== '1') || screens[0];
+      const e = expandT * expandT * (3 - 2 * expandT);
+      cam.getWorldDirection(FWD);
+      const fovR = (cam.fov * Math.PI / 180) / 2;
+      const dH = (sc.def.h * SCALE * 0.5) / Math.tan(fovR) * 1.12;
+      const dW = (sc.def.w * SCALE * 0.5) / (Math.tan(fovR) * cam.aspect) * 1.12;
+      TARGET.copy(cam.position).add(FWD.multiplyScalar(Math.max(dH, dW)));
+      sc.obj.position.lerpVectors(sc.homePos, TARGET, e);
+      sc.obj.quaternion.copy(sc.homeQuat).slerp(cam.quaternion, e);
+    } else if (!active){
+      screens.forEach((sc) => {
+        sc.obj.position.copy(sc.homePos);
+        sc.obj.quaternion.copy(sc.homeQuat);
       });
     }
     cssRenderer.render(cssScene, cam);

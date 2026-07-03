@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UMass Boston</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--teal:#00E5C7;--gold:#f5a623;--white:#eef3f8;--ice:rgba(207,232,255,0.6);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(180deg,#03111f,#000a14);min-height:100vh;font-family:'Space Grotesk',sans-serif;color:var(--white);}
+.wrap{padding:26px 28px 90px;max-width:900px;margin:0 auto;}
+.kicker{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--teal);margin-bottom:12px;}
+.kicker::before{content:'';display:inline-block;width:26px;height:1px;background:var(--teal);vertical-align:4px;margin-right:10px;}
+h1{font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(26px,5vw,40px);text-transform:uppercase;letter-spacing:-0.02em;line-height:1.05;margin-bottom:18px;}
+h1 em{font-style:normal;color:var(--teal);}
+p.lead{color:var(--ice);font-size:15px;line-height:1.7;margin-bottom:22px;max-width:640px;}
+.bullets{list-style:none;}
+.bullets li{padding:12px 0;border-bottom:1px solid rgba(238,243,248,0.07);color:var(--ice);font-size:14px;display:flex;gap:12px;}
+.bullets li::before{content:'→';color:var(--teal);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px;background:rgba(0,229,199,0.08);border:1px solid rgba(0,229,199,0.16);}
+.cell{background:rgba(2,12,22,0.9);padding:22px 18px;text-decoration:none;color:inherit;transition:background .3s;}
+.cell:hover{background:rgba(0,229,199,0.06);}
+.cell .ic{font-size:22px;margin-bottom:10px;}
+.cell h3{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;margin-bottom:6px;}
+.cell p{font-size:12px;color:var(--ice);line-height:1.5;}
+.list-card{border:1px solid rgba(0,229,199,0.14);background:rgba(2,12,22,0.85);padding:16px 18px;margin-bottom:10px;}
+.list-card h3{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;margin-bottom:6px;line-height:1.3;}
+.list-card .meta{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
+.list-card p{font-size:13px;color:var(--ice);line-height:1.55;}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.gallery img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid rgba(0,229,199,0.18);display:block;}
+.gallery .cap{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--ice);margin-top:4px;}
+.empty{color:var(--ice);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;padding:30px 0;text-align:center;}
+.foot{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:14px;background:linear-gradient(transparent,rgba(0,8,16,0.95) 40%);}
+.foot a{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#00241F;background:var(--teal);border-radius:999px;padding:11px 22px;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap" id="content"><div class="empty">LOADING…</div></div>
+<div class="foot"><a id="deep-link" href="/home" target="_top">Open in the full campus site →</a></div>
+<script>
+(function(){
+  var view = new URLSearchParams(location.search).get('view') || 'about';
+  var root = document.getElementById('content');
+  var deep = document.getElementById('deep-link');
+  function esc(t){ return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  var VIEWS = {
+    about: function(){
+      deep.href = '/home#about';
+      root.innerHTML =
+        '<div class="kicker">Our story</div>' +
+        '<h1>A beacon on <em>Boston Harbor</em></h1>' +
+        '<p class="lead">Founded in 1964, UMass Boston is the only public research university in the City of Boston — an anchor institution serving the Commonwealth with world-class education and scholarship.</p>' +
+        '<ul class="bullets">' +
+        '<li>Carnegie R1 classification — highest doctoral research activity</li>' +
+        '<li>120-acre Columbia Point peninsula, surrounded by harbor</li>' +
+        '<li>10 colleges spanning sciences, arts, business, health &amp; policy</li>' +
+        '<li>$100M+ in annual sponsored research funding</li>' +
+        '<li>Adjacent to the JFK Presidential Library &amp; Museum</li>' +
+        '</ul>';
+    },
+    programs: function(){
+      deep.href = '/home#programs';
+      var progs = [
+        ['🔬','Sciences &amp; Mathematics','40 programs — labs in the LEED-Gold ISC'],
+        ['📖','Liberal Arts','30+ programs across humanities &amp; social sciences'],
+        ['💻','Computer Science','CS, math and tech in University Hall'],
+        ['🏥','Nursing &amp; Health','15 programs, Boston hospital partnerships'],
+        ['📈','Management','25 programs in business &amp; finance'],
+        ['🎓','Education','18 programs transforming public education'],
+        ['🏛️','Public Policy','22 programs in governance &amp; justice'],
+        ['🌊','Graduate Research','80 programs, marine science to gerontology'],
+      ];
+      root.innerHTML =
+        '<div class="kicker">Academics</div>' +
+        '<h1>200+ <em>programs</em></h1>' +
+        '<div class="grid">' + progs.map(function(p){
+          return '<a class="cell" href="https://www.umb.edu/academics/" target="_blank"><div class="ic">' + p[0] + '</div><h3>' + p[1] + '</h3><p>' + p[2] + '</p></a>';
+        }).join('') + '</div>';
+    },
+    events: function(){
+      deep.href = '/home#events-section';
+      root.innerHTML = '<div class="kicker">On campus</div><h1>Events <em>this week</em></h1><div id="evs"><div class="empty">LOADING EVENTS…</div></div>';
+      fetch('/api/events').then(function(r){ return r.json(); }).then(function(d){
+        var evs = document.getElementById('evs');
+        if (!d.events || !d.events.length){ evs.innerHTML = '<div class="empty">No upcoming events right now.</div>'; return; }
+        evs.innerHTML = d.events.slice(0, 12).map(function(ev){
+          return '<div class="list-card"><div class="meta">' + esc(ev.pubDate ? ev.pubDate.slice(0, 16) : 'Upcoming') + (ev.buildingMatch ? ' · ' + esc(ev.buildingMatch.name) : '') + '</div>' +
+                 '<h3>' + esc(ev.title) + '</h3><p>' + esc(ev.description || '') + '</p></div>';
+        }).join('');
+      }).catch(function(){ document.getElementById('evs').innerHTML = '<div class="empty">Could not load events.</div>'; });
+    },
+    gallery: function(){
+      deep.href = '/home#gallery-section';
+      root.innerHTML = '<div class="kicker">Community</div><h1>Campus <em>gallery</em></h1><div id="gal" class="gallery"><div class="empty">LOADING PHOTOS…</div></div>';
+      fetch('/api/building-photos').then(function(r){ return r.json(); }).then(function(d){
+        var gal = document.getElementById('gal');
+        if (!d.photos || !d.photos.length){ gal.innerHTML = '<div class="empty">No photos yet — be the first to share on the main site!</div>'; return; }
+        gal.innerHTML = d.photos.slice(0, 24).map(function(p){
+          return '<div><img src="' + esc(p.photoUrl) + '" alt="' + esc(p.building) + '" loading="lazy"><div class="cap">' + esc(p.building) + (p.season ? ' · ' + esc(p.season) : '') + '</div></div>';
+        }).join('');
+      }).catch(function(){ document.getElementById('gal').innerHTML = '<div class="empty">Could not load photos.</div>'; });
+    },
+  };
+  (VIEWS[view] || VIEWS.about)();
+})();
+</script>
+</body>
+</html>

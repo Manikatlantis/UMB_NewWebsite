@@ -105,12 +105,12 @@ For non-tour questions (tuition, admissions, programs, etc.), answer helpfully u
 
 Keep responses concise — 2-4 sentences max for tour narrations. Use HTML formatting: <strong>, <br>, <ul>/<li>, <a href="..." target="_blank"> for links.
 
-CRITICAL: You MUST ALWAYS include a text response alongside any tool call. Never return only a tool call with no text. The text appears in the chat while the tool controls the camera.`;
+Order of operations for any building request: first write your narration as ordinary text (this is what the visitor reads in the chat), then call the tool in that same response so the camera moves. A response that is only a tool call shows the visitor nothing, so always write the text first.`;
 
 const HARBOR_TOOLS = [
   {
     name: 'fly_to_building',
-    description: 'Fly the 3D drone camera to a specific campus building and highlight it on the map. Use when the user wants to SEE or VISIT a building.',
+    description: 'Fly the 3D drone camera to a specific campus building and highlight it on the map. Use when the user wants to SEE or VISIT a building. Write your narration text before calling this tool.',
     input_schema: {
       type: 'object',
       properties: {
@@ -124,7 +124,7 @@ const HARBOR_TOOLS = [
   },
   {
     name: 'campus_tour',
-    description: 'Start a multi-stop guided drone tour flying between key campus buildings. Use when the user asks for a tour or to "show me around".',
+    description: 'Start a multi-stop guided drone tour flying between key campus buildings. Use when the user asks for a tour or to "show me around". Write a one-sentence introduction as text before calling this tool.',
     input_schema: {
       type: 'object',
       properties: {
@@ -184,12 +184,20 @@ router.post('/chat', async (req, res) => {
     messages.push({ role: 'user', content: message });
 
     const resp = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+      model: 'claude-sonnet-5-5',
+      max_tokens: 4096,                    // thinking tokens count toward this cap
+      output_config: { effort: 'low' },    // chat: brief/no thinking, fastest first token
       system: HARBOR_SYSTEM,
       tools: HARBOR_TOOLS,
       messages,
     });
+
+    // Sonnet 5.5 may decline with HTTP 200 + stop_reason 'refusal' and empty content.
+    // Treat it like an outage so the front-end falls back to its static answers.
+    if (resp.stop_reason === 'refusal') {
+      console.warn('Harbor chat refused:', resp.stop_details && resp.stop_details.category);
+      return res.json({ reply: null, actions: [], fallback: true });
+    }
 
     // Extract text blocks and tool_use blocks
     let reply = '';
@@ -343,8 +351,9 @@ async function moderateImage(filePath, mimeType) {
 
   try {
     const resp = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 150,
+      model: 'claude-haiku-5-5',
+      max_tokens: 1024,                    // room for any brief thinking plus the JSON verdict
+      output_config: { effort: 'low' },
       messages: [{
         role: 'user',
         content: [
@@ -354,7 +363,14 @@ async function moderateImage(filePath, mimeType) {
       }]
     });
 
-    const text = resp.content[0].text.trim();
+    // A refusal on the image itself is a strong unsafe signal — reject rather than allow.
+    if (resp.stop_reason === 'refusal') {
+      return { safe: false, reason: 'Content not appropriate for a university website.' };
+    }
+
+    // Read by block type — the first block may be a (possibly empty) thinking block.
+    const textBlock = resp.content.find(b => b.type === 'text');
+    const text = textBlock ? textBlock.text.trim() : '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) return JSON.parse(jsonMatch[0]);
     return { safe: true };
